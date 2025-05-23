@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { IoLogoFacebook, IoLogoInstagram, IoLogoTwitter } from 'react-icons/io5';
 
 import { Logo } from '@/components/logo';
-import { Toaster } from '@/components/ui/toaster';
+
 import { cn } from '@/utils/cn';
 import { Analytics } from '@vercel/analytics/react';
 
 import { Navigation } from './navigation';
 
 import '@/styles/globals.css';
+import { Toaster } from 'sonner';
 
 export const dynamic = 'force-dynamic';
 

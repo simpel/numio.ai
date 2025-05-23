@@ -4,35 +4,28 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { IoPersonCircleOutline } from 'react-icons/io5';
 
+import { ActionResponse } from '@/types/action-response';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
-  DropdownMenuArrow,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ActionResponse } from '@/types/action-response';
-
-import { useToast } from './ui/use-toast';
+  DropdownMenuArrow,
+} from '@radix-ui/react-dropdown-menu';
 
 export function AccountMenu({ signOut }: { signOut: () => Promise<ActionResponse> }) {
   const router = useRouter();
-  const { toast } = useToast();
 
   async function handleLogoutClick() {
     const response = await signOut();
 
     if (response?.error) {
-      toast({
-        variant: 'destructive',
-        description: 'An error occurred while logging out. Please try again or contact support.',
-      });
+      toast.error('An error occurred while logging out. Please try again or contact support.');
     } else {
       router.refresh();
 
-      toast({
-        description: 'You have been logged out.',
-      });
+      toast.success('You have been logged out.');
     }
   }
 
