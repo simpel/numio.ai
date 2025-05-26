@@ -4,9 +4,10 @@ globs:
 alwaysApply: false
 ---
 
-    You are an expert developer in TypeScript, Node.js, Next.js 15 App Router, React, Supabase, Tailwind CSS (with CVA), Radix UI, and Shadcn UI.
+    You are an expert developer in TypeScript, Node.js, Next.js 15 App Router, React, Supabase, GraphQL, Genql, Tailwind CSS, Radix UI, and Shadcn UI.
 
     Key Principles
+		- The project uses Turborepo
     - Write concise, technical responses with accurate TypeScript examples.
     - Use functional, declarative programming. Avoid classes.
     - Prefer iteration and modularization over duplication.
@@ -18,7 +19,7 @@ alwaysApply: false
     JavaScript/TypeScript
     - Use "function" keyword for pure functions. Omit semicolons.
     - Use TypeScript for all code. Prefer interfaces over types.
-    - File structure: Exported component, subcomponents, helpers, static content, types.
+    - File structure: Exported types, static content, helpers, subcomponents, component.
     - Avoid unnecessary curly braces in conditional statements.
     - For single-line statements in conditionals, omit curly braces.
     - Use concise, one-line syntax for simple conditional statements (e.g., if (condition) doSomething()).
@@ -32,7 +33,6 @@ alwaysApply: false
     - Use guard clauses to handle preconditions and invalid states early.
     - Implement proper error logging and user-friendly error messages.
     - Consider using custom error types or error factories for consistent error handling.
-    - Pass errors to the user with the Sonner toast pattern.
 
     AI SDK
     - Use the Vercel AI SDK UI for implementing streaming chat UI.
@@ -48,11 +48,11 @@ alwaysApply: false
     React/Next.js
     - Use functional components and TypeScript interfaces.
     - Use declarative JSX.
-    - Use const, not function, for components.
-    - Use Shadcn UI and Tailwind CSS for components and styling.
+    - Use function, not const, for components.
+    - Use Shadcn UI, Radix, and Tailwind CSS for components and styling.
     - Implement responsive design with Tailwind CSS.
     - Use mobile-first approach for responsive design.
-    - Place static content and interfaces at file beginning.
+    - Place static content and interfaces at file end.
     - Use content variables for static content outside render functions.
     - Minimize 'use client', 'useEffect', and 'setState'. Favor React Server Components (RSC).
     - Use Zod for form validation.
@@ -61,19 +61,17 @@ alwaysApply: false
     - Optimize images: WebP format, size data, lazy loading.
     - Model expected errors as return values: Avoid using try/catch for expected errors in Server Actions.
     - Use error boundaries for unexpected errors: Implement error boundaries using error.tsx and global-error.tsx files.
-    - Use ShadCN Form component for forms
+    - Use useActionState with react-hook-form for form validation.
     - Code in services/ dir always throw user-friendly errors that can be caught and shown to the user.
     - Use next-safe-action for all server actions.
     - Implement type-safe server actions with proper validation.
-    - Handle errors gracefully and return appropriate responses. 
-
-		Class Variance Authority
-		-	use CVA with variants to generate Tailwind CSS.
-		- place CVA code in .styles.ts files 
+    - Handle errors gracefully and return appropriate responses.
 
     Supabase and GraphQL
     - Use the Supabase client for database interactions and real-time subscriptions.
+    - Use a local database for development
     - Implement Row Level Security (RLS) policies for fine-grained access control.
+    - Use Declarative database schemas and create migrations for every database change.    - 
     - Use Supabase Auth for user authentication and management.
     - Leverage Supabase Storage for file uploads and management.
     - Use Supabase Edge Functions for serverless API endpoints when needed.
@@ -92,7 +90,7 @@ alwaysApply: false
     4. Follow the monorepo structure:
       - Place shared code in the 'packages' directory.
       - Keep app-specific code in the 'apps' directory.
-    5. Adhere to the defined database schema and use enum tables for predefined values.
+    5. Adhere to the defined database schema and use enum tables for predefined values.    6. 
 
     Naming Conventions
     - Booleans: Use auxiliary verbs such as 'does', 'has', 'is', and 'should' (e.g., isDisabled, hasError).
@@ -103,9 +101,8 @@ alwaysApply: false
     - Break down components into smaller parts with minimal props.
     - Suggest micro folder structure for components.
     - Use composition to build complex components.
-    - Follow the order: static variables (if any), TypeScript types, component declaration.
-    - Place components in folders, for example my-button/my-button.tsx, my-button/my-button.styles.ts
-    - Prefer using ShadCN components as much as possible
+    - Follow the order: TypeScript types, component declaration.
+    - Use CVA variants in seprate styles files, e.g. auth-wizard.styles.ts
 
     Data Fetching and State Management
     - Use React Server Components for data fetching when possible.
@@ -115,7 +112,7 @@ alwaysApply: false
 
     Styling
     - Use Tailwind CSS for styling, following the Utility First approach.
-    - Utilize the Class Variance Authority (CVA) for managing component variants.
+    - Utilize the Class Variance Authority (CVA) for managing component variants.    - 
 
     Testing
     - Implement unit tests for utility functions and hooks.
@@ -136,11 +133,8 @@ alwaysApply: false
 
     Refer to Next.js documentation for Data Fetching, Rendering, and Routing best practices and to the
     Vercel AI SDK documentation and OpenAI/Anthropic API guidelines for best practices in AI integration.
+
+		Misc.
+		- The code is hosted on Github, use github actions for deployment on new commits to main
+		- The website is hosted on Vercel. 
     
-	  Sources of information:
-	  - https://supabase.com/docs
-	  - https://ui.shadcn.com/docs/components
-	  - https://tailwindcss.com
-	  - https://nextjs.org/docs
-	  - https://docs.stripe.com
-	  - https://ai-sdk.dev/docs
