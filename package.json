@@ -6,7 +6,11 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "check-types": "turbo run check-types",
+    "supabase:start": "pnpm start",
+    "supabase:stop": "pnpm stop",
+    "start": "pnpm supabase:start",
+    "stop": "pnpm supabase:stop"
   },
   "devDependencies": {
     "prettier": "^3.5.3",
@@ -16,5 +20,9 @@
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@types/three": "^0.176.0",
+    "three": "^0.176.0"
   }
 }

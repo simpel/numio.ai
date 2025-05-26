@@ -9,7 +9,7 @@ export default async function LoginPage() {
 
   return (
     <div>
-      <h1>Hello</h1>
+      <h1>HOME</h1>
       EMAIL: {user.data.user?.email}
       <SignOutButton />
       <SignInWithGoogle />
