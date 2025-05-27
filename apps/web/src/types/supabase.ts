@@ -137,29 +137,41 @@ export type Database = {
         Row: {
           avatar: string | null
           created_at: string | null
+          email: string | null
           first_name: string
           id: number
           is_public: boolean | null
           last_name: string
+          onboarded: boolean
+          phone: string | null
           updated_at: string | null
+          user_id: string
         }
         Insert: {
           avatar?: string | null
           created_at?: string | null
+          email?: string | null
           first_name: string
           id?: never
           is_public?: boolean | null
           last_name: string
+          onboarded?: boolean
+          phone?: string | null
           updated_at?: string | null
+          user_id: string
         }
         Update: {
           avatar?: string | null
           created_at?: string | null
+          email?: string | null
           first_name?: string
           id?: never
           is_public?: boolean | null
           last_name?: string
+          onboarded?: boolean
+          phone?: string | null
           updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

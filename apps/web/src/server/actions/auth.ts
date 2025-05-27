@@ -19,7 +19,6 @@ export async function signInWithEmail(formData: FormData) {
 
 export async function signInWithGoogle(next: string = "/") {
   const supabase = await createClient();
-
   const origin = (await headers()).get("origin");
 
   const { data, error } = await supabase.auth.signInWithOAuth({

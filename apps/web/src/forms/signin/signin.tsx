@@ -21,7 +21,7 @@ const schema = z.object({
   password: z.string().min(6),
 });
 
-export function LoginForm() {
+export function SignInForm() {
   const [error, setError] = useState<string | null>(null);
   const form = useForm({
     resolver: zodResolver(schema),

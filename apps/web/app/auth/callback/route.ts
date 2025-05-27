@@ -6,16 +6,40 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const origin = requestUrl.origin;
   const next = requestUrl.searchParams.get("next")?.toString();
-  console.log("CALLBACK", { next, origin });
 
+  const supabase = await createClient();
+  let user;
   if (code) {
-    const supabase = await createClient();
     await supabase.auth.exchangeCodeForSession(code);
+    // Fetch the user after session exchange
+    const { data: userData } = await supabase.auth.getUser();
+    user = userData.user;
+  } else {
+    const { data: userData } = await supabase.auth.getUser();
+    user = userData.user;
   }
 
+  // If no user, redirect to login
+  if (!user) {
+    return NextResponse.redirect(`${origin}/login`);
+  }
+
+  // Fetch the user's profile from the 'profiles' table
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("onboarded")
+    .eq("id", user.id)
+    .single();
+
+  // If no profile or onboarded is false, redirect to /welcome
+  if (!profile || !profile.onboarded) {
+    return NextResponse.redirect(`${origin}/welcome`);
+  }
+
+  // If onboarded is true
   if (next) {
     return NextResponse.redirect(`${origin}${next}`);
   }
 
-  return NextResponse.redirect(`${origin}`);
+  return NextResponse.redirect(`${origin}/home`);
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+
 import "./globals.css";
+import { Toaster } from "sonner";
+import Header from "@/src/components/Header";
 
 export const metadata: Metadata = {
   title: "Numio.ai",
@@ -14,7 +16,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Toaster position="top-right" />
+        <Header />
+        <main className="pt-16">{children}</main>
+      </body>
     </html>
   );
 }
