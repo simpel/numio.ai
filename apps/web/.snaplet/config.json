@@ -1,0 +1,4 @@
+{
+  "adapter": "pg",
+  "projectDescription": "This project is about managing user profiles, companies, organizations, roles, and projects. It involves tracking sessions and user identities within the system."
+}

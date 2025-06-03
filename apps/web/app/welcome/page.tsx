@@ -4,8 +4,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/ui/card";
+import OnboardingForm from "@/src/forms/onboarding/OnboardingForm";
 import { createClient } from "@/src/supabase/server";
-import OnBoardingForm from "../../src/forms/onboarding/onboarding";
 
 export default async function WelcomePage() {
   const supabase = await createClient();
@@ -19,8 +19,6 @@ export default async function WelcomePage() {
     .eq("id", user?.id)
     .single();
 
-  console.log({ userDetails, user });
-
   return (
     <div className="flex justify-center items-center min-h-screen">
       <Card className="w-full max-w-md">
@@ -28,7 +26,7 @@ export default async function WelcomePage() {
           <CardTitle>Welcome! Complete your profile</CardTitle>
         </CardHeader>
         <CardContent>
-          <OnBoardingForm
+          <OnboardingForm
             defaultValues={{
               first_name: "",
               last_name: "",

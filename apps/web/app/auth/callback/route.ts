@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
   // If no user, redirect to login
   if (!user) {
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(`${origin}/signin`);
   }
 
   // Fetch the user's profile from the 'profiles' table
@@ -36,10 +36,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/welcome`);
   }
 
-  // If onboarded is true
-  if (next) {
-    return NextResponse.redirect(`${origin}${next}`);
-  }
-
-  return NextResponse.redirect(`${origin}/home`);
+  return NextResponse.redirect(`${origin}/${next ?? "home"}`);
 }

@@ -1,5 +1,6 @@
-import { SignInWithGoogle } from "@/src/components/SignInWithGoogle";
+import { Button } from "@/src/components/ui/button";
 import { createClient } from "@/src/supabase/server";
+import Link from "next/link";
 
 export default async function LoginPage() {
   const supabase = await createClient();
@@ -17,7 +18,9 @@ export default async function LoginPage() {
         collaboration, you can efficiently manage contract modifications.
       </p>
 
-      <SignInWithGoogle size={"lg"} />
+      <Button asChild>
+        <Link href="/sign-in">Sign in</Link>
+      </Button>
     </div>
   );
 }

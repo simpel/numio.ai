@@ -31,7 +31,7 @@ const schema = z.object({
   }),
 });
 
-export default function OnBoardingForm({
+export default function OnboardingForm({
   defaultValues,
 }: {
   defaultValues: any;
@@ -92,7 +92,7 @@ export default function OnBoardingForm({
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Your e-mail</FormLabel>
               <FormControl>
                 <Input
                   {...field}

@@ -61,6 +61,66 @@ export type Database = {
         }
         Relationships: []
       }
+      company_organisations: {
+        Row: {
+          company_id: number | null
+          created_at: string
+          id: number
+          organisation_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: number | null
+          created_at?: string
+          id?: number
+          organisation_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: number | null
+          created_at?: string
+          id?: number
+          organisation_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_organisations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_organisations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organisations: {
+        Row: {
+          created_at: string
+          id: number
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profile_companies: {
         Row: {
           company_id: number
@@ -97,38 +157,41 @@ export type Database = {
           },
         ]
       }
-      profile_roles: {
+      profile_organisations: {
         Row: {
-          created_at: string | null
-          profile_id: number
-          role_id: number
+          created_at: string
+          id: number
+          organisation_id: number | null
+          profile_id: number | null
           updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          profile_id: number
-          role_id: number
+          created_at?: string
+          id?: number
+          organisation_id?: number | null
+          profile_id?: number | null
           updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
-          profile_id?: number
-          role_id?: number
+          created_at?: string
+          id?: number
+          organisation_id?: number | null
+          profile_id?: number | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "profile_roles_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "profile_organisations_organisation_id_fkey"
+            columns: ["organisation_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "profile_roles_role_id_fkey"
-            columns: ["role_id"]
+            foreignKeyName: "profile_organisations_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "roles"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -138,12 +201,13 @@ export type Database = {
           avatar: string | null
           created_at: string | null
           email: string | null
-          first_name: string
+          first_name: string | null
           id: number
           is_public: boolean | null
-          last_name: string
+          last_name: string | null
           onboarded: boolean
           phone: string | null
+          roles: Database["public"]["Enums"]["roles"][]
           updated_at: string | null
           user_id: string
         }
@@ -151,12 +215,13 @@ export type Database = {
           avatar?: string | null
           created_at?: string | null
           email?: string | null
-          first_name: string
-          id?: never
+          first_name?: string | null
+          id?: number
           is_public?: boolean | null
-          last_name: string
+          last_name?: string | null
           onboarded?: boolean
           phone?: string | null
+          roles: Database["public"]["Enums"]["roles"][]
           updated_at?: string | null
           user_id: string
         }
@@ -164,12 +229,13 @@ export type Database = {
           avatar?: string | null
           created_at?: string | null
           email?: string | null
-          first_name?: string
-          id?: never
+          first_name?: string | null
+          id?: number
           is_public?: boolean | null
-          last_name?: string
+          last_name?: string | null
           onboarded?: boolean
           phone?: string | null
+          roles?: Database["public"]["Enums"]["roles"][]
           updated_at?: string | null
           user_id?: string
         }
@@ -215,6 +281,7 @@ export type Database = {
         Row: {
           company_id: number | null
           created_at: string | null
+          finished_at: string | null
           id: number
           name: string
           updated_at: string | null
@@ -222,6 +289,7 @@ export type Database = {
         Insert: {
           company_id?: number | null
           created_at?: string | null
+          finished_at?: string | null
           id?: never
           name: string
           updated_at?: string | null
@@ -229,6 +297,7 @@ export type Database = {
         Update: {
           company_id?: number | null
           created_at?: string | null
+          finished_at?: string | null
           id?: never
           name?: string
           updated_at?: string | null
@@ -243,30 +312,6 @@ export type Database = {
           },
         ]
       }
-      roles: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: number
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: never
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: never
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -275,7 +320,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      roles: "owner" | "superadmin" | "editor" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -393,7 +438,9 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      roles: ["owner", "superadmin", "editor", "user"],
+    },
   },
 } as const
 
