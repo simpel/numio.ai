@@ -7,6 +7,31 @@ import { createInviteAction } from '@src/lib/db/membership/invite.actions';
 import { sendInviteEmail } from '@src/mails/invite';
 import { auth } from '@src/lib/auth/auth';
 
+// Helper function to check if user has permission to manage team
+async function hasTeamManagementPermission(
+	userProfileId: string,
+	teamId: string
+): Promise<boolean> {
+	const userProfile = await db.userProfile.findUnique({
+		where: { id: userProfileId },
+	});
+
+	// Superadmin has full permissions
+	if (userProfile?.role === 'superadmin') {
+		return true;
+	}
+
+	// Check team membership for admin/owner roles
+	const membership = await db.membership.findFirst({
+		where: {
+			teamContextId: teamId,
+			userProfileId: userProfileId,
+		},
+	});
+
+	return membership?.role === 'admin' || membership?.role === 'owner';
+}
+
 export async function createTeamAction(input: {
 	name: string;
 	organisationId: string;
@@ -327,19 +352,12 @@ export async function removeTeamMemberAction(
 			return { isSuccess: false, message: 'User profile not found' };
 		}
 
-		// Check if the current user is an admin or owner of the team
-		const currentUserMembership = await db.membership.findFirst({
-			where: {
-				teamContextId: teamId,
-				userProfileId: userProfile.id,
-			},
-		});
-
-		if (
-			!currentUserMembership ||
-			(currentUserMembership.role !== 'admin' &&
-				currentUserMembership.role !== 'owner')
-		) {
+		// Check if the current user has permission to manage the team
+		const hasPermission = await hasTeamManagementPermission(
+			userProfile.id,
+			teamId
+		);
+		if (!hasPermission) {
 			return { isSuccess: false, message: 'Insufficient permissions' };
 		}
 
@@ -397,19 +415,12 @@ export async function changeTeamMemberRoleAction(
 			return { isSuccess: false, message: 'User profile not found' };
 		}
 
-		// Check if the current user is an admin or owner of the team
-		const currentUserMembership = await db.membership.findFirst({
-			where: {
-				teamContextId: teamId,
-				userProfileId: userProfile.id,
-			},
-		});
-
-		if (
-			!currentUserMembership ||
-			(currentUserMembership.role !== 'admin' &&
-				currentUserMembership.role !== 'owner')
-		) {
+		// Check if the current user has permission to manage the team
+		const hasPermission = await hasTeamManagementPermission(
+			userProfile.id,
+			teamId
+		);
+		if (!hasPermission) {
 			return { isSuccess: false, message: 'Insufficient permissions' };
 		}
 
@@ -466,19 +477,12 @@ export async function updateTeamAction(
 			return { isSuccess: false, message: 'User profile not found' };
 		}
 
-		// Check if the current user is an admin or owner of the team
-		const currentUserMembership = await db.membership.findFirst({
-			where: {
-				teamContextId: teamId,
-				userProfileId: userProfile.id,
-			},
-		});
-
-		if (
-			!currentUserMembership ||
-			(currentUserMembership.role !== 'admin' &&
-				currentUserMembership.role !== 'owner')
-		) {
+		// Check if the current user has permission to manage the team
+		const hasPermission = await hasTeamManagementPermission(
+			userProfile.id,
+			teamId
+		);
+		if (!hasPermission) {
 			return { isSuccess: false, message: 'Insufficient permissions' };
 		}
 
