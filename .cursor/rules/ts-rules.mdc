@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+#Type Safety
+
+- Never use stuff like // @ts-expect-error or // @ts-ignore
+- Never convert variables with "someVar as any", if there is no viable type you should create one
+   - if its not possible to create a type use "as unknown" instead of "as any". BUT THIS SHOULD REALLY ONLY HAPPEN IN EMERGENCY CASES!

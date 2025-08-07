@@ -1,6 +1,5 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": [
@@ -13,41 +12,100 @@
       "outputs": [
         ".next/**",
         "!.next/cache/**"
+      ],
+      "env": [
+        "NODE_ENV",
+        "AZURE_API_KEY",
+        "AUTH_MICROSOFT_ENTRA_ID_ID",
+        "AUTH_MICROSOFT_ENTRA_ID_SECRET",
+        "AUTH_MICROSOFT_ENTRA_ID_ISSUER",
+        "TAVILY_API_KEY",
+        "AZURE_API_VERSION",
+        "API_PORT"
       ]
     },
     "lint": {
       "dependsOn": [
         "^lint"
+      ],
+      "env": [
+        "NODE_ENV",
+        "AZURE_API_KEY",
+        "AUTH_MICROSOFT_ENTRA_ID_ID",
+        "AUTH_MICROSOFT_ENTRA_ID_SECRET",
+        "AUTH_MICROSOFT_ENTRA_ID_ISSUER",
+        "TAVILY_API_KEY",
+        "AZURE_API_VERSION",
+        "API_PORT"
       ]
     },
-    "check-types": {
+    "typecheck": {
       "dependsOn": [
-        "^check-types"
+        "^typecheck"
+      ],
+      "env": [
+        "NODE_ENV",
+        "AZURE_API_KEY",
+        "AUTH_MICROSOFT_ENTRA_ID_ID",
+        "AUTH_MICROSOFT_ENTRA_ID_SECRET",
+        "AUTH_MICROSOFT_ENTRA_ID_ISSUER",
+        "TAVILY_API_KEY",
+        "AZURE_API_VERSION",
+        "API_PORT"
       ]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "NODE_ENV",
+        "AZURE_API_KEY",
+        "AUTH_MICROSOFT_ENTRA_ID_ID",
+        "AUTH_MICROSOFT_ENTRA_ID_SECRET",
+        "AUTH_MICROSOFT_ENTRA_ID_ISSUER",
+        "TAVILY_API_KEY",
+        "AZURE_API_VERSION",
+        "API_PORT"
+      ]
     },
-    "supabase:start": {
-      "cache": false,
-      "persistent": true
-    },
-    "supabase:stop": {
-      "cache": false
-    },
-    "start": {
+    "generate": {
       "dependsOn": [
-        "supabase:start"
+        "^generate"
       ],
-      "cache": false,
-      "persistent": true
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "prisma/schema.prisma"
+      ],
+      "env": [
+        "DATABASE_URL"
+      ]
     },
-    "stop": {
-      "dependsOn": [
-        "supabase:stop"
-      ],
-      "cache": false
+    "migrate": {
+      "cache": false,
+      "persistent": false,
+      "env": [
+        "DATABASE_URL"
+      ]
+    },
+    "migrate:deploy": {
+      "cache": false,
+      "persistent": false,
+      "env": [
+        "DATABASE_URL"
+      ]
+    },
+    "studio": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "DATABASE_URL"
+      ]
+    },
+    "envs:dev": {
+      "persistent": false
+    },
+    "envs:prod": {
+      "persistent": false
     }
   }
 }

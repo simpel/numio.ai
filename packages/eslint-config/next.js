@@ -5,6 +5,7 @@ import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginReact from "eslint-plugin-react";
 import globals from "globals";
 import pluginNext from "@next/eslint-plugin-next";
+import pluginReactPerf from "eslint-plugin-react-perf";
 import { config as baseConfig } from "./base.js";
 
 /**
@@ -44,6 +45,17 @@ export const nextJsConfig = [
       ...pluginReactHooks.configs.recommended.rules,
       // React scope no longer necessary with new JSX transform.
       "react/react-in-jsx-scope": "off",
+    },
+  },
+  {
+    plugins: {
+      "react-perf": pluginReactPerf,
+    },
+    rules: {
+      ...pluginReactPerf.configs.recommended.rules,
+      "react-perf/jsx-no-new-function-as-prop": "off",
+      "react-perf/jsx-no-new-object-as-prop": "off",
+      "react-perf/jsx-no-new-array-as-prop": "off",
     },
   },
 ];

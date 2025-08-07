@@ -1,28 +1,42 @@
 {
-  "name": "@numio/monorepo",
+  "name": "@numio/ai",
   "private": true,
   "scripts": {
+    "prebuild": "pnpm db:generate",
     "build": "turbo run build",
+    "predev": "pnpm db:generate",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types",
-    "supabase:start": "pnpm start",
-    "supabase:stop": "pnpm stop",
-    "start": "pnpm supabase:start",
-    "stop": "pnpm supabase:stop"
+    "typecheck": "turbo run typecheck",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "changeset:create": "changeset",
+    "changeset:publish": "changeset publish",
+    "changeset:status": "changeset status --since=main",
+    "changeset:version": "changeset version",
+    "db:generate": "pnpm --filter @numio/ai-database run generate",
+    "db:migrate": "pnpm --filter @numio/ai-database run migrate",
+    "db:migrate:deploy": "pnpm --filter @numio/ai-database run migrate:deploy",
+    "db:studio": "pnpm --filter @numio/ai-database run studio",
+    "db:seed": "pnpm --filter @numio/ai-database run seed",
+    "envs:dev": "turbo run envs:dev",
+    "envs:prod": "turbo run envs:prod",
+    "clean": "rimraf --glob \"**/node_modules\" \"**/pnpm-lock.yaml\""
   },
   "devDependencies": {
+    "@changesets/cli": "^2.28.1",
+    "@types/node": "^20.19.1",
     "prettier": "^3.5.3",
-    "turbo": "^2.5.3",
+    "rimraf": "^6.0.1",
+    "turbo": "^2.5.4",
     "typescript": "5.8.2"
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac",
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "@types/three": "^0.176.0",
-    "three": "^0.176.0"
+    "prettier-plugin-tailwindcss": "^0.6.13"
   }
 }

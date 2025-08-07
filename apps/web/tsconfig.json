@@ -1,24 +1,32 @@
 {
   "extends": "@numio/typescript-config/nextjs.json",
   "compilerOptions": {
+    "paths": {
+      "@src/*": [
+        "./src/*"
+      ],
+      "@app/*": [
+        "./app/*"
+      ],
+      "@shadcn/*": [
+        "./shadcn/*"
+      ]
+    },
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     "next-env.d.ts",
     "next.config.js",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "./next-auth.d.ts",
+    "global.d.ts",
+    "src"
   ],
   "exclude": [
     "node_modules"

@@ -1,0 +1,17 @@
+{
+  "name": "@numio/tsup-config",
+  "version": "1.0.0",
+  "description": "Shared tsup configurations for the Numio AI monorepo.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {},
+  "keywords": [
+    "tsup",
+    "config"
+  ],
+  "author": "Numio AI",
+  "license": "ISC",
+  "dependencies": {
+    "tsup": "^8.2.3"
+  }
+}

@@ -1,34 +1,52 @@
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/src/components/ui/card";
-import { SignInWithEmailAndPasswordForm } from "@/src/forms/signin/SignInWithEmailAndPasswordForm";
-import { SignInWithGoogle } from "@/src/components/SignInWithGoogle";
+import { Alert, AlertDescription, AlertTitle } from '@shadcn/ui/alert';
 
-export default function SignInPage() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">
-            Sign in to your account
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SignInWithEmailAndPasswordForm />
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <div className="flex items-center w-full my-2">
-            <div className="flex-grow border-t border-muted-foreground/20" />
-            <span className="mx-2 text-muted-foreground text-xs">or</span>
-            <div className="flex-grow border-t border-muted-foreground/20" />
-          </div>
-          <SignInWithGoogle className="w-full" variant="outline" />
-        </CardFooter>
-      </Card>
-    </div>
-  );
+import { db } from '@numio/ai-database';
+import { Info } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import SignInForm from '@src/components/forms/signin-form';
+import { getCurrentUser } from '@src/lib/auth/auth.utils';
+
+export default async function SignInPage({
+	searchParams,
+}: {
+	searchParams: Promise<{
+		message?: string;
+		title?: string;
+		cta?: string;
+		ctaLabel?: string;
+	}>;
+}) {
+	const user = await getCurrentUser();
+
+	const { message, title } = await searchParams;
+
+	if (user?.id) {
+		const profile = await db.userProfile.findUnique({
+			where: { userId: user.id },
+			select: {
+				hasDoneIntro: true,
+			},
+		});
+
+		if (profile?.hasDoneIntro) {
+			redirect('/home');
+		}
+
+		redirect('/welcome');
+	}
+
+	return (
+		<div className="flex min-h-screen flex-col items-center justify-center py-12">
+			<div className="w-full max-w-md">
+				{(message || title) && (
+					<Alert className="mb-4">
+						<Info className="h-4 w-4" />
+						{title && <AlertTitle>{title}</AlertTitle>}
+						{message && <AlertDescription>{message}</AlertDescription>}
+					</Alert>
+				)}
+				<SignInForm />
+			</div>
+		</div>
+	);
 }

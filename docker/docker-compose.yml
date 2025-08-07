@@ -1,0 +1,27 @@
+services:
+  postgres:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-postgres}-db
+    ports:
+      - '${DOCKER_POSTGRES_PORT:-5432}:5432'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    command: >
+      bash -c "
+      docker-entrypoint.sh postgres &
+      until pg_isready -h localhost -p 5432 -U ${POSTGRES_USER:-postgres}; do
+        sleep 1;
+      done;
+      psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres} -c 'CREATE EXTENSION IF NOT EXISTS vector;' &
+      wait
+      "
+
+volumes:
+  postgres-data:
+    driver: local

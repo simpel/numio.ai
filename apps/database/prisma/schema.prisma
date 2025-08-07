@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organisation {
+  id           String        @id @default(cuid())
+  name         String
+  owner        UserProfile   @relation("OrgOwner", fields: [ownerId], references: [id])
+  ownerId      String
+  teams        Team[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  memberships  Membership[]
+  invites      Invite[]
+}
+
+model Team {
+  id             String         @id @default(cuid())
+  organisation   Organisation   @relation(fields: [organisationId], references: [id])
+  organisationId String
+  owner          UserProfile    @relation("TeamOwner", fields: [ownerId], references: [id])
+  ownerId        String
+  name           String
+  description    String?
+  state          TeamState      @default(active)
+  casesCreated   Case[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  teamMemberships Membership[]  @relation("TeamMemberships")
+  contextMemberships Membership[] @relation("MembershipContextTeam")
+  invites      Invite[]
+}
+
+model Client {
+  id             String         @id @default(cuid())
+  name           String
+  orgNumber      String         @unique
+  description    String?
+  cases          Case[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  memberships    Membership[]
+}
+
+model Case {
+  id            String        @id @default(cuid())
+  client        Client        @relation(fields: [clientId], references: [id])
+  clientId      String
+  team          Team          @relation(fields: [teamId], references: [id])
+  teamId        String        // creator
+  title         String
+  description   String?
+  state         CaseState     @default(created)
+  events        Event[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  memberships   Membership[]
+}
+
+model Event {
+  id         String    @id @default(cuid())
+  case       Case      @relation(fields: [caseId], references: [id])
+  caseId     String
+  actor      UserProfile @relation("EventActor", fields: [actorId], references: [id])
+  actorId    String
+  occurredAt DateTime  @default(now())
+  type       String
+  metadata   Json      @default("{}")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?   // Added for NextAuth compatibility
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  profile  UserProfile?
+
+  @@map("users")
+}
+
+model UserProfile {
+  id           String        @id @default(cuid())
+  firstName    String?
+  lastName     String?
+  email        String?       @unique
+  image        String?
+  bio          String?       @db.Text
+  jobTitle     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  role         Role          @default(authenticated)
+  hasDoneIntro Boolean       @default(false)
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String        @unique
+
+  memberships Membership[]
+  ownsTeams   Team[]        @relation("TeamOwner")
+  ownsOrgs    Organisation[] @relation("OrgOwner")
+  events      Event[]       @relation("EventActor")
+
+  @@map("user_profiles")
+}
+
+enum Role {
+  admin
+  authenticated
+  owner
+  member
+  assignee
+  client
+  superadmin
+}
+
+model Membership {
+  id           String   @id @default(cuid())
+
+  // Polymorphic member: either user or team
+  userProfile  UserProfile? @relation(fields: [userProfileId], references: [id])
+  userProfileId String?
+  team         Team?        @relation("TeamMemberships", fields: [teamId], references: [id])
+  teamId       String?
+
+  // Polymorphic context: organisation, team, case, or client
+  organisation Organisation? @relation(fields: [organisationId], references: [id])
+  organisationId String?
+  teamContext   Team?        @relation("MembershipContextTeam", fields: [teamContextId], references: [id])
+  teamContextId String?
+  caseItem     Case?         @relation(fields: [caseId], references: [id])
+  caseId       String?
+  client       Client?       @relation(fields: [clientId], references: [id])
+  clientId     String?
+
+  role         Role
+  createdAt    DateTime @default(now())
+
+  @@unique([userProfileId, teamId, organisationId, teamContextId, caseId, clientId])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+enum CaseState {
+  created
+  active
+  on_hold
+  completed
+  closed
+}
+
+enum TeamState {
+  active
+  inactive
+}
+
+model Invite {
+  id             String   @id @default(cuid())
+  email          String
+  organisation   Organisation? @relation(fields: [organisationId], references: [id])
+  organisationId String?
+  team           Team?        @relation(fields: [teamId], references: [id])
+  teamId         String?
+  role           Role
+  token          String
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  acceptedById   String?
+  status         InviteStatus @default(PENDING)
+
+  @@unique([email, organisationId, teamId, status])
+}

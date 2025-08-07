@@ -1,0 +1,29 @@
+# Build files
+.next/
+out/
+build/
+dist/
+
+# Package managers
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Generated files
+.vercel
+.turbo
+.env
+.env.local
+.env.*
+public/
+coverage/
+src/generated/
+
+# Misc
+.git/
+.github/
+*.log
+*.min.js 
+.changeset/
+**/components/ui/**

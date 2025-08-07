@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+When creating new UI do not use the shadcn Card component all the time. Prefer to list stuff using just a table. Common infoblocks such as organisation details etc, does not need to be contained by a card component.

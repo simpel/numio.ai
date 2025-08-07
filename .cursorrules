@@ -1,0 +1,414 @@
+# Project Instructions
+
+Use specification and guidelines as you build the app.
+
+Write the complete code for every step. Do not get lazy.
+
+Your goal is to completely finish whatever I ask for.
+
+You will see <ai_context> tags in the code. These are context tags that you should use to help you understand the codebase.
+
+## Overview
+
+## Tech Stack
+
+- Frontend: Next.js 15, Tailwind CSS 3, Shadcn UI, Framer Motion
+- Backend: Postgres with Prisma ORM, Azure Blob Storage, Server Actions
+- Auth: NextAuth.js with Microsoft Entra
+- AI: Azure OpenAI
+- Analytics: Vercel Analytics
+- Deployment: Vercel
+
+## Rules
+
+Follow these rules when building the app.
+
+### General Rules
+
+- Use @ to import anything from the app unless otherwise specified
+- Use kebab case for all files and folders unless otherwise specified
+- Never create index.ts files, use direct imports instead. THIS IS IMPORTANT!
+- Don't update shadcn components unless otherwise specified
+- Always use PNPM
+- Do not use the pattern where a component is prefixed with Pure and then reexported wrapped in a memo. Do a memo wrapped arrow function instead and export it.
+
+### Architectural Patterns
+
+#### Toolcalls
+Use this generic pattern: User Input → Tool Selection → Tool Execution → Result Processing → Response
+
+### Type Rules
+
+#### ✅ General Rules
+- Use **PascalCase** for all type and interface names.
+- Prefer `interface` for **object shapes** (especially extendable ones).
+- Prefer `type` for **primitives, unions, intersections**, or **function types**.
+- Avoid `I` and `T` prefix unless needed to disambiguate from a value (rare).
+
+---
+
+#### ✅ Suffix Rules
+
+| Suffix     | Use for                                                 | Example           |
+| ---------- | ------------------------------------------------------- | ----------------- |
+| `Props`    | Component inputs                                        | `ButtonProps`     |
+| `Input`    | Function, mutation, or API input                        | `CreateUserInput` |
+| `Response` | Function, mutation, or API return type                  | `LoginResponse`   |
+| `Params`   | URL, route, or function parameters (usually primitives) | `GetUserParams`   |
+| `Data`     | Fetched, normalized, or internal model-like shapes      | `UserData`        |
+| `State`    | Local or global state objects                           | `AuthState`       |
+
+---
+
+## ✅ Best Practices
+- Avoid redundant context: `LoginResponse` inside a `user` module is enough (not `UserLoginResponse`).
+- Stay consistent across your codebase.
+- Keep types **tight and scoped** to their usage.
+
+### Frontend Rules
+
+Follow these rules when working on the frontend.
+
+It uses Next.js, Tailwind CSS, Prisma ORM, Shadcn, and Framer Motion.
+
+#### General Rules
+
+- Use lucide-react for icons
+
+#### Components
+
+- Use divs instead of other html tags unless otherwise specified
+- Separate the main parts of a component's html with an extra blank line for visual spacing
+- Always tag a component with either use server or use client at the top, including layouts and pages
+
+##### Organization
+
+- All components be named using kebab case like example-component.tsx unless otherwise specified
+- Put components in /\_components in the route if one-off components
+- Put components in /components from the root if shared components
+
+##### Data Fetching
+
+- Fetch data in server components and pass the data down as props to client components.
+- Use server actions from /actions to mutate data.
+
+##### Server Components
+
+- Use "use server" at the top of the file.
+- Prefer using server actions when possible
+- Implement Suspense for asynchronous data fetching to show loading states while data is being fetched.
+- If no asynchronous logic is required for a given server component, you do not need to wrap the component in <Suspense>. You can simply return the final UI directly since there is no async boundary needed.
+- If asynchronous fetching is required, you can use a <Suspense> boundary and a fallback to indicate a loading state while data is loading.
+- params in server pages should be awaited such as `const { courseId } = await params` where the type is `params: Promise<{ courseId: string }>`
+
+Example of a server layout:
+
+```tsx
+"use server"
+
+export default async function ExampleServerLayout({
+  children
+}: {
+  children: React.ReactNode
+}) {
+  return children
+}
+```
+
+Example of a server page (with async logic):
+
+```tsx
+"use server"
+
+import { Suspense } from "react"
+import { SomeAction } from "@/actions/some-actions"
+import SomeComponent from "./_components/some-component"
+import SomeSkeleton from "./_components/some-skeleton"
+
+export default async function ExampleServerPage() {
+  return (
+    <Suspense fallback={<SomeSkeleton className="some-class" />}>
+      <SomeComponentFetcher />
+    </Suspense>
+  )
+}
+
+async function SomeComponentFetcher() {
+  const { data } = await SomeAction()
+  return <SomeComponent className="some-class" initialData={data || []} />
+}
+```
+
+Example of a server page (no async logic required):
+
+```tsx
+"use server"
+
+import SomeClientComponent from "./_components/some-client-component"
+
+// In this case, no asynchronous work is being done, so no Suspense or fallback is required.
+export default async function ExampleServerPage() {
+  return <SomeClientComponent initialData={[]} />
+}
+```
+
+Example of a server component:
+
+```tsx
+"use server"
+
+interface ExampleServerComponentProps {
+  // Your props here
+}
+
+export async function ExampleServerComponent({
+  props
+}: ExampleServerComponentProps) {
+  // Your code here
+}
+```
+
+##### Client Components
+
+- Use "use client" at the top of the file
+- Client components can safely rely on props passed down from server components, or handle UI interactions without needing <Suspense> if there’s no async logic.
+- Never use server actions in client components. If you need to create a new server action, create it in /actions
+
+Example of a client page:
+
+```tsx
+"use client"
+
+export default function ExampleClientPage() {
+  // Your code here
+}
+```
+
+Example of a client component:
+
+```tsx
+"use client"
+
+interface ExampleClientComponentProps {
+  initialData: unknown[]
+}
+
+export default function ExampleClientComponent({
+  initialData
+}: ExampleClientComponentProps) {
+  // Client-side logic here
+  return <div>{initialData.length} items</div>
+}
+```
+
+### Backend Rules
+
+Follow these rules when working on the backend.
+
+It uses Prisma ORM, Azure Blob Storage, and Server Actions.
+
+#### Server Actions
+
+- When importing actions, use @/actions or @/actions/db if db related
+- DB related actions should go in the actions/db folder
+- Other actions should go in the actions folder
+- Name files like example-actions.ts
+- All actions should go in the actions folder
+- Only write the needed actions
+- Return an ActionState with the needed data type from actions
+- Include Action at the end of function names Ex: exampleFunction -> exampleFunctionAction
+- Actions should return a Promise<ActionState<T>>
+- Sort in CRUD order: Create, Read, Update, Delete
+- Convert Date objects to strings (e.g., using .toISOString()) before storing in Azure Cosmos DB to maintain consistency
+
+Example of an action:
+
+```ts
+"use server"
+
+import { ActionState } from "@/types"
+
+export async function createTaskAction(task: {
+  userId: string
+  name: string
+}): Promise<ActionState<{ id: string; userId: string; name: string }>> {
+  try {
+    // Perform your Cosmos DB insert here
+    // Example placeholder:
+    const newTask = {
+      id: "generated-id",
+      ...task,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    return {
+      isSuccess: true,
+      message: "Task created successfully",
+      data: newTask
+    }
+  } catch (error) {
+    console.error("Error creating task:", error)
+    return { isSuccess: false, message: "Failed to create task" }
+  }
+}
+```
+
+### Auth Rules
+
+Follow these rules when working on auth.
+
+It uses NextAuth.js and Microsoft Entra for authentication.
+
+#### General Rules
+
+- Import the auth helpers from NextAuth.js or Azure AD libraries in server components
+- Always protect server actions by validating sessions where required
+
+### Analytics Rules
+
+Follow these rules when working on analytics.
+
+It uses Vercel Analytics for analytics.
+
+# Storage Rules
+
+Follow these rules when working with Azure Blob Storage.
+
+## General Rules
+
+- Always use environment variables for container names to maintain consistency across environments
+- Never hardcode container names in the application code
+- Always handle file size limits and allowed file types at the application level
+- Generate unique filenames to prevent collisions
+- Always implement proper error handling for storage operations
+- Use content-type headers when uploading files to ensure proper file handling
+
+## Organization
+
+### Containers
+
+- Name containers in kebab-case: user-uploads, profile-images
+- Create separate containers for different types of files (e.g., profile-images, documents, attachments)
+- Document container purposes in a central location
+- Set appropriate access levels (public/private) based on requirements
+
+### File Structure
+
+- Organize files in folders based on their purpose and ownership
+- Use predictable, collision-resistant naming patterns
+- Structure: {container}/{userId}/{purpose}/{filename}
+- Example: profile-images/123e4567-e89b/avatar/profile.jpg
+- Include timestamps in filenames when version history is important
+- Example: documents/123e4567-e89b/contracts/2024-02-13-contract.pdf
+- Use dot notation for supporting files, such as types and styles files
+- Example:
+  src/lib/db/message/message.types.ts
+  src/lib/db/message/message.styles.ts
+  src/lib/db/message/message.actions.ts
+  src/lib/db/message/message.hooks.ts
+  src/lib/db/message/message.ts
+
+## Actions
+
+- Name files like example-storage.actions.ts
+- Include Storage at the end of function names Ex: uploadFile -> uploadFileStorage
+- Follow the same ActionState pattern as DB actions
+
+Example of a storage action:
+
+```ts
+"use server"
+
+import { ActionState } from "@/types"
+
+export async function uploadFileStorage(
+  container: string,
+  path: string,
+  file: Buffer | ArrayBuffer,
+  contentType: string
+): Promise<ActionState<{ url: string }>> {
+  try {
+    // Perform Azure Blob upload here
+    // Return a URL or path
+    return {
+      isSuccess: true,
+      message: "File uploaded successfully",
+      data: { url: "https://your-account.blob.core.windows.net/..." }
+    }
+  } catch (error) {
+    console.error("Error uploading file:", error)
+    return { isSuccess: false, message: "Failed to upload file" }
+  }
+}
+```
+
+## File Handling
+
+### Upload Rules
+
+- Always validate file size before upload
+- Implement file type validation using both extension and MIME type
+- Generate unique filenames to prevent collisions
+- Set appropriate content-type headers
+- Handle existing files appropriately (error or overwrite)
+
+Example validation:
+
+```ts
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+
+function validateFile(file: { size: number; type: string }): boolean {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error("File size exceeds limit")
+  }
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error("File type not allowed")
+  }
+
+  return true
+}
+```
+
+### Download Rules
+
+- Always handle missing files gracefully
+- Implement proper error handling for failed downloads
+- Use short-lived SAS tokens for private files
+
+### Delete Rules
+
+- Implement soft deletes when appropriate
+- Clean up related database records when deleting files
+- Handle bulk deletions carefully
+- Verify ownership before deletion
+
+## Security
+
+### Container Policies
+
+- Make containers private by default
+- Only make containers public when absolutely necessary
+- Use appropriate access tiers to control access to containers
+
+### Access Control
+
+- Generate short-lived SAS tokens for private files
+- Implement proper CORS policies
+- Never expose internal file paths
+- Validate user permissions before any operation
+
+## Error Handling
+
+- Implement specific error types for common storage issues
+- Always provide meaningful error messages
+- Implement retry logic for transient failures
+- Log storage errors separately for monitoring
+
+## Optimization
+
+- Implement appropriate chunking for large files
+- Clean up temporary files and failed uploads
+- Use batch operations when handling multiple files

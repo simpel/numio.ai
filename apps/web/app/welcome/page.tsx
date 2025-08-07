@@ -1,41 +1,33 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
-import OnboardingForm from "@/src/forms/onboarding/OnboardingForm";
-import { createClient } from "@/src/supabase/server";
+'use server';
 
-export default async function WelcomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  // Fetch user details from the users table
-  const { data: userDetails } = await supabase
-    .from("users")
-    .select("email, phone, displayname")
-    .eq("id", user?.id)
-    .single();
+import { getCurrentUser } from '@src/lib/auth/auth.utils';
+import ProfileUpdateForm from '@src/components/forms/profile-update-form';
+import { getUserProfileAction } from '@src/lib/auth/auth.actions';
+import { redirect } from 'next/navigation';
 
-  return (
-    <div className="flex justify-center items-center min-h-screen">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome! Complete your profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <OnboardingForm
-            defaultValues={{
-              first_name: "",
-              last_name: "",
-              email: userDetails?.email || user?.email || "",
-              phone: userDetails?.phone || user?.phone || "",
-            }}
-          />
-        </CardContent>
-      </Card>
-    </div>
-  );
+export default async function WelcomeRootRedirect() {
+	const user = await getCurrentUser();
+	if (!user || !user.id) {
+		redirect('/signin');
+	}
+	const { data: profile } = await getUserProfileAction(user.id);
+	if (!profile) {
+		redirect('/signin');
+	}
+
+	return (
+		<div className="mx-auto max-w-xl py-8">
+			<ProfileUpdateForm
+				userId={profile.userId}
+				onSuccessRedirect="/home"
+				initialValues={{
+					firstName: profile.firstName || '',
+					lastName: profile.lastName || '',
+					email: profile.email || '',
+					bio: profile.bio || '',
+					jobTitle: profile.jobTitle || '',
+				}}
+			/>
+		</div>
+	);
 }

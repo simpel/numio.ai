@@ -1,0 +1,54 @@
+{
+  "name": "@numio/ai-database",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "lint": "eslint . --fix",
+    "build": "pnpm generate && dotenv -e ../../.env.local -- tsup",
+    "dev": "pnpm generate && dotenv -e ../../.env.local -- tsup --watch",
+    "generate": "dotenv -e ../../.env.local -e .env -- prisma generate",
+    "migrate": "dotenv -e ../../.env.local -e .env -- prisma migrate dev",
+    "migrate:deploy": "dotenv -e ../../.env.local -e .env -- prisma migrate deploy",
+    "seed": "dotenv -e ../../.env.local -e .env -- prisma db seed",
+    "studio": "dotenv -e ../../.env.local -e .env -- prisma studio",
+    "envs:dev": "dotenv -e ../../.env.local -e .env -- comprend environments --project=\"AI Initiatives\" --variableGroupIds=88,87 --overwrite",
+    "envs:prod": "dotenv -e ../../.env.local -e .env -- comprend environments --project=\"AI Initiatives\" --variableGroupIds=86,87 --overwrite",
+    "typecheck": "tsc --noEmit"
+  },
+  "prisma": {
+    "seed": "tsx src/seed.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@ai-sdk/react": "^1.2.12",
+    "@comprend/azure": "^1.1.1",
+    "@numio/eslint-config": "workspace:*",
+    "@numio/tsup-config": "workspace:*",
+    "@numio/typescript-config": "workspace:*",
+    "@types/bcrypt": "^5.0.2",
+    "dotenv": "^17.0.1",
+    "dotenv-cli": "^8.0.0",
+    "eslint": "^9.29.0",
+    "prisma": "^6.11.1",
+    "prisma-json-types-generator": "^3.5.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3"
+  },
+  "dependencies": {
+    "@ai-sdk/react": "^1.2.12",
+    "@faker-js/faker": "^9.9.0",
+    "@prisma/client": "^6.11.1",
+    "@types/uuid": "^10.0.0",
+    "ai": "^4.3.16",
+    "bcrypt": "^5.1.1",
+    "uuid": "^11.1.0"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ]
+}
