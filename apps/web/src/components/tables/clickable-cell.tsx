@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@src/i18n/navigation';
 import { cn } from '@src/utils';
 
 interface ClickableCellProps {

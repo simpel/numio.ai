@@ -1,8 +1,8 @@
 'use server';
 
 import { db, Role, Invite } from '@numio/ai-database';
-import { ActionState } from '@src/types/global';
-import { sendInviteEmail } from '@src/mails/invite';
+import { ActionState } from '@/types/global';
+import { sendInviteEmail } from '@/mails/invite';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function createInviteAction(input: {
@@ -42,8 +42,7 @@ export async function createInviteAction(input: {
 		);
 
 		return { isSuccess: true, message: 'Invite created', data: invite };
-	} catch (error) {
-		console.error('Error creating invite:', error);
+	} catch {
 		return { isSuccess: false, message: 'Failed to create invite' };
 	}
 }
@@ -54,7 +53,7 @@ export async function getInviteByTokenAction(
 	try {
 		const invite = await db.invite.findFirst({ where: { token } });
 		return { isSuccess: true, message: 'Invite fetched', data: invite };
-	} catch (error) {
+	} catch {
 		return { isSuccess: false, message: 'Failed to fetch invite' };
 	}
 }
@@ -70,7 +69,7 @@ export async function acceptInviteAction({
 		const invite = await db.invite.findFirst({ where: { token } });
 		if (
 			!invite ||
-			invite.status !== 'PENDING' ||
+			invite.status !== 'pending' ||
 			invite.expiresAt < new Date()
 		) {
 			return {
@@ -92,7 +91,7 @@ export async function acceptInviteAction({
 		const updated = await db.invite.update({
 			where: { id: invite.id },
 			data: {
-				status: 'ACCEPTED',
+				status: 'accepted',
 				acceptedAt: new Date(),
 				acceptedById: userProfileId,
 			},
@@ -106,16 +105,14 @@ export async function acceptInviteAction({
 
 export async function rejectInviteAction({
 	inviteId,
-	userProfileId,
 }: {
 	inviteId: string;
-	userProfileId: string;
 }): Promise<ActionState<Invite | null>> {
 	try {
 		const invite = await db.invite.findUnique({ where: { id: inviteId } });
 		if (
 			!invite ||
-			invite.status !== 'PENDING' ||
+			invite.status !== 'pending' ||
 			invite.expiresAt < new Date()
 		) {
 			return {
@@ -129,13 +126,41 @@ export async function rejectInviteAction({
 		const updated = await db.invite.update({
 			where: { id: invite.id },
 			data: {
-				status: 'CANCELLED',
+				status: 'cancelled',
 			},
 		});
 		return { isSuccess: true, message: 'Invite rejected', data: updated };
 	} catch (error) {
 		console.error('Error rejecting invite:', error);
 		return { isSuccess: false, message: 'Failed to reject invite' };
+	}
+}
+
+export async function cancelInviteByIdAction(
+	inviteId: string
+): Promise<ActionState<Invite | null>> {
+	try {
+		const invite = await db.invite.findUnique({ where: { id: inviteId } });
+		if (
+			!invite ||
+			(invite.status !== 'pending' && invite.status !== 'expired')
+		) {
+			return {
+				isSuccess: false,
+				message: 'Invite is not pending/expired or does not exist',
+				data: null,
+			};
+		}
+
+		const updated = await db.invite.update({
+			where: { id: inviteId },
+			data: { status: 'cancelled' },
+		});
+
+		return { isSuccess: true, message: 'Invite cancelled', data: updated };
+	} catch (error) {
+		console.error('Error cancelling invite:', error);
+		return { isSuccess: false, message: 'Failed to cancel invite', data: null };
 	}
 }
 
@@ -150,7 +175,7 @@ export async function acceptInviteByIdAction({
 		const invite = await db.invite.findUnique({ where: { id: inviteId } });
 		if (
 			!invite ||
-			invite.status !== 'PENDING' ||
+			invite.status !== 'pending' ||
 			invite.expiresAt < new Date()
 		) {
 			return {
@@ -174,7 +199,7 @@ export async function acceptInviteByIdAction({
 		const updated = await db.invite.update({
 			where: { id: invite.id },
 			data: {
-				status: 'ACCEPTED',
+				status: 'accepted',
 				acceptedAt: new Date(),
 				acceptedById: userProfileId,
 			},
@@ -191,13 +216,14 @@ export async function expireOldInvitesAction(): Promise<ActionState<number>> {
 		const now = new Date();
 		const { count } = await db.invite.updateMany({
 			where: {
-				status: 'PENDING',
+				status: 'pending',
 				expiresAt: { lt: now },
 			},
-			data: { status: 'EXPIRED' },
+			data: { status: 'expired' },
 		});
-		return { isSuccess: true, message: 'Expired old invites', data: count };
+		return { isSuccess: true, message: 'expired old invites', data: count };
 	} catch (error) {
+		console.error('Error expiring old invites:', error);
 		return { isSuccess: false, message: 'Failed to expire invites', data: 0 };
 	}
 }
@@ -210,6 +236,7 @@ export async function listInvitesForContextAction(context: {
 		const invites = await db.invite.findMany({ where: context });
 		return { isSuccess: true, message: 'Invites fetched', data: invites };
 	} catch (error) {
+		console.error('Error fetching invites:', error);
 		return { isSuccess: false, message: 'Failed to fetch invites', data: [] };
 	}
 }
@@ -221,7 +248,36 @@ export async function listInvitesForEmailAction(
 		const invites = await db.invite.findMany({ where: { email } });
 		return { isSuccess: true, message: 'Invites fetched', data: invites };
 	} catch (error) {
+		console.error('Error fetching invites:', error);
 		return { isSuccess: false, message: 'Failed to fetch invites', data: [] };
+	}
+}
+
+export async function renewInviteAction(
+	inviteId: string
+): Promise<ActionState<Invite | null>> {
+	try {
+		const invite = await db.invite.findUnique({ where: { id: inviteId } });
+		if (!invite || invite.status !== 'pending') {
+			return {
+				isSuccess: false,
+				message: 'Invite is not pending or does not exist',
+				data: null,
+			};
+		}
+
+		// Extend expiry by 72 hours from now
+		const newExpiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
+
+		const updated = await db.invite.update({
+			where: { id: inviteId },
+			data: { expiresAt: newExpiresAt },
+		});
+
+		return { isSuccess: true, message: 'Invite renewed', data: updated };
+	} catch (error) {
+		console.error('Error renewing invite:', error);
+		return { isSuccess: false, message: 'Failed to renew invite' };
 	}
 }
 
@@ -261,15 +317,17 @@ export async function reInviteUserAction(input: {
 			contextType = 'team';
 		}
 
-		// Cancel any existing pending invites for this email and context
+		// Cancel any existing pending or expired invites for this email and context
 		await db.invite.updateMany({
 			where: {
 				email,
 				...(organisationId ? { organisationId } : {}),
 				...(teamId ? { teamId } : {}),
-				status: 'PENDING',
+				status: {
+					in: ['pending', 'expired'],
+				},
 			},
-			data: { status: 'CANCELLED' },
+			data: { status: 'cancelled' },
 		});
 
 		// Create new invite
@@ -307,7 +365,7 @@ export async function getPendingInvitesForUserAction(
 		const invites = await db.invite.findMany({
 			where: {
 				email,
-				status: 'PENDING',
+				status: 'pending',
 				expiresAt: { gt: new Date() },
 			},
 			include: {
@@ -325,6 +383,7 @@ export async function getPendingInvitesForUserAction(
 			data: invites,
 		};
 	} catch (error) {
+		console.error('Error fetching pending invites:', error);
 		return {
 			isSuccess: false,
 			message: 'Failed to fetch pending invites',
@@ -338,7 +397,7 @@ export async function getAllInvitesAction(): Promise<ActionState<Invite[]>> {
 		const invites = await db.invite.findMany({
 			where: {
 				status: {
-					in: ['PENDING', 'EXPIRED'],
+					in: ['pending', 'expired'],
 				},
 			},
 			include: {
@@ -394,6 +453,49 @@ export async function getAllInvitesAction(): Promise<ActionState<Invite[]>> {
 	} catch (error) {
 		console.error('Error getting all invites:', error);
 		return { isSuccess: false, message: 'Failed to get all invites' };
+	}
+}
+
+export async function getInviteAction(
+	token: string
+): Promise<ActionState<Invite | null>> {
+	try {
+		const invite = await db.invite.findFirst({
+			where: { token },
+			include: {
+				organisation: {
+					select: {
+						id: true,
+						name: true,
+					},
+				},
+				team: {
+					select: {
+						id: true,
+						name: true,
+						organisation: {
+							select: {
+								id: true,
+								name: true,
+							},
+						},
+					},
+				},
+			},
+		});
+
+		if (!invite) {
+			return { isSuccess: false, message: 'Invite not found', data: null };
+		}
+
+		return {
+			isSuccess: true,
+			message: 'Invite retrieved',
+			data: invite,
+		};
+	} catch (error) {
+		console.error('Error getting invite:', error);
+		return { isSuccess: false, message: 'Failed to get invite', data: null };
 	}
 }
 

@@ -21,7 +21,11 @@
         "AUTH_MICROSOFT_ENTRA_ID_ISSUER",
         "TAVILY_API_KEY",
         "AZURE_API_VERSION",
-        "API_PORT"
+        "API_PORT",
+        "MAIL_API_SECRET",
+        "MAIL_API_URL",
+        "MAIL_API_PORT",
+        "APP_URL"
       ]
     },
     "lint": {
@@ -36,7 +40,11 @@
         "AUTH_MICROSOFT_ENTRA_ID_ISSUER",
         "TAVILY_API_KEY",
         "AZURE_API_VERSION",
-        "API_PORT"
+        "API_PORT",
+        "MAIL_API_SECRET",
+        "MAIL_API_URL",
+        "MAIL_API_PORT",
+        "APP_URL"
       ]
     },
     "typecheck": {
@@ -51,7 +59,11 @@
         "AUTH_MICROSOFT_ENTRA_ID_ISSUER",
         "TAVILY_API_KEY",
         "AZURE_API_VERSION",
-        "API_PORT"
+        "API_PORT",
+        "MAIL_API_SECRET",
+        "MAIL_API_URL",
+        "MAIL_API_PORT",
+        "APP_URL"
       ]
     },
     "dev": {
@@ -65,7 +77,11 @@
         "AUTH_MICROSOFT_ENTRA_ID_ISSUER",
         "TAVILY_API_KEY",
         "AZURE_API_VERSION",
-        "API_PORT"
+        "API_PORT",
+        "MAIL_API_SECRET",
+        "MAIL_API_URL",
+        "MAIL_API_PORT",
+        "APP_URL"
       ]
     },
     "generate": {

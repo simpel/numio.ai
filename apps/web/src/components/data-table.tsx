@@ -6,6 +6,7 @@ import {
 	ColumnFiltersState,
 	SortingState,
 	VisibilityState,
+	Row,
 	flexRender,
 	getCoreRowModel,
 	getFilteredRowModel,
@@ -26,6 +27,8 @@ import {
 } from '@shadcn/ui/table';
 import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 import BaseContextMenu from './context-menus/base-context-menu';
+import { cn } from '@src/utils';
+// i18n TODO: replace with next-intl useTranslations once wired
 
 interface DataTableProps<TData, TValue> {
 	columns: ColumnDef<TData, TValue>[];
@@ -37,8 +40,14 @@ interface DataTableProps<TData, TValue> {
 	pagination?: number;
 	initialSorting?: SortingState;
 	contextMenu?: {
-		additionalItems?: React.ReactNode | ((row: any) => React.ReactNode);
+		additionalItems?: React.ReactNode | ((row: TData) => React.ReactNode);
 	};
+	bulkActions?: React.ReactNode;
+	customRowRenderer?: (
+		row: Row<TData>,
+		children: React.ReactNode
+	) => React.ReactNode;
+	stretchColumn?: string; // Column accessor key to stretch
 }
 
 export function DataTable<TData, TValue>({
@@ -51,6 +60,9 @@ export function DataTable<TData, TValue>({
 	pagination = 10,
 	initialSorting = [],
 	contextMenu,
+	bulkActions,
+	customRowRenderer,
+	stretchColumn,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>(initialSorting);
 	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -128,9 +140,21 @@ export function DataTable<TData, TValue>({
 				)}
 			</div>
 
+			{/* Bulk Actions */}
+			{bulkActions && Object.keys(rowSelection).length > 0 && (
+				<div className="bg-muted/50 flex items-center justify-between rounded-lg p-4">
+					<div className="text-muted-foreground text-sm">
+						{Object.keys(rowSelection).length} item(s) selected
+					</div>
+					<div className="flex items-center gap-2">
+						{React.cloneElement(bulkActions as React.ReactElement, { table })}
+					</div>
+				</div>
+			)}
+
 			{/* Table */}
-			<div className="rounded-md border">
-				<Table>
+			<div className="w-full rounded-md border">
+				<Table className="w-full">
 					<TableHeader>
 						{table.getHeaderGroups().map((headerGroup) => (
 							<TableRow key={headerGroup.id}>
@@ -138,7 +162,7 @@ export function DataTable<TData, TValue>({
 									return (
 										<TableHead key={header.id}>
 											{header.isPlaceholder ? null : header.column.getCanSort() ? (
-												<SortableColumnHeader column={header.column}>
+												<SortableColumnHeader<TData> column={header.column}>
 													{flexRender(
 														header.column.columnDef.header,
 														header.getContext()
@@ -159,9 +183,9 @@ export function DataTable<TData, TValue>({
 					<TableBody>
 						{table.getRowModel().rows?.length ? (
 							table.getRowModel().rows.map((row) => {
-								const rowData = row.original as any;
+								const rowData = row.original as TData;
 
-								return contextMenu ? (
+								const rowContent = contextMenu ? (
 									<BaseContextMenu
 										key={row.id}
 										additionalItems={contextMenu.additionalItems}
@@ -174,14 +198,15 @@ export function DataTable<TData, TValue>({
 											{row.getVisibleCells().map((cell, index) => {
 												const isLastColumn =
 													index === row.getVisibleCells().length - 1;
+												const isStretchColumn =
+													stretchColumn && cell.column.id === stretchColumn;
 												return (
 													<TableCell
 														key={cell.id}
-														className={
-															isLastColumn
-																? 'bg-background sticky right-0 text-right'
-																: ''
-														}
+														className={cn(
+															isLastColumn ? 'bg-background sticky' : '',
+															isStretchColumn ? 'w-full' : ''
+														)}
 													>
 														{flexRender(
 															cell.column.columnDef.cell,
@@ -200,12 +225,15 @@ export function DataTable<TData, TValue>({
 										{row.getVisibleCells().map((cell, index) => {
 											const isLastColumn =
 												index === row.getVisibleCells().length - 1;
+											const isStretchColumn =
+												stretchColumn && cell.column.id === stretchColumn;
 											return (
 												<TableCell
 													key={cell.id}
-													className={
-														isLastColumn ? 'sticky right-0 text-right' : ''
-													}
+													className={cn(
+														isLastColumn ? 'sticky' : '',
+														isStretchColumn ? 'w-full' : ''
+													)}
 												>
 													{flexRender(
 														cell.column.columnDef.cell,
@@ -216,9 +244,13 @@ export function DataTable<TData, TValue>({
 										})}
 									</TableRow>
 								);
+
+								return customRowRenderer
+									? customRowRenderer(row, rowContent)
+									: rowContent;
 							})
 						) : (
-							<TableRow>
+							<TableRow key="no-results">
 								<TableCell
 									colSpan={columns.length}
 									className="h-24 text-center"
@@ -234,17 +266,15 @@ export function DataTable<TData, TValue>({
 			{table.getPageCount() > 1 && (
 				<div className="flex items-center justify-end space-x-2 py-4">
 					<div className="text-muted-foreground flex-1 text-sm">
-						Showing{' '}
-						{table.getState().pagination.pageIndex *
-							table.getState().pagination.pageSize +
-							1}
-						-
-						{Math.min(
+						{`Showing ${
+							table.getState().pagination.pageIndex *
+								table.getState().pagination.pageSize +
+							1
+						}-${Math.min(
 							(table.getState().pagination.pageIndex + 1) *
 								table.getState().pagination.pageSize,
 							table.getFilteredRowModel().rows.length
-						)}{' '}
-						of {table.getFilteredRowModel().rows.length} results
+						)} of ${table.getFilteredRowModel().rows.length} results`}
 					</div>
 					<div className="space-x-2">
 						<Button
@@ -271,22 +301,24 @@ export function DataTable<TData, TValue>({
 }
 
 // Sortable column header component following TanStack Table v8 best practices
-export function SortableColumnHeader({
+export function SortableColumnHeader<TData>({
 	column,
 	children,
 }: {
-	column: any;
+	column:
+		| ReturnType<ReturnType<typeof useReactTable<TData>>['getAllColumns']>[0]
+		| undefined;
 	children: React.ReactNode;
 }) {
-	const isSorted = column.getIsSorted();
-	const canSort = column.getCanSort();
+	const isSorted = column?.getIsSorted();
+	const canSort = column?.getCanSort();
 
 	return (
 		<div
 			className={`flex items-center space-x-1 ${
 				canSort ? 'cursor-pointer select-none' : ''
 			}`}
-			onClick={canSort ? column.getToggleSortingHandler() : undefined}
+			onClick={canSort ? column?.getToggleSortingHandler() : undefined}
 		>
 			{children}
 			{canSort && (

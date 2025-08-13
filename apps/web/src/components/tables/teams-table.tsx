@@ -1,8 +1,14 @@
 'use client';
 
-import Link from 'next/link';
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@shadcn/ui/button';
+import { ColumnDef, Row } from '@tanstack/react-table';
+import { format, formatDistanceToNow } from 'date-fns';
+import { Badge } from '@shadcn/ui/badge';
+import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from '@shadcn/ui/hover-card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/ui/tooltip';
 import { DataTable } from '@src/components/data-table';
 import { ClickableCell } from './clickable-cell';
 
@@ -13,33 +19,36 @@ interface TeamData {
 	organisation?: string;
 	organisationId?: string;
 	owner?: string;
+	usersCount?: number;
+	members?: { id: string; name: string; role: string; image?: string }[];
+	createdAt?: string;
 }
 
 interface TeamsTableProps {
 	data: TeamData[];
 	title: string;
 	description?: string;
-	showActions?: boolean;
 	showDescription?: boolean;
 	showOrganisation?: boolean;
 	showOwner?: boolean;
+	showCreatedAt?: boolean;
 }
 
 export default function TeamsTable({
 	data,
 	title,
 	description,
-	showActions = true,
 	showDescription = true,
 	showOrganisation = true,
 	showOwner = false,
+	showCreatedAt = false,
 }: TeamsTableProps) {
 	const columns: ColumnDef<TeamData>[] = [
 		{
 			accessorKey: 'name',
 			header: 'Team Name',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
+			cell: ({ row }: { row: Row<TeamData> }) => (
 				<ClickableCell href={`/team/${row.original.id}`}>
 					{row.original.name}
 				</ClickableCell>
@@ -54,14 +63,15 @@ export default function TeamsTable({
 					},
 				]
 			: []),
+
 		...(showOrganisation
 			? [
 					{
 						accessorKey: 'organisation',
 						header: 'Organization',
 						enableSorting: true,
-						cell: ({ row }: { row: any }) => {
-							// If we have organisation data with ID, make it clickable
+						cell: ({ row }: { row: Row<TeamData> }) => {
+							// Always make organization clickable if we have the ID
 							if (row.original.organisationId) {
 								return (
 									<ClickableCell
@@ -77,6 +87,7 @@ export default function TeamsTable({
 					},
 				]
 			: []),
+
 		...(showOwner
 			? [
 					{
@@ -86,20 +97,83 @@ export default function TeamsTable({
 					},
 				]
 			: []),
-		...(showActions
+		...(showCreatedAt
 			? [
 					{
-						id: 'actions',
-						enableSorting: false,
-						cell: ({ row }: { row: any }) => (
-							<Button asChild variant="outline" size="sm">
-								<Link href={`/team/${row.original.id}`}>View Details</Link>
-							</Button>
-						),
+						accessorKey: 'createdAt',
+						header: 'Created',
+						enableSorting: true,
+						cell: ({ row }: { row: Row<TeamData> }) => {
+							const v = row.original.createdAt;
+							if (!v) return <div className="text-muted-foreground">—</div>;
+							const d = new Date(v);
+							const rel = formatDistanceToNow(d, { addSuffix: true });
+							const exact = format(d, 'PPpp');
+							return (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div className="text-muted-foreground text-sm">{rel}</div>
+									</TooltipTrigger>
+									<TooltipContent>{exact}</TooltipContent>
+								</Tooltip>
+							);
+						},
 					},
 				]
 			: []),
+		// Removed actions column; names are already linked
 	];
+
+	// Custom row renderer with hover card
+	const customRowRenderer = (row: Row<TeamData>, children: React.ReactNode) => {
+		const team = row.original;
+
+		// Sort members alphabetically
+		const sortedMembers = (team.members || []).sort((a, b) =>
+			a.name.localeCompare(b.name)
+		);
+
+		return (
+			<HoverCard>
+				<HoverCardTrigger asChild className="cursor-pointer">
+					{children}
+				</HoverCardTrigger>
+				<HoverCardContent className="w-80">
+					<div className="space-y-2">
+						<div>
+							<h4 className="text-sm font-semibold">{team.name}</h4>
+							{team.description && (
+								<p className="text-muted-foreground text-sm">
+									{team.description}
+								</p>
+							)}
+						</div>
+						<div>
+							<p className="text-muted-foreground text-xs">
+								{sortedMembers.length} member
+								{sortedMembers.length !== 1 ? 's' : ''}
+							</p>
+							<div className="mt-2 space-y-1">
+								{sortedMembers.slice(0, 5).map((member) => (
+									<div key={member.id} className="flex items-center gap-2">
+										<Badge variant="secondary" className="text-xs">
+											{member.role}
+										</Badge>
+										<span className="text-sm">{member.name}</span>
+									</div>
+								))}
+								{sortedMembers.length > 5 && (
+									<p className="text-muted-foreground text-xs">
+										+{sortedMembers.length - 5} more
+									</p>
+								)}
+							</div>
+						</div>
+					</div>
+				</HoverCardContent>
+			</HoverCard>
+		);
+	};
 
 	return (
 		<DataTable
@@ -109,6 +183,7 @@ export default function TeamsTable({
 			description={description}
 			searchKey="name"
 			searchPlaceholder="Search teams..."
+			customRowRenderer={customRowRenderer}
 		/>
 	);
 }

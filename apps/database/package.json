@@ -9,6 +9,7 @@
     "build": "pnpm generate && dotenv -e ../../.env.local -- tsup",
     "dev": "pnpm generate && dotenv -e ../../.env.local -- tsup --watch",
     "generate": "dotenv -e ../../.env.local -e .env -- prisma generate",
+    "reset": "dotenv -e ../../.env.local -e .env -- prisma migrate reset",
     "migrate": "dotenv -e ../../.env.local -e .env -- prisma migrate dev",
     "migrate:deploy": "dotenv -e ../../.env.local -e .env -- prisma migrate deploy",
     "seed": "dotenv -e ../../.env.local -e .env -- prisma db seed",
@@ -16,9 +17,6 @@
     "envs:dev": "dotenv -e ../../.env.local -e .env -- comprend environments --project=\"AI Initiatives\" --variableGroupIds=88,87 --overwrite",
     "envs:prod": "dotenv -e ../../.env.local -e .env -- comprend environments --project=\"AI Initiatives\" --variableGroupIds=86,87 --overwrite",
     "typecheck": "tsc --noEmit"
-  },
-  "prisma": {
-    "seed": "tsx src/seed.ts"
   },
   "keywords": [],
   "author": "",

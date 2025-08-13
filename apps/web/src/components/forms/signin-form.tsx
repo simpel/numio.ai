@@ -8,7 +8,11 @@ import { Label } from '@shadcn/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@shadcn/ui/tabs';
 import { MicrosoftIcon } from '@src/components/microsoft-icon';
 
-export default function SignInForm() {
+interface SignInFormProps {
+	callbackUrl?: string;
+}
+
+export default function SignInForm({ callbackUrl }: SignInFormProps) {
 	const [tab, setTab] = useState('microsoft');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -23,18 +27,22 @@ export default function SignInForm() {
 			email,
 			password,
 			redirect: false,
+			callbackUrl: callbackUrl || '/',
 		});
 		setLoading(false);
 		if (res?.error) {
 			setError('Invalid email or password');
 		} else if (res?.ok) {
-			window.location.href = '/';
+			// Redirect to callback URL or root
+			window.location.href = callbackUrl || '/';
 		}
 	};
 
 	const handleMicrosoftLogin = () => {
 		setLoading(true);
-		signIn('microsoft-entra-id');
+		signIn('microsoft-entra-id', {
+			callbackUrl: callbackUrl || '/',
+		});
 	};
 
 	return (

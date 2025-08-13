@@ -1,75 +1,49 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { removeMembershipAction } from '@src/lib/db/membership/membership.actions';
 import { toast } from 'sonner';
+import { removeMembershipAction } from '@src/lib/db/membership/membership.actions';
 import OrganizationMemberships from './memberships-list/organization-memberships';
 import TeamMemberships from './memberships-list/team-memberships';
 import CaseMemberships from './memberships-list/case-memberships';
 import ClientMemberships from './memberships-list/client-memberships';
-import type { Prisma } from '@numio/ai-database';
 
-// Define the type for memberships with included relations using Prisma utility types
-type MembershipWithRelations = Prisma.MembershipGetPayload<{
-	include: {
-		organisation: {
-			select: {
-				id: true;
-				name: true;
-			};
-		};
-		teamContext: {
-			select: {
-				id: true;
-				name: true;
-				organisation: {
-					select: {
-						id: true;
-						name: true;
-					};
-				};
-			};
-		};
-		team: {
-			select: {
-				id: true;
-				name: true;
-				organisation: {
-					select: {
-						id: true;
-						name: true;
-					};
-				};
-			};
-		};
-		caseItem: {
-			select: {
-				id: true;
-				title: true;
-				team: {
-					select: {
-						id: true;
-						name: true;
-					};
-				};
-			};
-		};
-		client: {
-			select: {
-				id: true;
-				name: true;
-				organisation: {
-					select: {
-						id: true;
-						name: true;
-					};
-				};
-			};
+// Base membership interface
+interface MembershipWithRelations {
+	id: string;
+	role: string;
+	createdAt: Date | string;
+	organisation?: {
+		id: string;
+		name: string;
+	};
+	teamContext?: {
+		id: string;
+		name: string;
+		organisation?: {
+			id: string;
+			name: string;
 		};
 	};
-}>;
+	team?: {
+		id: string;
+		name: string;
+		organisation?: {
+			id: string;
+			name: string;
+		};
+	};
+	caseItem?: {
+		id: string;
+		title: string;
+		state: string;
+	};
+	client?: {
+		id: string;
+		name: string;
+	};
+}
 
-// Transform the Prisma result to include the type field and convert dates
 type TransformedMembership = Omit<MembershipWithRelations, 'createdAt'> & {
 	createdAt: string;
 	type: 'membership';
@@ -87,7 +61,6 @@ interface MembershipsListProps {
 }
 
 export default function MembershipsList({
-	userProfileId,
 	initialMemberships,
 }: MembershipsListProps) {
 	const [memberships, setMemberships] =
@@ -96,8 +69,7 @@ export default function MembershipsList({
 
 	const handleRemoveMembership = async (
 		membershipId: string,
-		membershipName: string,
-		_type: 'organisation' | 'team' | 'case' | 'client'
+		membershipName: string
 	) => {
 		startTransition(async () => {
 			const result = await removeMembershipAction(membershipId);

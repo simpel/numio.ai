@@ -1,12 +1,16 @@
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 
-const MAIL_API_SECRET = process.env.MAIL_API_SECRET!;
-const MAIL_API_URL = process.env.MAIL_API_URL!;
-const MAIL_API_PORT = process.env.MAIL_API_PORT!;
+const MAIL_API_SECRET = process.env.MAIL_API_SECRET;
+const MAIL_API_URL = process.env.MAIL_API_URL;
+const MAIL_API_PORT = process.env.MAIL_API_PORT;
+
+if (!MAIL_API_SECRET || !MAIL_API_URL || !MAIL_API_PORT) {
+	throw new Error('Missing required environment variables for mail service');
+}
 
 export async function sendWelcomeEmail(to: string, name?: string) {
-	const token = jwt.sign({ iss: 'nextjs-app' }, MAIL_API_SECRET, {
+	const token = jwt.sign({ iss: 'nextjs-app' }, MAIL_API_SECRET!, {
 		expiresIn: '5m',
 	});
 	const subject = 'Welcome to Numio!';

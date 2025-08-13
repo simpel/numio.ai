@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ColumnDef, Row } from '@tanstack/react-table';
 import { Badge } from '@shadcn/ui/badge';
 import { DataTable } from '@src/components/data-table';
 import { ClickableCell } from './clickable-cell';
@@ -38,6 +39,7 @@ interface CaseData {
 	status?: string;
 	state?: string;
 	createdAt: string;
+	updatedAt?: string;
 }
 
 interface CasesTableProps {
@@ -53,13 +55,19 @@ export default function CasesTable({
 	description,
 	showClient = true,
 }: CasesTableProps) {
+	const router = useRouter();
+	const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+	const [selectedCase, setSelectedCase] = useState<{ id: string; title: string } | null>(null);
 	const handleStateChange = async (caseId: string, newState: string) => {
 		try {
-			const result = await updateCaseStateAction(caseId, newState);
+			const result = await updateCaseStateAction(
+				caseId,
+				newState as 'created' | 'active' | 'on_hold' | 'completed' | 'closed'
+			);
 			if (result.isSuccess) {
 				toast.success('Case state updated successfully');
-				// Refresh the page to show updated data
-				window.location.reload();
+				// Refresh the current route to re-fetch data
+				router.refresh();
 			} else {
 				toast.error(result.message || 'Failed to update case state');
 			}
@@ -133,7 +141,7 @@ export default function CasesTable({
 			accessorKey: 'updatedAt',
 			header: 'Last Changed',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => {
+			cell: ({ row }: { row: Row<CaseData> }) => {
 				const v = row.original.updatedAt;
 				if (!v) return <div className="text-muted-foreground">—</div>;
 				const d = new Date(v);
@@ -153,7 +161,7 @@ export default function CasesTable({
 			accessorKey: 'status',
 			header: 'Status',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => {
+			cell: ({ row }: { row: Row<CaseData> }) => {
 				const currentState = row.original.state || 'created';
 				return (
 					<Badge
@@ -169,7 +177,7 @@ export default function CasesTable({
 			accessorKey: 'title',
 			header: 'Case',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
+			cell: ({ row }: { row: Row<CaseData> }) => (
 				<div className="space-y-1">
 					<ClickableCell href={`/case/${row.original.id}`}>
 						{row.original.title}
@@ -187,7 +195,7 @@ export default function CasesTable({
 						accessorKey: 'client',
 						header: 'Client',
 						enableSorting: true,
-						cell: ({ row }: { row: any }) => {
+						cell: ({ row }: { row: Row<CaseData> }) => {
 							if (row.original.client && row.original.clientId) {
 								return (
 									<ClickableCell href={`/client/${row.original.clientId}`}>
@@ -204,10 +212,9 @@ export default function CasesTable({
 			id: 'actions',
 			header: '',
 			enableSorting: false,
-			cell: ({ row }: { row: any }) => {
+			cell: ({ row }: { row: Row<CaseData> }) => {
 				const currentState = row.original.state || 'created';
 				const stateOptions = getStateOptions(currentState);
-				const [open, setOpen] = React.useState(false);
 				return (
 					<div className="flex justify-end">
 						<DropdownMenu>
@@ -238,18 +245,23 @@ export default function CasesTable({
 									</DropdownMenuSubContent>
 								</DropdownMenuSub>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={() => setOpen(true)}>
+								<DropdownMenuItem onClick={() => {
+									setSelectedCase({ id: row.original.id, title: row.original.title });
+									setRenameDialogOpen(true);
+								}}>
 									Rename…
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
 
-						<RenameCaseDialog
-							open={open}
-							onOpenChange={setOpen}
-							caseId={row.original.id}
-							currentTitle={row.original.title}
-						/>
+						{selectedCase && (
+							<RenameCaseDialog
+								open={renameDialogOpen}
+								onOpenChange={setRenameDialogOpen}
+								caseId={selectedCase.id}
+								currentTitle={selectedCase.title}
+							/>
+						)}
 					</div>
 				);
 			},

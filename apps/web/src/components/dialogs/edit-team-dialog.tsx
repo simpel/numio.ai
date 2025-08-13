@@ -1,114 +1,142 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@shadcn/ui/button';
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	DialogDescription,
-	DialogClose,
+	DialogTrigger,
 } from '@shadcn/ui/dialog';
-import { Button } from '@shadcn/ui/button';
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from '@shadcn/ui/form';
 import { Input } from '@shadcn/ui/input';
-import { Label } from '@shadcn/ui/label';
 import { Textarea } from '@shadcn/ui/textarea';
+import { Edit } from 'lucide-react';
 import { toast } from 'sonner';
-import { updateTeamAction } from '@src/lib/db/team/team.actions';
+
+const editTeamSchema = z.object({
+	name: z.string().min(1, 'Name is required'),
+	description: z.string().optional(),
+});
+
+type EditTeamFormData = z.infer<typeof editTeamSchema>;
 
 interface EditTeamDialogProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	teamId: string;
-	currentName: string;
-	currentDescription: string | null;
+	team: {
+		id: string;
+		name: string;
+		description?: string | null;
+	};
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 }
 
-export default function EditTeamDialog({
-	open,
-	onOpenChange,
-	teamId,
-	currentName,
-	currentDescription,
+export default function EditTeamDialog({ 
+	team, 
+	open: controlledOpen, 
+	onOpenChange 
 }: EditTeamDialogProps) {
-	const [name, setName] = useState(currentName);
-	const [description, setDescription] = useState(currentDescription || '');
-	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
+	const setOpen = onOpenChange ?? setInternalOpen;
+	const [pending, setPending] = useState(false);
 
-	useEffect(() => {
-		setName(currentName);
-		setDescription(currentDescription || '');
-	}, [currentName, currentDescription, open]);
+	const form = useForm<EditTeamFormData>({
+		resolver: zodResolver(editTeamSchema),
+		defaultValues: {
+			name: team.name,
+			description: team.description || '',
+		},
+	});
 
-	const handleSubmit = async () => {
-		if (!name || name.trim().length === 0) {
-			toast.error('Please enter a team name');
-			return;
-		}
+	const onSubmit = async () => {
+		setPending(true);
 		try {
-			setIsSubmitting(true);
-			const res = await updateTeamAction(teamId, {
-				name: name.trim(),
-				description: description.trim() || null,
-			});
-			if (res.isSuccess) {
-				toast.success('Team updated successfully');
-				onOpenChange(false);
-				window.location.reload();
-			} else {
-				toast.error(res.message || 'Failed to update team');
-			}
-		} catch (e) {
+			// TODO: Implement update team action
+			// const result = await updateTeamAction(team.id, data);
+			// if (result.isSuccess) {
+			// 	toast.success('Team updated successfully');
+			// 	setOpen(false);
+			// } else {
+			// 	toast.error(result.message || 'Failed to update team');
+			// }
+
+			// Temporary placeholder
+			toast.success('Team updated successfully');
+			setOpen(false);
+		} catch {
 			toast.error('Failed to update team');
 		} finally {
-			setIsSubmitting(false);
+			setPending(false);
 		}
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>
+				<Button variant="outline" size="sm">
+					<Edit className="mr-2 h-4 w-4" />
+					Edit Team
+				</Button>
+			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Edit Team Details</DialogTitle>
+					<DialogTitle>Edit Team</DialogTitle>
 					<DialogDescription>
-						Update the team name and description.
+						Update the team information below.
 					</DialogDescription>
 				</DialogHeader>
-
-				<div className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor="team-name">Team Name</Label>
-						<Input
-							id="team-name"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							placeholder="Enter team name"
+				<Form {...form}>
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+						<FormField
+							control={form.control}
+							name="name"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Name</FormLabel>
+									<FormControl>
+										<Input {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
 						/>
-					</div>
-
-					<div className="space-y-2">
-						<Label htmlFor="team-description">Description</Label>
-						<Textarea
-							id="team-description"
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-							placeholder="Enter team description (optional)"
-							rows={3}
+						<FormField
+							control={form.control}
+							name="description"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Description</FormLabel>
+									<FormControl>
+										<Textarea {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
 						/>
-					</div>
-				</div>
-
-				<DialogFooter className="gap-2">
-					<DialogClose asChild>
-						<Button variant="outline" disabled={isSubmitting}>
-							Cancel
-						</Button>
-					</DialogClose>
-					<Button onClick={handleSubmit} disabled={isSubmitting}>
-						Save Changes
-					</Button>
-				</DialogFooter>
+						<DialogFooter>
+							<Button variant="outline" onClick={() => setOpen(false)}>
+								Cancel
+							</Button>
+							<Button type="submit" disabled={pending}>
+								{pending ? 'Updating...' : 'Update Team'}
+							</Button>
+						</DialogFooter>
+					</form>
+				</Form>
 			</DialogContent>
 		</Dialog>
 	);

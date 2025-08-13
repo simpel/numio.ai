@@ -2,6 +2,7 @@ import { Button } from '@shadcn/ui/button';
 import { Progress } from '@shadcn/ui/progress';
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface Step {
 	label: string;
@@ -27,6 +28,7 @@ export default function MultiStepForm({
 	showStepIndicators = true,
 	pending = false,
 }: MultiStepFormProps) {
+	const t = useTranslations('common');
 	const [current, setCurrent] = useState(initialStep);
 
 	const isLast = current === steps.length - 1;
@@ -76,11 +78,11 @@ export default function MultiStepForm({
 							onClick={() => setCurrent(current - 1)}
 							aria-label="Previous step"
 						>
-							<ArrowLeft className="mr-1 h-4 w-4" /> Previous
+							<ArrowLeft className="mr-1 h-4 w-4" /> {t('previous')}
 						</Button>
 					)}
 					<Button variant="outline" onClick={onCancel} aria-label="Cancel">
-						Cancel
+						{t('cancel')}
 					</Button>
 				</div>
 				<div>
@@ -91,14 +93,14 @@ export default function MultiStepForm({
 							variant="default"
 							aria-label="Next step"
 						>
-							Next <ArrowRight className="ml-1 h-4 w-4" />
+							{t('next')} <ArrowRight className="ml-1 h-4 w-4" />
 						</Button>
 					) : (
 						<Button
 							variant="default"
 							onClick={onFinish}
 							disabled={pending}
-							aria-label="Finish"
+							aria-label={t('finish')}
 						>
 							{pending ? (
 								<span className="flex items-center gap-2">

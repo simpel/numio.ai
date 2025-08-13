@@ -1,9 +1,10 @@
 'use server';
 
 import { z } from 'zod';
-import { signIn } from './auth';
+import { signIn, signOut } from './auth';
 import { db, UserProfile, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
+import { redirect } from 'next/navigation';
 
 // Create a schema for validating form inputs
 const SignInSchema = z.object({
@@ -34,6 +35,24 @@ export async function signInWithMicrosoft(formData: FormData) {
 }
 
 /**
+ * Server action to sign out and redirect
+ */
+export async function signOutAction(
+	redirectTo?: string
+): Promise<ActionState<null>> {
+	try {
+		// Sign out using NextAuth (this handles cookie cleanup automatically)
+		await signOut({ redirect: false });
+
+		// Redirect to signin page or specified URL
+		redirect(redirectTo || '/signin');
+	} catch (error) {
+		console.error('Error during sign out:', error);
+		return { isSuccess: false, message: 'Failed to sign out' };
+	}
+}
+
+/**
  * Server action to get a user profile by userId
  */
 export async function getUserProfileAction(
@@ -42,7 +61,7 @@ export async function getUserProfileAction(
 	try {
 		const profile = await db.userProfile.findUnique({ where: { userId } });
 		return { isSuccess: true, message: 'Profile fetched', data: profile };
-	} catch (error: unknown) {
+	} catch {
 		return { isSuccess: false, message: 'Failed to fetch profile' };
 	}
 }
@@ -64,8 +83,7 @@ export async function createUserProfileAction(
 		});
 
 		return { isSuccess: true, message: 'Profile created', data: profile };
-	} catch (error) {
-		console.log('error', error);
+	} catch {
 		return { isSuccess: false, message: 'Failed to create profile' };
 	}
 }
@@ -86,7 +104,7 @@ export async function updateUserProfileAction(
 			},
 		});
 		return { isSuccess: true, message: 'Profile updated', data: profile };
-	} catch (error) {
+	} catch {
 		return { isSuccess: false, message: 'Failed to update profile' };
 	}
 }

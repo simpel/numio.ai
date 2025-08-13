@@ -49,7 +49,7 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" suppressHydrationWarning className="h-full">
+		<html suppressHydrationWarning className="h-full">
 			<body
 				className={cn('bg-sidebar font-sans antialiased', fontSans.variable)}
 			>
@@ -61,7 +61,6 @@ export default async function RootLayout({
 						disableTransitionOnChange
 					>
 						{children}
-
 						<Toaster />
 					</ThemeProvider>
 				</SessionProvider>

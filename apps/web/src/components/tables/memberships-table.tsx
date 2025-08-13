@@ -1,19 +1,20 @@
 'use client';
 
-import { ColumnDef } from '@tanstack/react-table';
+import React from 'react';
+import { ColumnDef, Row } from '@tanstack/react-table';
 import { Badge } from '@shadcn/ui/badge';
 import { DataTable } from '@src/components/data-table';
 import { ClickableCell } from './clickable-cell';
+import { formatDistanceToNow, format } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/ui/tooltip';
 
 interface MembershipData {
 	id: string;
 	name: string;
-	type: string;
+	type: 'organization' | 'team' | 'case';
 	role: string;
-	organisation?: string;
-	organisationId?: string;
-	teamId?: string;
 	createdAt: string;
+	href: string;
 }
 
 interface MembershipsTableProps {
@@ -32,77 +33,46 @@ export default function MembershipsTable({
 			accessorKey: 'name',
 			header: 'Name',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => {
-				const membership = row.original;
-				let href = '';
-
-				// Determine the correct link based on membership type
-				if (
-					membership.type.toLowerCase() === 'organisation' ||
-					membership.type.toLowerCase() === 'organization'
-				) {
-					href = `/organisation/${membership.organisationId || membership.id}`;
-				} else if (membership.type.toLowerCase() === 'team') {
-					href = `/team/${membership.teamId || membership.id}`;
-				} else {
-					// Default to user profile if type is unknown
-					href = `/user/${membership.id}`;
-				}
-
-				return (
-					<ClickableCell href={href}>
-						<div className="font-medium">{membership.name}</div>
-					</ClickableCell>
-				);
-			},
+			cell: ({ row }: { row: Row<MembershipData> }) => (
+				<ClickableCell href={row.original.href}>
+					{row.original.name}
+				</ClickableCell>
+			),
 		},
 		{
 			accessorKey: 'type',
 			header: 'Type',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
-				<Badge variant="outline">{row.original.type}</Badge>
+			cell: ({ row }: { row: Row<MembershipData> }) => (
+				<Badge variant={'outline'}>{row.original.type}</Badge>
 			),
 		},
 		{
 			accessorKey: 'role',
 			header: 'Role',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
-				<Badge variant="secondary">{row.original.role}</Badge>
+			cell: ({ row }: { row: Row<MembershipData> }) => (
+				<Badge variant="outline">{row.original.role}</Badge>
 			),
-		},
-		{
-			accessorKey: 'organisation',
-			header: 'Organization',
-			enableSorting: true,
-			cell: ({ row }: { row: any }) => {
-				const membership = row.original;
-				if (membership.organisation && membership.organisationId) {
-					return (
-						<ClickableCell href={`/organisation/${membership.organisationId}`}>
-							<div className="text-muted-foreground text-sm">
-								{membership.organisation}
-							</div>
-						</ClickableCell>
-					);
-				}
-				return (
-					<div className="text-muted-foreground text-sm">
-						{membership.organisation || '-'}
-					</div>
-				);
-			},
 		},
 		{
 			accessorKey: 'createdAt',
-			header: 'Member Since',
+			header: 'Created',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
-				<div className="text-muted-foreground text-sm">
-					{new Date(row.original.createdAt).toLocaleDateString()}
-				</div>
-			),
+			cell: ({ row }: { row: Row<MembershipData> }) => {
+				const date = new Date(row.original.createdAt);
+				const relative = formatDistanceToNow(date, { addSuffix: true });
+				const exact = format(date, 'PPpp');
+
+				return (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<div className="text-muted-foreground text-sm">{relative}</div>
+						</TooltipTrigger>
+						<TooltipContent>{exact}</TooltipContent>
+					</Tooltip>
+				);
+			},
 		},
 	];
 
@@ -114,6 +84,12 @@ export default function MembershipsTable({
 			description={description}
 			searchKey="name"
 			searchPlaceholder="Search memberships..."
+			initialSorting={[
+				{
+					id: 'createdAt',
+					desc: true,
+				},
+			]}
 		/>
 	);
 }

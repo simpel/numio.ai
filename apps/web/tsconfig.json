@@ -2,8 +2,17 @@
   "extends": "@numio/typescript-config/nextjs.json",
   "compilerOptions": {
     "paths": {
+      "@/*": [
+        "./src/*"
+      ],
       "@src/*": [
         "./src/*"
+      ],
+      "@/components/*": [
+        "./src/components/*"
+      ],
+      "@/lib/*": [
+        "./src/lib/*"
       ],
       "@app/*": [
         "./app/*"
@@ -12,11 +21,12 @@
         "./shadcn/*"
       ]
     },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "incremental": true
   },
   "include": [
     "**/*.ts",
@@ -25,8 +35,7 @@
     "next.config.js",
     ".next/types/**/*.ts",
     "./next-auth.d.ts",
-    "global.d.ts",
-    "src"
+    "global.d.ts"
   ],
   "exclude": [
     "node_modules"

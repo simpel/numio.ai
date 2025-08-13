@@ -14,7 +14,8 @@ import {
 	AlertDialogTrigger,
 } from '@shadcn/ui/alert-dialog';
 import { LogOut } from 'lucide-react';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@src/i18n/navigation';
 
 interface OrganizationMembership {
 	id: string;
@@ -37,6 +38,8 @@ export default function OrganizationMemberships({
 	pending,
 	onRemoveMembership,
 }: OrganizationMembershipsProps) {
+	const t = useTranslations('common');
+
 	if (memberships.length === 0) {
 		return null;
 	}
@@ -114,7 +117,7 @@ export default function OrganizationMemberships({
 												</AlertDialogDescription>
 											</AlertDialogHeader>
 											<AlertDialogFooter>
-												<AlertDialogCancel>Cancel</AlertDialogCancel>
+												<AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
 												<AlertDialogAction
 													onClick={() =>
 														onRemoveMembership(

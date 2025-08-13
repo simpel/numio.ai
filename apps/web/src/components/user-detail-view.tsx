@@ -1,25 +1,77 @@
 'use client';
 
-import { useTransition, useState } from 'react';
-import { Card, CardContent, CardHeader } from '@shadcn/ui/card';
-import { Badge } from '@shadcn/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@shadcn/ui/avatar';
-import { Button } from '@shadcn/ui/button';
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Edit } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@shadcn/ui/avatar';
+import { Badge } from '@shadcn/ui/badge';
+import { Button } from '@shadcn/ui/button';
+import { Card, CardContent, CardHeader } from '@shadcn/ui/card';
 import Tabs from '@src/components/tabs';
 import InvitesTable from '@src/components/tables/invites-table';
 import ProfileUpdateDialog from '@src/components/dialogs/profile-update-dialog';
 
+// Type for user with profile
+interface UserWithProfile {
+	id: string;
+	firstName?: string;
+	lastName?: string;
+	email: string;
+	role: string;
+	image?: string;
+	bio?: string;
+	createdAt: string;
+	userProfile?: {
+		id: string;
+	};
+	activeInvites?: InviteWithRelations[];
+}
+
+// Type for invite with relations
+interface InviteWithRelations {
+	id: string;
+	email: string;
+	status: string;
+	expiresAt: string;
+	createdAt: string;
+	role: string;
+	organisationId?: string;
+	teamId?: string;
+	organisation?: {
+		name: string;
+	};
+	team?: {
+		name: string;
+	};
+}
+
+// Type for invite data for table
+interface InviteData {
+	id: string;
+	email: string;
+	status: string;
+	expiresAt: string;
+	createdAt: string;
+	contextName: string;
+	contextType: string;
+	role: string;
+	hasUser: boolean;
+	userProfileId?: string;
+	organisationId?: string;
+	teamId?: string;
+}
+
 interface UserDetailViewProps {
-	targetUser: any;
-	currentUser: any;
+	targetUser: UserWithProfile;
+	currentUser: UserWithProfile;
 }
 
 export default function UserDetailView({
 	targetUser,
 	currentUser,
 }: UserDetailViewProps) {
-	const [isReInviting, startReInviteTransition] = useTransition();
+	const t = useTranslations('common');
+
 	const [showEditDialog, setShowEditDialog] = useState(false);
 
 	const formatDate = (dateString: string) => {
@@ -34,15 +86,16 @@ export default function UserDetailView({
 	const isCurrentUser = currentUser.id === targetUser.id;
 
 	// Transform active invites to match InvitesTable format
-	const activeInvites =
-		targetUser.activeInvites?.map((invite: any) => ({
+	const activeInvites: InviteData[] =
+		targetUser.activeInvites?.map((invite: InviteWithRelations) => ({
 			id: invite.id,
 			email: invite.email,
 			status: invite.status,
 			expiresAt: new Date(invite.expiresAt).toLocaleDateString(),
 			createdAt: new Date(invite.createdAt).toLocaleDateString(),
-			contextName: invite.organisation?.name || invite.team?.name || 'Unknown',
-			contextType: invite.organisation ? 'Organisation' : 'Team',
+			contextName:
+				invite.organisation?.name || invite.team?.name || t('unknown'),
+			contextType: invite.organisation ? t('organisation') : t('team'),
 			role: invite.role,
 			hasUser: !!targetUser.userProfile,
 			userProfileId: targetUser.userProfile?.id,
@@ -52,12 +105,12 @@ export default function UserDetailView({
 
 	// Separate active and expired invites
 	const pendingInvites = activeInvites.filter(
-		(invite: any) =>
-			invite.status === 'PENDING' && new Date(invite.expiresAt) > new Date()
+		(invite: InviteData) =>
+			invite.status === 'pending' && new Date(invite.expiresAt) > new Date()
 	);
 	const expiredInvites = activeInvites.filter(
-		(invite: any) =>
-			invite.status === 'EXPIRED' || new Date(invite.expiresAt) <= new Date()
+		(invite: InviteData) =>
+			invite.status === 'expired' || new Date(invite.expiresAt) <= new Date()
 	);
 
 	// Profile Information Tab Content
@@ -83,7 +136,7 @@ export default function UserDetailView({
 								<div className="mt-2 flex items-center space-x-2">
 									<Badge variant="outline">{targetUser.role}</Badge>
 									<span className="text-muted-foreground text-sm">
-										Member since {formatDate(targetUser.createdAt)}
+										{t('member_since')} {formatDate(targetUser.createdAt)}
 									</span>
 								</div>
 							</div>
@@ -95,7 +148,7 @@ export default function UserDetailView({
 								size="sm"
 							>
 								<Edit className="mr-2 h-4 w-4" />
-								Edit Profile
+								{t('edit_profile')}
 							</Button>
 						)}
 					</div>
@@ -103,14 +156,8 @@ export default function UserDetailView({
 				<CardContent>
 					{targetUser.bio && (
 						<div className="mb-4">
-							<h3 className="mb-2 font-semibold">Bio</h3>
+							<h3 className="mb-2 font-semibold">{t('bio')}</h3>
 							<p className="text-muted-foreground">{targetUser.bio}</p>
-						</div>
-					)}
-					{targetUser.jobTitle && (
-						<div>
-							<h3 className="mb-2 font-semibold">Job Title</h3>
-							<p className="text-muted-foreground">{targetUser.jobTitle}</p>
 						</div>
 					)}
 				</CardContent>
@@ -118,138 +165,83 @@ export default function UserDetailView({
 		</div>
 	);
 
-	// Memberships Tab Content
-	const MembershipsContent = (
-		<div className="space-y-6">
-			{targetUser.memberships && targetUser.memberships.length > 0 ? (
-				<div className="space-y-4">
-					<div>
-						<h2 className="text-2xl font-bold">Active Memberships</h2>
-						<p className="text-muted-foreground">
-							Organizations, teams, and cases this user is part of.
-						</p>
-					</div>
-					<Card>
-						<CardContent className="pt-6">
-							<div className="space-y-3">
-								{targetUser.memberships.map((membership: any) => (
-									<div
-										key={membership.id}
-										className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-colors"
-									>
-										<div className="flex-1">
-											<p className="font-medium">
-												{membership.organisation?.name ||
-													membership.teamContext?.name ||
-													membership.caseItem?.title ||
-													'Unknown'}
-											</p>
-											<p className="text-muted-foreground text-sm">
-												{membership.organisation
-													? 'Organisation'
-													: membership.teamContext
-														? 'Team'
-														: 'Case'}{' '}
-												• Role: {membership.role}
-											</p>
-											{membership.teamContext?.organisation && (
-												<p className="text-muted-foreground text-xs">
-													Team in: {membership.teamContext.organisation.name}
-												</p>
-											)}
-										</div>
-										<Badge variant="secondary">{membership.role}</Badge>
-									</div>
-								))}
-							</div>
-						</CardContent>
-					</Card>
-				</div>
-			) : (
-				<div className="py-8 text-center">
-					<p className="text-muted-foreground">No memberships found.</p>
-				</div>
-			)}
-		</div>
-	);
-
 	// Invites Tab Content
 	const InvitesContent = (
 		<div className="space-y-6">
-			{/* Pending Invites */}
-			{pendingInvites.length > 0 && (
-				<InvitesTable
-					data={pendingInvites}
-					title="Pending Invites"
-					description="Active invitations for this user."
-					type="active"
-					isCurrentUser={isCurrentUser}
-					currentUserProfileId={currentUser.id}
-				/>
-			)}
+			{canViewSensitiveInfo ? (
+				<>
+					{/* pending Invites */}
+					{pendingInvites.length > 0 && (
+						<InvitesTable
+							data={pendingInvites}
+							title="pending Invites"
+							description="Active invitations for this user."
+							type="active"
+							isCurrentUser={isCurrentUser}
+							currentUserProfileId={currentUser.id}
+						/>
+					)}
 
-			{/* Expired Invites */}
-			{expiredInvites.length > 0 && (
-				<InvitesTable
-					data={expiredInvites}
-					title="Expired Invites"
-					description="Invitations that have expired and need to be re-sent."
-					type="expired"
-					isCurrentUser={isCurrentUser}
-					currentUserProfileId={currentUser.id}
-				/>
-			)}
+					{/* expired Invites */}
+					{expiredInvites.length > 0 && (
+						<InvitesTable
+							data={expiredInvites}
+							title="expired Invites"
+							description="Invitations that have expired and need to be re-sent."
+							type="expired"
+							isCurrentUser={isCurrentUser}
+							currentUserProfileId={currentUser.id}
+						/>
+					)}
 
-			{/* No invites message */}
-			{pendingInvites.length === 0 && expiredInvites.length === 0 && (
+					{/* No invites message */}
+					{pendingInvites.length === 0 && expiredInvites.length === 0 && (
+						<div className="py-8 text-center">
+							<p className="text-muted-foreground">No invites found.</p>
+						</div>
+					)}
+				</>
+			) : (
 				<div className="py-8 text-center">
-					<p className="text-muted-foreground">No invites found.</p>
+					<p className="text-muted-foreground">
+						You don&apos;t have permission to view this user&apos;s invites.
+					</p>
 				</div>
 			)}
 		</div>
 	);
 
-	// Define tabs
 	const tabs = [
 		{
 			id: 'profile',
-			label: 'Profile Information',
+			value: 'profile',
+			label: t('profile_information'),
 			content: ProfileInformationContent,
 		},
 		{
-			id: 'memberships',
-			label: 'Memberships',
-			content: MembershipsContent,
+			id: 'invites',
+			value: 'invites',
+			label: t('invites'),
+			content: InvitesContent,
 		},
-		...(canViewSensitiveInfo &&
-		(pendingInvites.length > 0 || expiredInvites.length > 0)
-			? [
-					{
-						id: 'invites',
-						label: 'Invites',
-						content: InvitesContent,
-					},
-				]
-			: []),
 	];
 
 	return (
 		<div className="space-y-6">
 			<Tabs tabs={tabs} defaultTab="profile" />
 
-			{/* Profile Update Dialog */}
 			{showEditDialog && (
 				<ProfileUpdateDialog
-					userId={targetUser.userId}
+					open={showEditDialog}
+					onOpenChange={setShowEditDialog}
+					userId={targetUser.id}
 					initialValues={{
 						firstName: targetUser.firstName || '',
 						lastName: targetUser.lastName || '',
 						email: targetUser.email || '',
 						bio: targetUser.bio || '',
-						jobTitle: targetUser.jobTitle || '',
+						jobTitle: (targetUser as any).jobTitle || '',
 					}}
-					open={showEditDialog}
-					onOpenChange={setShowEditDialog}
 				/>
 			)}
 		</div>

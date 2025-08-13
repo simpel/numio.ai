@@ -1,8 +1,5 @@
 'use client';
-
-import Link from 'next/link';
 import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@shadcn/ui/button';
 import { Badge } from '@shadcn/ui/badge';
 import { DataTable } from '@src/components/data-table';
 import { ClickableCell } from './clickable-cell';
@@ -46,7 +43,7 @@ export default function UsersTable({
 			accessorKey: 'name',
 			header: 'Name',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
+			cell: ({ row }: { row: { original: UserData } }) => (
 				<ClickableCell href={`/user/${row.original.id}`}>
 					{row.original.name}
 				</ClickableCell>
@@ -56,7 +53,7 @@ export default function UsersTable({
 			accessorKey: 'email',
 			header: 'Email',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
+			cell: ({ row }: { row: { original: UserData } }) => (
 				<ClickableCell href={`/user/${row.original.id}`}>
 					{row.original.email}
 				</ClickableCell>
@@ -66,7 +63,7 @@ export default function UsersTable({
 			accessorKey: 'status',
 			header: 'Role',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
+			cell: ({ row }: { row: { original: UserData } }) => (
 				<Badge variant={getStatusVariant(row.original.status)}>
 					{row.original.status}
 				</Badge>
@@ -76,15 +73,6 @@ export default function UsersTable({
 			accessorKey: 'lastLogin',
 			header: 'Last Login',
 			enableSorting: true,
-		},
-		{
-			id: 'actions',
-			enableSorting: false,
-			cell: ({ row }: { row: any }) => (
-				<Button asChild variant="outline" size="sm">
-					<Link href={`/user/${row.original.id}`}>View Details</Link>
-				</Button>
-			),
 		},
 	];
 

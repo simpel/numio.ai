@@ -26,8 +26,8 @@ export default function GlobalError({ error }: { error: Error }) {
 
 				<h1 className="mb-2 text-4xl font-bold">Something went wrong</h1>
 				<p className="text-muted-foreground mb-6 text-xl">
-					Uh Oh! Numio AI experienced a brain freeze. <br />
-					Please try again later or return to the home page.
+					Uh Oh! Numio AI experienced a brain freeze. Please try again later or
+					return to the home page.
 				</p>
 
 				<div className="flex justify-center gap-4">

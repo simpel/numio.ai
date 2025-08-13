@@ -1,0 +1,61 @@
+erDiagram
+  UserProfile ||--o{ Organisation : "owns"
+  UserProfile ||--o{ Team : "owns"
+  Organisation ||--o{ Team : "has"
+  Team ||--o{ Case : "has"
+  Client ||--o{ Case : "has"
+
+  UserProfile ||--o{ Membership : "member"
+  Team ||--o{ Membership : "member"
+
+  Membership }o--|| Organisation : "context"
+  Membership }o--|| Team : "context"
+  Membership }o--|| Case : "context"
+  Membership }o--|| Client : "context"
+
+  UserProfile {
+    String id PK
+    String firstName
+    String lastName
+    String email
+    String userId FK
+  }
+  Organisation {
+    String id PK
+    String name
+    String ownerId FK
+  }
+  Team {
+    String id PK
+    String name
+    String description
+    TeamState state
+    String organisationId FK
+    String ownerId FK
+  }
+  Client {
+    String id PK
+    String name
+    String orgNumber
+  }
+  Case {
+    String id PK
+    String title
+    String description
+    CaseState state
+    String clientId FK
+    String teamId FK
+  }
+  Membership {
+    String id PK
+    String userProfileId FK
+    String teamId FK
+    String organisationId FK
+    String teamContextId FK
+    String caseId FK
+    String clientId FK
+    Role role
+  }
+
+
+

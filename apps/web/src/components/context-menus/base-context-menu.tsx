@@ -6,23 +6,23 @@ import {
 	ContextMenuTrigger,
 } from '@shadcn/ui/context-menu';
 
-interface BaseContextMenuProps {
+interface BaseContextMenuProps<T = unknown> {
 	children: React.ReactNode;
-	additionalItems?: React.ReactNode | ((row: any) => React.ReactNode);
-	rowData?: any;
+	additionalItems?: React.ReactNode | ((row: T) => React.ReactNode);
+	rowData?: T;
 }
 
-export default function BaseContextMenu({
+export default function BaseContextMenu<T = unknown>({
 	children,
 	additionalItems,
 	rowData,
-}: BaseContextMenuProps) {
+}: BaseContextMenuProps<T>) {
 	// Handle additional items - can be either a React node or a function
 	const renderAdditionalItems = () => {
 		if (!additionalItems) return null;
 
 		if (typeof additionalItems === 'function') {
-			return additionalItems(rowData);
+			return additionalItems(rowData as T);
 		}
 
 		return additionalItems;

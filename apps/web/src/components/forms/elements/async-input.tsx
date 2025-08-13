@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useFormContext } from 'react-hook-form';
@@ -47,13 +46,13 @@ export default function AsyncInput({
 					<FormControl>
 						<div className="relative flex items-center">
 							<Input
-									{...field}
-									value={field.value ?? ''}
-									placeholder={placeholder}
-									disabled={disabled}
-									aria-invalid={!!fieldState.error}
-									className="pr-8"
-								/>
+								{...field}
+								value={field.value ?? ''}
+								placeholder={placeholder}
+								disabled={disabled}
+								aria-invalid={!!fieldState.error}
+								className="pr-8"
+							/>
 							<div className="absolute inset-y-0 right-0 flex items-center pr-3">
 								{isValidating ? (
 									<Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
@@ -69,4 +68,3 @@ export default function AsyncInput({
 		/>
 	);
 }
-

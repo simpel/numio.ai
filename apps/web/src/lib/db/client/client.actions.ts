@@ -1,16 +1,16 @@
 'use server';
 
-import { db } from '@numio/ai-database';
-import { Client } from '@numio/ai-database';
+import { db, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
 import { auth } from '@src/lib/auth/auth';
+import { getMemberships } from '@src/lib/db/membership/membership.utils';
 
 export async function createClientAction(input: {
 	name: string;
 	orgNumber: string;
 	description?: string;
 	organisationId: string;
-}): Promise<ActionState<Client>> {
+}): Promise<ActionState<Prisma.ClientGetPayload<Record<string, never>>>> {
 	const session = await auth();
 	if (!session?.user?.id) {
 		return { isSuccess: false, message: 'Not authenticated' };
@@ -27,7 +27,19 @@ export async function createClientAction(input: {
 	}
 }
 
-export async function getClientsForUserAction(): Promise<ActionState<any[]>> {
+export async function getClientsForUserAction(): Promise<
+	ActionState<
+		Prisma.MembershipGetPayload<{
+			include: {
+				client: {
+					include: {
+						organisation: true;
+					};
+				};
+			};
+		}>[]
+	>
+> {
 	const session = await auth();
 	if (!session?.user?.id) {
 		return { isSuccess: false, message: 'Not authenticated', data: [] };
@@ -42,33 +54,42 @@ export async function getClientsForUserAction(): Promise<ActionState<any[]>> {
 			return { isSuccess: false, message: 'User profile not found', data: [] };
 		}
 
-		// TODO: Uncomment after Prisma client is regenerated
-		// const clientMemberships = await db.membership.findMany({
-		// 	where: {
-		// 		userProfileId: userProfile.id,
-		// 		clientId: { not: null }
-		// 	},
-		// 	include: {
-		// 		client: {
-		// 			include: {
-		// 				organisation: true,
-		// 			},
-		// 		},
-		// 	},
-		// });
-		// return { isSuccess: true, message: 'Clients fetched', data: clientMemberships };
-
-		// Temporary: return empty array until Prisma client is regenerated
-		return { isSuccess: true, message: 'Clients fetched', data: [] };
+		const clientMemberships = await getMemberships({
+			type: 'client',
+			userProfileId: userProfile.id,
+			prismaArgs: {
+				include: {
+					client: true,
+				},
+			},
+		});
+		return {
+			isSuccess: true,
+			message: 'Clients fetched',
+			data: clientMemberships,
+		};
 	} catch (error) {
 		console.error('Error fetching clients:', error);
 		return { isSuccess: false, message: 'Failed to fetch clients', data: [] };
 	}
 }
 
-export async function getClientDetailsAction(
-	clientId: string
-): Promise<ActionState<Client | null>> {
+export async function getClientDetailsAction(clientId: string): Promise<
+	ActionState<Prisma.ClientGetPayload<{
+		include: {
+			memberships: {
+				include: {
+					userProfile: true;
+				};
+			};
+			cases: {
+				include: {
+					team: true;
+				};
+			};
+		};
+	}> | null>
+> {
 	const session = await auth();
 	if (!session?.user?.id) {
 		return { isSuccess: false, message: 'Not authenticated' };
@@ -83,23 +104,21 @@ export async function getClientDetailsAction(
 			return { isSuccess: false, message: 'User profile not found' };
 		}
 
-		// TODO: Update after Prisma client is regenerated
 		const client = await db.client.findFirst({
 			where: {
 				id: clientId,
-				// memberships: {
-				// 	some: {
-				// 		userProfileId: userProfile.id,
-				// 	},
-				// },
+				memberships: {
+					some: {
+						userProfileId: userProfile.id,
+					},
+				},
 			},
 			include: {
-				// memberships: {
-				// 	include: {
-				// 		userProfile: true,
-				// 	},
-				// },
-				organisation: true,
+				memberships: {
+					include: {
+						userProfile: true,
+					},
+				},
 				cases: {
 					include: {
 						team: true,
@@ -117,55 +136,23 @@ export async function getClientDetailsAction(
 // Get all client memberships for a user
 export async function getUserClientMembershipsAction(
 	userProfileId: string
-): Promise<ActionState<any[]>> {
+): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
 	try {
-		// TODO: Uncomment after Prisma client is regenerated
-		// const clientMemberships = await db.membership.findMany({
-		// 	where: {
-		// 		userProfileId: userProfileId,
-		// 		clientId: { not: null }
-		// 	},
-		// 	include: {
-		// 		client: {
-		// 			include: {
-		// 				organisation: {
-		// 					select: {
-		// 						id: true,
-		// 						name: true,
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	orderBy: { client: { createdAt: 'desc' } },
-		// });
+		const clientMemberships = await getMemberships({
+			type: 'client',
+			userProfileId: userProfileId,
+			prismaArgs: {
+				include: {
+					client: true,
+				},
+				orderBy: { createdAt: 'desc' },
+			},
+		});
 
-		// // Transform the data to match the expected format
-		// const transformedClientMemberships = clientMemberships.map(
-		// 	(membership: any) => ({
-		// 		id: membership.id,
-		// 		role: membership.role,
-		// 		createdAt: membership.createdAt.toISOString(),
-		// 		client: {
-		// 			id: membership.client.id,
-		// 			name: membership.client.name,
-		// 			organisation: membership.client.organisation,
-		// 		},
-		// 		type: 'clientMembership',
-		// 	})
-		// );
-
-		// return {
-		// 	isSuccess: true,
-		// 	message: 'User client memberships fetched',
-		// 	data: transformedClientMemberships,
-		// };
-
-		// Temporary: return empty array until Prisma client is regenerated
 		return {
 			isSuccess: true,
 			message: 'User client memberships fetched',
-			data: [],
+			data: clientMemberships,
 		};
 	} catch (error) {
 		console.error('Error fetching user client memberships:', error);

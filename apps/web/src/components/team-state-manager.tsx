@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@shadcn/ui/badge';
 import { Button } from '@shadcn/ui/button';
 import {
 	getTeamStateDisplayName,
 	getTeamStateColor,
 	toggleTeamState,
+	TeamState,
 } from '@src/lib/state-machines/team-state-machine';
 import { updateTeamStateAction } from '@src/lib/db/team/team.actions';
 import { toast } from 'sonner';
@@ -22,6 +24,7 @@ export default function TeamStateManager({
 	currentState,
 	canEdit = true,
 }: TeamStateManagerProps) {
+	const router = useRouter();
 	const [isUpdating, setIsUpdating] = useState(false);
 
 	const handleStateToggle = async () => {
@@ -29,16 +32,16 @@ export default function TeamStateManager({
 
 		setIsUpdating(true);
 		try {
-			const newState = toggleTeamState(currentState as any);
+			const newState = toggleTeamState(currentState as TeamState);
 			const result = await updateTeamStateAction(teamId, newState);
 			if (result.isSuccess) {
 				toast.success('Team state updated successfully');
-				// Refresh the page to show updated data
-				window.location.reload();
+				// Refresh the current route to re-fetch data
+				router.refresh();
 			} else {
 				toast.error(result.message || 'Failed to update team state');
 			}
-		} catch (error) {
+		} catch {
 			toast.error('Failed to update team state');
 		} finally {
 			setIsUpdating(false);
@@ -48,8 +51,10 @@ export default function TeamStateManager({
 	return (
 		<div className="space-y-3">
 			<div className="flex items-center gap-2">
-				<Badge className={getTeamStateColor(currentState as any)}>
-					{getTeamStateDisplayName(currentState as any)}
+				<Badge
+					className={getTeamStateColor(currentState as TeamState)}
+				>
+					{getTeamStateDisplayName(currentState as TeamState)}
 				</Badge>
 			</div>
 
@@ -62,7 +67,7 @@ export default function TeamStateManager({
 				>
 					{isUpdating
 						? 'Updating...'
-						: `Toggle to ${toggleTeamState(currentState as any) === 'active' ? 'Active' : 'Inactive'}`}
+						: `Toggle to ${toggleTeamState(currentState as TeamState) === TeamState.active ? 'Active' : 'Inactive'}`}
 				</Button>
 			)}
 		</div>

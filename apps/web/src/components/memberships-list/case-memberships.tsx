@@ -14,7 +14,8 @@ import {
 	AlertDialogTrigger,
 } from '@shadcn/ui/alert-dialog';
 import { LogOut } from 'lucide-react';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@src/i18n/navigation';
 
 interface CaseMembership {
 	id: string;
@@ -41,6 +42,8 @@ export default function CaseMemberships({
 	pending,
 	onRemoveMembership,
 }: CaseMembershipsProps) {
+	const t = useTranslations('common');
+
 	if (memberships.length === 0) {
 		return null;
 	}
@@ -86,7 +89,9 @@ export default function CaseMemberships({
 									</div>
 									<div className="flex justify-end gap-2 text-right">
 										<Button variant="outline" size="sm" asChild>
-											<Link href={`/case/${caseItem.id}`}>View Details</Link>
+											<Link href={`/case/${caseItem.id}`}>
+												{t('view_details')}
+											</Link>
 										</Button>
 										<AlertDialog>
 											<AlertDialogTrigger asChild>
@@ -117,7 +122,7 @@ export default function CaseMemberships({
 													</AlertDialogDescription>
 												</AlertDialogHeader>
 												<AlertDialogFooter>
-													<AlertDialogCancel>Cancel</AlertDialogCancel>
+													<AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
 													<AlertDialogAction
 														onClick={() =>
 															onRemoveMembership(

@@ -1,4 +1,17 @@
-import { nextJsConfig } from "@numio/eslint-config/next-js";
+import { config } from "@numio/eslint-config/react";
 
 /** @type {import("eslint").Linter.Config} */
-export default nextJsConfig;
+export default [
+  ...config,
+  {
+    ignores: [
+      ".next/**",
+      "dist/**",
+      "node_modules/**",
+      "coverage/**",
+      "shadcn/**",
+      "next-env.d.ts",
+      "**/*.d.ts",
+    ],
+  },
+];

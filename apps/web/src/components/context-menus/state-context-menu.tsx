@@ -16,17 +16,17 @@ interface StateOption {
 	color?: string;
 }
 
-interface StateContextMenuProps {
+interface StateContextMenuProps<T = unknown> {
 	children: React.ReactNode;
 	availableStates?: StateOption[];
 	onStateChange?: (newState: string) => void;
 	currentState?: string;
-	additionalItems?: React.ReactNode | ((row: any) => React.ReactNode);
-	rowData?: any;
+	additionalItems?: React.ReactNode | ((row: T) => React.ReactNode);
+	rowData?: T;
 	stateLabel?: string;
 }
 
-export default function StateContextMenu({
+export default function StateContextMenu<T = unknown>({
 	children,
 	availableStates = [],
 	onStateChange,
@@ -34,7 +34,7 @@ export default function StateContextMenu({
 	additionalItems,
 	rowData,
 	stateLabel = 'Status',
-}: StateContextMenuProps) {
+}: StateContextMenuProps<T>) {
 	const renderStateItems = () => {
 		if (!availableStates.length || !onStateChange || !currentState) {
 			return null;
@@ -70,14 +70,14 @@ export default function StateContextMenu({
 		if (!additionalItems) return null;
 
 		if (typeof additionalItems === 'function') {
-			return additionalItems(rowData);
+			return additionalItems(rowData as T);
 		}
 
 		return additionalItems;
 	};
 
 	return (
-		<BaseContextMenu
+		<BaseContextMenu<T>
 			additionalItems={() => (
 				<>
 					{renderStateItems()}

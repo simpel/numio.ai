@@ -1,9 +1,10 @@
 'use server';
 
-import { db } from '@numio/ai-database';
+import { db, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
 import { UserProfileSearchData } from './user-profile.types';
 import { auth } from '@src/lib/auth/auth';
+import { getMemberships } from '@src/lib/db/membership/membership.utils';
 
 export async function searchUserProfilesAction(
 	query: string
@@ -40,14 +41,178 @@ export async function searchUserProfilesAction(
 		console.log('mapped', mapped);
 
 		return { isSuccess: true, message: 'Profiles found', data: mapped };
-	} catch (error) {
+	} catch {
 		return { isSuccess: false, message: 'Failed to search profiles', data: [] };
 	}
 }
 
-export async function getUserProfileByIdAction(
-	userProfileId: string
-): Promise<ActionState<any>> {
+export async function getAllUserProfilesAction(): Promise<
+	ActionState<UserProfileSearchData[]>
+> {
+	try {
+		const session = await auth();
+		if (!session?.user?.id) {
+			return { isSuccess: false, message: 'Not authenticated', data: [] };
+		}
+
+		const currentUserProfile = await db.userProfile.findUnique({
+			where: { userId: session.user.id },
+		});
+
+		if (!currentUserProfile || currentUserProfile.role !== 'superadmin') {
+			return {
+				isSuccess: false,
+				message: 'Insufficient permissions',
+				data: [],
+			};
+		}
+
+		const results = await db.userProfile.findMany({
+			select: {
+				id: true,
+				firstName: true,
+				lastName: true,
+				email: true,
+				role: true,
+				createdAt: true,
+			},
+			orderBy: {
+				createdAt: 'desc',
+			},
+		});
+
+		// Map nulls to undefined for Zod compatibility
+		const mapped = results.map((r) => ({
+			id: r.id,
+			firstName: r.firstName ?? undefined,
+			lastName: r.lastName ?? undefined,
+			email: r.email ?? undefined,
+			role: r.role,
+			createdAt: r.createdAt.toISOString(),
+		}));
+
+		return { isSuccess: true, message: 'All profiles fetched', data: mapped };
+	} catch (error) {
+		console.error('Error fetching all user profiles:', error);
+		return { isSuccess: false, message: 'Failed to fetch profiles', data: [] };
+	}
+}
+
+export async function getCurrentUserProfileAction(): Promise<
+	ActionState<Prisma.UserProfileGetPayload<Record<string, never>> | null>
+> {
+	try {
+		const session = await auth();
+		if (!session?.user?.id) {
+			return { isSuccess: false, message: 'Not authenticated', data: null };
+		}
+
+		const userProfile = await db.userProfile.findUnique({
+			where: { userId: session.user.id },
+		});
+
+		if (!userProfile) {
+			return {
+				isSuccess: false,
+				message: 'User profile not found',
+				data: null,
+			};
+		}
+
+		return { isSuccess: true, message: 'Profile fetched', data: userProfile };
+	} catch (error) {
+		console.error('Error fetching current user profile:', error);
+		return { isSuccess: false, message: 'Failed to fetch profile', data: null };
+	}
+}
+
+// Helper function to get user profile ID from session
+export async function getUserProfileId(): Promise<string | null> {
+	const session = await auth();
+	if (!session?.user?.id) {
+		return null;
+	}
+
+	const userProfile = await db.userProfile.findUnique({
+		where: { userId: session.user.id },
+	});
+
+	return userProfile?.id ?? null;
+}
+
+export async function getUserProfileByIdAction(userProfileId: string): Promise<
+	ActionState<
+		| (Prisma.UserProfileGetPayload<{
+				include: {
+					user: {
+						select: {
+							id: true;
+							email: true;
+							createdAt: true;
+						};
+					};
+					memberships: {
+						include: {
+							organisation: {
+								select: {
+									id: true;
+									name: true;
+								};
+							};
+							teamContext: {
+								select: {
+									id: true;
+									name: true;
+									organisation: {
+										select: {
+											id: true;
+											name: true;
+										};
+									};
+								};
+							};
+							caseItem: {
+								select: {
+									id: true;
+									title: true;
+									team: {
+										select: {
+											id: true;
+											name: true;
+										};
+									};
+								};
+							};
+						};
+					};
+				};
+		  }> & {
+				activeInvites: Prisma.InviteGetPayload<{
+					include: {
+						organisation: {
+							select: {
+								id: true;
+								name: true;
+							};
+						};
+						team: {
+							select: {
+								id: true;
+								name: true;
+								organisation: {
+									select: {
+										id: true;
+										name: true;
+									};
+								};
+							};
+						};
+					};
+				}>[];
+		  })
+		| null
+	>
+> {
 	try {
 		const profile = await db.userProfile.findUnique({
 			where: { id: userProfileId },
@@ -106,11 +271,11 @@ export async function getUserProfileByIdAction(
 				email: profile.email || '',
 				OR: [
 					{
-						status: 'PENDING',
+						status: 'pending',
 						expiresAt: { gt: new Date() },
 					},
 					{
-						status: 'EXPIRED',
+						status: 'expired',
 					},
 				],
 			},
@@ -180,14 +345,18 @@ export async function canViewUserProfileAction(
 		}
 
 		// Check if current user is admin/owner of any organisation or team that the target user is part of
-		const targetUserMemberships = await db.membership.findMany({
-			where: { userProfileId: targetUserProfileId },
+		const targetUserMemberships = await getMemberships({
+			type: 'all',
+			userProfileId: targetUserProfileId,
 		});
 
-		const currentUserMemberships = await db.membership.findMany({
-			where: {
-				userProfileId: currentUserProfile.id,
-				role: { in: ['admin', 'owner'] },
+		const currentUserMemberships = await getMemberships({
+			type: 'all',
+			userProfileId: currentUserProfile.id,
+			prismaArgs: {
+				where: {
+					role: { in: ['admin', 'owner'] },
+				},
 			},
 		});
 

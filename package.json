@@ -16,13 +16,14 @@
     "changeset:status": "changeset status --since=main",
     "changeset:version": "changeset version",
     "db:generate": "pnpm --filter @numio/ai-database run generate",
+    "db:reset": "pnpm --filter @numio/ai-database run reset",
     "db:migrate": "pnpm --filter @numio/ai-database run migrate",
     "db:migrate:deploy": "pnpm --filter @numio/ai-database run migrate:deploy",
     "db:studio": "pnpm --filter @numio/ai-database run studio",
     "db:seed": "pnpm --filter @numio/ai-database run seed",
     "envs:dev": "turbo run envs:dev",
     "envs:prod": "turbo run envs:prod",
-    "clean": "rimraf --glob \"**/node_modules\" \"**/pnpm-lock.yaml\""
+    "clean": "npx rimraf --glob \"**/node_modules\" \"**/pnpm-lock.yaml\" \"**/dist\" \"**/.next\""
   },
   "devDependencies": {
     "@changesets/cli": "^2.28.1",

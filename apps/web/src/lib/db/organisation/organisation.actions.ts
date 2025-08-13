@@ -1,14 +1,27 @@
 'use server';
 
-import { db } from '@numio/ai-database';
-import { Organisation, Prisma } from '@numio/ai-database';
+import { db, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
 import { sendOrganisationRoleEmail } from '@src/mails/organisation';
 import { auth } from '@src/lib/auth/auth';
+import { getMemberships } from '@src/lib/db/membership/membership.utils';
+
+// Interface for organisation data that matches table expectations
+export interface OrganisationData {
+	id: string;
+	name: string;
+	organisationId?: string;
+	teamsCount?: number;
+	usersCount?: number;
+	activeCasesCount?: number;
+	description?: string;
+	ownerName?: string;
+	createdAt?: string;
+}
 
 export async function createOrganisationAction(input: {
 	name: string;
-}): Promise<ActionState<Organisation>> {
+}): Promise<ActionState<Prisma.OrganisationGetPayload<Record<string, never>>>> {
 	const { name } = input;
 	const session = await auth();
 
@@ -69,16 +82,14 @@ export async function createOrganisationAction(input: {
 }
 
 export async function getOrganisationsForUserAction(): Promise<
-	ActionState<
-		Prisma.MembershipGetPayload<{ include: { organisation: true } }>[]
-	>
+	ActionState<OrganisationData[]>
 > {
-	const session = await auth();
-	if (!session?.user?.id) {
-		return { isSuccess: false, message: 'Not authenticated', data: [] };
-	}
-
 	try {
+		const session = await auth();
+		if (!session?.user?.id) {
+			return { isSuccess: false, message: 'Not authenticated', data: [] };
+		}
+
 		const userProfile = await db.userProfile.findUnique({
 			where: { userId: session.user.id },
 		});
@@ -87,20 +98,46 @@ export async function getOrganisationsForUserAction(): Promise<
 			return { isSuccess: false, message: 'User profile not found', data: [] };
 		}
 
-		const memberships = await db.membership.findMany({
-			where: { userProfileId: userProfile.id },
-			include: {
-				organisation: true,
+		const memberships = await getMemberships({
+			type: 'organisation',
+			userProfileId: userProfile.id,
+			prismaArgs: {
+				include: {
+					organisation: {
+						include: {
+							_count: { select: { teams: true, memberships: true } },
+							owner: true,
+						},
+					},
+				},
+				orderBy: { createdAt: 'desc' },
 			},
 		});
+
+		const organisationData: OrganisationData[] = memberships.map(
+			(membership) => {
+				const org = membership.organisation!;
+				return {
+					id: membership.id,
+					name: org.name,
+					organisationId: org.id,
+					teamsCount: org._count?.teams ?? 0,
+					usersCount: org._count?.memberships ?? 0,
+					ownerName: org.owner?.firstName
+						? `${org.owner.firstName} ${org.owner.lastName || ''}`.trim()
+						: undefined,
+					createdAt: membership.createdAt.toISOString(),
+				};
+			}
+		);
 
 		return {
 			isSuccess: true,
 			message: 'Organisations fetched',
-			data: memberships,
+			data: organisationData,
 		};
 	} catch (error) {
-		console.error('Error fetching organisations:', error);
+		console.error('Error fetching organisations for user:', error);
 		return {
 			isSuccess: false,
 			message: 'Failed to fetch organisations',
@@ -111,7 +148,9 @@ export async function getOrganisationsForUserAction(): Promise<
 
 export async function getOrganisationAction(
 	id: string
-): Promise<ActionState<Organisation | null>> {
+): Promise<
+	ActionState<Prisma.OrganisationGetPayload<Record<string, never>> | null>
+> {
 	try {
 		const organisation = await db.organisation.findUnique({ where: { id } });
 		return {
@@ -119,7 +158,7 @@ export async function getOrganisationAction(
 			message: 'Organisation fetched',
 			data: organisation,
 		};
-	} catch (error) {
+	} catch {
 		return { isSuccess: false, message: 'Failed to fetch organisation' };
 	}
 }
@@ -131,6 +170,21 @@ export async function getOrganisationWithDetailsAction(id: string): Promise<
 			teams: {
 				include: {
 					owner: true;
+					_count: {
+						select: { teamMemberships: true; contextMemberships: true };
+					};
+					contextMemberships: {
+						include: {
+							userProfile: {
+								select: {
+									id: true;
+									firstName: true;
+									lastName: true;
+									image: true;
+								};
+							};
+						};
+					};
 				};
 			};
 			memberships: {
@@ -149,6 +203,21 @@ export async function getOrganisationWithDetailsAction(id: string): Promise<
 				teams: {
 					include: {
 						owner: true,
+						_count: {
+							select: { teamMemberships: true, contextMemberships: true },
+						},
+						contextMemberships: {
+							include: {
+								userProfile: {
+									select: {
+										id: true,
+										firstName: true,
+										lastName: true,
+										image: true,
+									},
+								},
+							},
+						},
 					},
 				},
 				memberships: {
@@ -164,8 +233,7 @@ export async function getOrganisationWithDetailsAction(id: string): Promise<
 			message: 'Organisation with details fetched',
 			data: organisation,
 		};
-	} catch (error) {
-		console.error('Error fetching organisation with details:', error);
+	} catch {
 		return {
 			isSuccess: false,
 			message: 'Failed to fetch organisation details',
@@ -176,7 +244,7 @@ export async function getOrganisationWithDetailsAction(id: string): Promise<
 export async function updateOrganisationAction(
 	id: string,
 	data: Prisma.OrganisationUpdateInput
-): Promise<ActionState<Organisation>> {
+): Promise<ActionState<Prisma.OrganisationGetPayload<Record<string, never>>>> {
 	try {
 		const organisation = await db.organisation.update({ where: { id }, data });
 		return {
@@ -184,7 +252,7 @@ export async function updateOrganisationAction(
 			message: 'Organisation updated',
 			data: organisation,
 		};
-	} catch (error) {
+	} catch {
 		return { isSuccess: false, message: 'Failed to update organisation' };
 	}
 }
@@ -195,7 +263,7 @@ export async function deleteOrganisationAction(
 	try {
 		await db.organisation.delete({ where: { id } });
 		return { isSuccess: true, message: 'Organisation deleted', data: null };
-	} catch (error) {
+	} catch {
 		return { isSuccess: false, message: 'Failed to delete organisation' };
 	}
 }
@@ -224,7 +292,7 @@ export async function checkOrgNameAction(
 }
 
 export async function getOrgsWithAdminRightsAction(): Promise<
-	ActionState<Organisation[]>
+	ActionState<Prisma.OrganisationGetPayload<Record<string, never>>[]>
 > {
 	const session = await auth();
 	if (!session?.user?.id) {
@@ -240,19 +308,25 @@ export async function getOrgsWithAdminRightsAction(): Promise<
 			return { isSuccess: false, message: 'User profile not found', data: [] };
 		}
 
-		const memberships = await db.membership.findMany({
-			where: {
-				userProfileId: userProfile.id,
-				role: { in: ['owner', 'admin'] },
-			},
-			include: {
-				organisation: true,
+		const memberships = await getMemberships({
+			type: 'organisation',
+			userProfileId: userProfile.id,
+			prismaArgs: {
+				where: {
+					role: { in: ['owner', 'admin'] },
+				},
+				include: {
+					organisation: true,
+				},
 			},
 		});
 
 		const organisations = memberships
 			.map((membership) => membership.organisation)
-			.filter((org): org is Organisation => org !== null);
+			.filter(
+				(org): org is Prisma.OrganisationGetPayload<Record<string, never>> =>
+					org !== null
+			);
 
 		return {
 			isSuccess: true,
@@ -269,11 +343,28 @@ export async function getOrgsWithAdminRightsAction(): Promise<
 	}
 }
 
-export async function getAllOrganisationsAction(): Promise<ActionState<any[]>> {
+export async function getAllOrganisationsAction(): Promise<
+	ActionState<
+		Prisma.OrganisationGetPayload<{
+			include: {
+				_count: {
+					select: { teams: true; memberships: true };
+				};
+				owner: true;
+			};
+		}>[]
+	>
+> {
 	try {
 		const organisations = await db.organisation.findMany({
 			orderBy: {
 				createdAt: 'desc',
+			},
+			include: {
+				_count: {
+					select: { teams: true, memberships: true },
+				},
+				owner: true,
 			},
 		});
 

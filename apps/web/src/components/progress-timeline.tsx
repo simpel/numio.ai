@@ -14,7 +14,7 @@ interface Event {
 	};
 	metadata?: {
 		description?: string;
-		[key: string]: any;
+		[key: string]: unknown;
 	};
 }
 
@@ -43,7 +43,7 @@ export default function ProgressTimeline({
 
 				{/* Events */}
 				<div className="space-y-4">
-					{events.map((event, index) => (
+					{events.map((event) => (
 						<div key={event.id} className="relative flex items-start gap-4">
 							{/* Timeline dot */}
 							<div className="bg-primary border-background relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2">

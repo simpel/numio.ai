@@ -1,16 +1,14 @@
 'use client';
-
-import Link from 'next/link';
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@shadcn/ui/button';
+import { ColumnDef, Row } from '@tanstack/react-table';
 import { Badge } from '@shadcn/ui/badge';
 import { DataTable } from '@src/components/data-table';
+import { ClickableCell } from './clickable-cell';
 
 interface EventData {
 	id: string;
 	type: string;
 	occurredAt: string;
-	metadata?: any;
+	metadata?: Record<string, unknown>;
 }
 
 interface EventsTableProps {
@@ -29,15 +27,17 @@ export default function EventsTable({
 			accessorKey: 'type',
 			header: 'Event Type',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
-				<Badge variant="outline">{row.original.type}</Badge>
+			cell: ({ row }: { row: Row<EventData> }) => (
+				<ClickableCell href={`/event/${row.original.id}`}>
+					<Badge variant="outline">{row.original.type}</Badge>
+				</ClickableCell>
 			),
 		},
 		{
 			accessorKey: 'occurredAt',
 			header: 'Occurred At',
 			enableSorting: true,
-			cell: ({ row }: { row: any }) => (
+			cell: ({ row }: { row: Row<EventData> }) => (
 				<div className="text-muted-foreground text-sm">
 					{new Date(row.original.occurredAt).toLocaleString()}
 				</div>
@@ -47,7 +47,7 @@ export default function EventsTable({
 			accessorKey: 'metadata',
 			header: 'Details',
 			enableSorting: false,
-			cell: ({ row }: { row: any }) => {
+			cell: ({ row }: { row: Row<EventData> }) => {
 				const metadata = row.original.metadata;
 				if (!metadata || Object.keys(metadata).length === 0) {
 					return (
@@ -60,15 +60,6 @@ export default function EventsTable({
 					</div>
 				);
 			},
-		},
-		{
-			id: 'actions',
-			enableSorting: false,
-			cell: ({ row }: { row: any }) => (
-				<Button asChild variant="outline" size="sm">
-					<Link href={`/event/${row.original.id}`}>View Details</Link>
-				</Button>
-			),
 		},
 	];
 

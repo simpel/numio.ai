@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@shadcn/ui/button';
 import {
 	Dialog,
@@ -11,57 +12,32 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '@shadcn/ui/dialog';
-import { Input } from '@shadcn/ui/input';
-import { Label } from '@shadcn/ui/label';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 
 interface DeleteTeamDialogProps {
 	teamId: string;
 	teamName: string;
 }
 
-export default function DeleteTeamDialog({
-	teamId,
-	teamName,
-}: DeleteTeamDialogProps) {
+export default function DeleteTeamDialog({ teamName }: DeleteTeamDialogProps) {
 	const [open, setOpen] = useState(false);
-	const [confirmationText, setConfirmationText] = useState('');
-	const [isDeleting, setIsDeleting] = useState(false);
+	const [pending, setPending] = useState(false);
 	const router = useRouter();
 
 	const handleDelete = async () => {
-		if (confirmationText !== teamName) {
-			toast.error('Team name does not match');
-			return;
-		}
-
-		setIsDeleting(true);
+		setPending(true);
 		try {
 			// TODO: Implement delete team action
-			// const result = await deleteTeamAction(teamId);
-			// if (result.isSuccess) {
-			// 	toast.success('Team deleted successfully');
-			// 	router.push('/teams');
-			// } else {
-			// 	toast.error(result.message || 'Failed to delete team');
-			// }
-
-			// Temporary placeholder
 			toast.success('Team deleted successfully');
+			setOpen(false);
 			router.push('/teams');
-		} catch (error) {
-			console.error('Delete team error:', error);
+		} catch {
 			toast.error('Failed to delete team');
 		} finally {
-			setIsDeleting(false);
-			setOpen(false);
-			setConfirmationText('');
+			setPending(false);
 		}
 	};
-
-	const isConfirmButtonDisabled = confirmationText !== teamName || isDeleting;
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
@@ -71,41 +47,24 @@ export default function DeleteTeamDialog({
 					Delete Team
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[425px]">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Delete Team</DialogTitle>
 					<DialogDescription>
-						This action cannot be undone. This will permanently delete the team{' '}
-						<strong>{teamName}</strong> and all associated data.
+						Are you sure you want to delete &quot;{teamName}&quot;? This action
+						cannot be undone.
 					</DialogDescription>
 				</DialogHeader>
-				<div className="grid gap-4 py-4">
-					<div className="grid gap-2">
-						<Label htmlFor="confirmation">
-							Please type <strong>{teamName}</strong> to confirm
-						</Label>
-						<Input
-							id="confirmation"
-							value={confirmationText}
-							onChange={(e) => setConfirmationText(e.target.value)}
-							placeholder="Enter team name to confirm"
-						/>
-					</div>
-				</div>
 				<DialogFooter>
-					<Button
-						variant="outline"
-						onClick={() => setOpen(false)}
-						disabled={isDeleting}
-					>
+					<Button variant="outline" onClick={() => setOpen(false)}>
 						Cancel
 					</Button>
 					<Button
 						variant="destructive"
 						onClick={handleDelete}
-						disabled={isConfirmButtonDisabled}
+						disabled={pending}
 					>
-						{isDeleting ? 'Deleting...' : 'Delete Team'}
+						{pending ? 'Deleting...' : 'Delete Team'}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

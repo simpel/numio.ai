@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "InviteStatus" AS ENUM ('PENDING', 'ACCEPTED', 'EXPIRED', 'CANCELLED');
+CREATE TYPE "InviteStatus" AS ENUM ('pending', 'accepted', 'expired', 'cancelled');
 
 -- CreateTable
 CREATE TABLE "Invite" (
@@ -13,7 +13,7 @@ CREATE TABLE "Invite" (
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "acceptedAt" TIMESTAMP(3),
     "acceptedById" TEXT,
-    "status" "InviteStatus" NOT NULL DEFAULT 'PENDING',
+    "status" "InviteStatus" NOT NULL DEFAULT 'pending',
 
     CONSTRAINT "Invite_pkey" PRIMARY KEY ("id")
 );

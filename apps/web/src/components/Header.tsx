@@ -1,7 +1,6 @@
-'use client';
+'use server';
 
-import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
+import { Link } from '@src/i18n/navigation';
 import { Button } from '@shadcn/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@shadcn/ui/avatar';
 import {
@@ -12,39 +11,36 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@shadcn/ui/dropdown-menu';
-import { Settings, LogOut, User } from 'lucide-react';
+import { Settings, LogOut, User, Shield } from 'lucide-react';
 import { cn } from '@src/utils';
+import { HeaderLanguageSwitcher } from './header-language-switcher';
+import { getTranslations } from 'next-intl/server';
+import { auth } from '@src/lib/auth/auth';
+import RoleGuard from '@src/components/auth/role-guard';
 
-const authenticatedMenuItems = [
-	{
-		title: 'Home',
-		url: '/home',
-	},
-	{
-		title: 'Cases',
-		url: '/cases',
-	},
-	{
-		title: 'Teams',
-		url: '/teams',
-	},
-	{
-		title: 'Organisations',
-		url: '/organisations',
-	},
-	{
-		title: 'Settings',
-		url: '/settings',
-	},
-];
+export default async function Header() {
+	const session = await auth();
+	const t = await getTranslations('header');
+	const nav = await getTranslations('navigation');
 
-export default function Header() {
-	const { data: session, status } = useSession();
-	const isLoading = status === 'loading';
-
-	const handleSignOut = () => {
-		signOut({ callbackUrl: '/' });
-	};
+	const authenticatedMenuItems = [
+		{
+			title: nav('cases'),
+			url: '/cases',
+		},
+		{
+			title: nav('teams'),
+			url: '/teams',
+		},
+		{
+			title: nav('organizations'),
+			url: '/organisations',
+		},
+		{
+			title: nav('settings'),
+			url: '/settings',
+		},
+	];
 
 	const getUserInitials = (name?: string | null, email?: string | null) => {
 		if (name) {
@@ -65,11 +61,11 @@ export default function Header() {
 			<div className="container mx-auto flex h-14 items-center justify-between px-6">
 				{/* Left: App Name */}
 				<Link href="/" className="flex items-center space-x-2">
-					<span className="text-xl font-bold">Numio</span>
+					<span className="text-xl font-bold">{t('app_name')}</span>
 				</Link>
 
 				{/* Center: Navigation Menu (only for authenticated users) */}
-				{!isLoading && session && (
+				{session && (
 					<nav className="hidden items-center space-x-6 md:flex">
 						{authenticatedMenuItems.map((item) => (
 							<Link
@@ -88,63 +84,81 @@ export default function Header() {
 
 				{/* Right: Auth Controls */}
 				<div className="flex items-center space-x-4">
-					{isLoading ? (
-						<div className="bg-muted h-8 w-8 animate-pulse rounded-full" />
-					) : session ? (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="ghost"
-									className="relative h-8 w-8 rounded-full"
-								>
-									<Avatar className="h-8 w-8">
-										<AvatarImage
-											src={session.user?.image || ''}
-											alt={session.user?.name || ''}
-										/>
-										<AvatarFallback>
-											{getUserInitials(session.user?.name, session.user?.email)}
-										</AvatarFallback>
-									</Avatar>
+					{session ? (
+						<>
+							{/* Admin button for superadmin users */}
+							<RoleGuard requiredRoles={['superadmin']}>
+								<Button asChild variant="outline" size="sm">
+									<Link href="/admin" className="flex items-center">
+										<Shield className="mr-2 h-4 w-4" />
+										{nav('admin')}
+									</Link>
 								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent className="w-56" align="end" forceMount>
-								<DropdownMenuLabel className="font-normal">
-									<div className="flex flex-col space-y-1">
-										<p className="text-sm font-medium leading-none">
-											{session.user?.name || 'User'}
-										</p>
-										<p className="text-muted-foreground text-xs leading-none">
-											{session.user?.email}
-										</p>
-									</div>
-								</DropdownMenuLabel>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem asChild>
-									<Link href="/settings" className="flex items-center">
-										<Settings className="mr-2 h-4 w-4" />
-										Settings
-									</Link>
-								</DropdownMenuItem>
-								<DropdownMenuItem asChild>
-									<Link href="/profile" className="flex items-center">
-										<User className="mr-2 h-4 w-4" />
-										Profile
-									</Link>
-								</DropdownMenuItem>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									onClick={handleSignOut}
-									className="text-destructive focus:text-destructive flex items-center"
-								>
-									<LogOut className="mr-2 h-4 w-4" />
-									Sign out
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
+							</RoleGuard>
+
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="ghost"
+										className="relative h-8 w-8 rounded-full"
+									>
+										<Avatar className="h-8 w-8">
+											<AvatarImage
+												src={session.user?.image || ''}
+												alt={session.user?.name || ''}
+											/>
+											<AvatarFallback>
+												{getUserInitials(
+													session.user?.name,
+													session.user?.email
+												)}
+											</AvatarFallback>
+										</Avatar>
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent className="w-56" align="end" forceMount>
+									<DropdownMenuLabel className="font-normal">
+										<div className="flex flex-col space-y-1">
+											<p className="text-sm font-medium leading-none">
+												{session.user?.name || t('user_fallback')}
+											</p>
+											<p className="text-muted-foreground text-xs leading-none">
+												{session.user?.email}
+											</p>
+										</div>
+									</DropdownMenuLabel>
+									<DropdownMenuSeparator />
+									{/* Language submenu */}
+									<HeaderLanguageSwitcher />
+									<DropdownMenuSeparator />
+									<DropdownMenuItem asChild>
+										<Link href="/settings" className="flex items-center">
+											<Settings className="mr-2 h-4 w-4" />
+											{nav('settings')}
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuItem asChild>
+										<Link href="/profile" className="flex items-center">
+											<User className="mr-2 h-4 w-4" />
+											{nav('profile')}
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem asChild>
+										<Link
+											href="/api/auth/signout"
+											className="text-destructive focus:text-destructive flex items-center"
+										>
+											<LogOut className="mr-2 h-4 w-4" />
+											{t('sign_out')}
+										</Link>
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</>
 					) : (
 						<Button asChild>
-							<Link href="/signin">Sign in</Link>
+							<Link href="/signin">{nav('signin')}</Link>
 						</Button>
 					)}
 				</div>

@@ -9,6 +9,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@shadcn/ui/dropdown-menu';
+import { useTranslations } from 'next-intl';
 import EditTeamDialog from '@src/components/dialogs/edit-team-dialog';
 
 interface TeamActionsMenuProps {
@@ -22,6 +23,7 @@ export default function TeamActionsMenu({
 	teamName,
 	teamDescription,
 }: TeamActionsMenuProps) {
+	const t = useTranslations('common');
 	const [editDialogOpen, setEditDialogOpen] = useState(false);
 
 	return (
@@ -34,7 +36,7 @@ export default function TeamActionsMenu({
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
 					<DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
-						Edit Details
+						{t('edit_details')}
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
@@ -42,9 +44,11 @@ export default function TeamActionsMenu({
 			<EditTeamDialog
 				open={editDialogOpen}
 				onOpenChange={setEditDialogOpen}
-				teamId={teamId}
-				currentName={teamName}
-				currentDescription={teamDescription}
+				team={{
+					id: teamId,
+					name: teamName,
+					description: teamDescription,
+				}}
 			/>
 		</>
 	);

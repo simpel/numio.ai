@@ -12,6 +12,7 @@ import {
 	CommandList,
 } from '@shadcn/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@shadcn/ui/popover';
+import { useTranslations } from 'next-intl';
 import {
 	getStateDisplayName,
 	CaseState,
@@ -37,15 +38,18 @@ export default function StateDropdown({
 	availableStates,
 	onStateChange,
 	disabled = false,
-	placeholder = 'Select state...',
+	placeholder,
 	className,
 }: StateDropdownProps) {
+	const t = useTranslations('common');
 	const [open, setOpen] = useState(false);
+
+	const defaultPlaceholder = placeholder || t('select_state');
 
 	// Always show the current state as text, even if it's not in available transitions
 	const currentStateText = currentState
-		? getStateDisplayName(currentState as any)
-		: placeholder;
+		? getStateDisplayName(currentState as CaseState)
+		: defaultPlaceholder;
 
 	// Get all possible states
 	const allStates = Object.values(CaseState).map((state) => ({
@@ -71,7 +75,7 @@ export default function StateDropdown({
 			<PopoverContent className="w-[200px] p-0">
 				<Command>
 					<CommandList>
-						<CommandEmpty>No state found.</CommandEmpty>
+						<CommandEmpty>{t('no_state_found')}</CommandEmpty>
 						<CommandGroup>
 							{allStates.map((state) => (
 								<CommandItem
@@ -97,7 +101,7 @@ export default function StateDropdown({
 									{state.label}
 									{!state.isAvailable && (
 										<span className="text-muted-foreground ml-2 text-xs">
-											(Not available)
+											{t('not_available')}
 										</span>
 									)}
 								</CommandItem>

@@ -14,8 +14,6 @@ datasource db {
 model Organisation {
   id           String        @id @default(cuid())
   name         String
-  owner        UserProfile   @relation("OrgOwner", fields: [ownerId], references: [id])
-  ownerId      String
   teams        Team[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -27,8 +25,6 @@ model Team {
   id             String         @id @default(cuid())
   organisation   Organisation   @relation(fields: [organisationId], references: [id])
   organisationId String
-  owner          UserProfile    @relation("TeamOwner", fields: [ownerId], references: [id])
-  ownerId        String
   name           String
   description    String?
   state          TeamState      @default(active)
@@ -153,20 +149,16 @@ model UserProfile {
   userId     String        @unique
 
   memberships Membership[]
-  ownsTeams   Team[]        @relation("TeamOwner")
-  ownsOrgs    Organisation[] @relation("OrgOwner")
   events      Event[]       @relation("EventActor")
 
   @@map("user_profiles")
 }
 
 enum Role {
-  admin
   authenticated
   owner
   member
   assignee
-  client
   superadmin
 }
 
@@ -196,10 +188,10 @@ model Membership {
 }
 
 enum InviteStatus {
-  PENDING
-  ACCEPTED
-  EXPIRED
-  CANCELLED
+  pending
+  accepted
+  expired
+  cancelled
 }
 
 enum CaseState {
@@ -228,7 +220,32 @@ model Invite {
   expiresAt      DateTime
   acceptedAt     DateTime?
   acceptedById   String?
-  status         InviteStatus @default(PENDING)
+  status         InviteStatus @default(pending)
 
   @@unique([email, organisationId, teamId, status])
+}
+
+model MetricEvent {
+  id        String   @id @default(cuid())
+  type      String   // Event type (e.g., "user_profile_created")
+  entityId  String?  // ID of the related entity
+  metadata  Json     @default("{}") // Additional context
+  timestamp DateTime @default(now())
+  
+  @@index([type, timestamp])
+  @@index([timestamp])
+  @@index([entityId])
+}
+
+model MetricSnapshot {
+  id        String   @id @default(cuid())
+  metric    String   // Aggregated metric name
+  value     Int
+  context   Json?    @default("{}") // For org-specific metrics
+  date      DateTime // Date of the snapshot
+  period    String   // "daily", "weekly", "monthly"
+  
+  @@unique([metric, context, date, period])
+  @@index([metric, date])
+  @@index([context])
 }

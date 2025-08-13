@@ -1,4 +1,13 @@
-import { config } from "../../packages/eslint-config/react-internal";
+import { config } from "@numio/eslint-config/base";
 
 /** @type {import("eslint").Linter.Config} */
-export default config; 
+export default [
+  ...config,
+  {
+    ignores: [
+      "dist/**", 
+      "node_modules/**",
+      "coverage/**",
+    ],
+  },
+];

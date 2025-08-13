@@ -35,6 +35,30 @@ async function main() {
 		},
 	});
 
+	console.log('✅ Created admin user and profile');
+
+	// Helper function to create date spread across the last 30 days
+	const createSpreadDate = (daysAgo: number) => {
+		const now = new Date();
+		const targetDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+		// Add some randomness within the day (0-23 hours)
+		const randomHours = faker.number.int({ min: 0, max: 23 });
+		const randomMinutes = faker.number.int({ min: 0, max: 59 });
+		targetDate.setHours(randomHours, randomMinutes, 0, 0);
+		return targetDate;
+	};
+
+	// Helper function to create date spread across the last 6 months (180 days)
+	const createSpreadDate6Months = (daysAgo: number) => {
+		const now = new Date();
+		const targetDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+		// Add some randomness within the day (0-23 hours)
+		const randomHours = faker.number.int({ min: 0, max: 23 });
+		const randomMinutes = faker.number.int({ min: 0, max: 59 });
+		targetDate.setHours(randomHours, randomMinutes, 0, 0);
+		return targetDate;
+	};
+
 	// Create admin user profile
 	const adminProfile = await db.userProfile.create({
 		data: {
@@ -46,23 +70,58 @@ async function main() {
 			hasDoneIntro: true,
 			jobTitle: 'System Administrator',
 			bio: 'System administrator with full access to all organizations and teams.',
+			createdAt: createSpreadDate(30), // Admin created 30 days ago
 		},
 	});
 
-	console.log('✅ Created admin user and profile');
-
-	// Create 10 organizations
+	// Create organizations with specific pattern for chart trends
+	// More organizations in first 7 days (negative 7-day trend), fewer in last 7 days
+	// But overall positive 30-day trend
 	const organizations = [];
 
-	for (let i = 1; i <= 10; i++) {
+	// Create 6 organizations in the first 7 days (days 0-6)
+	for (let i = 1; i <= 6; i++) {
+		const daysAgo = faker.number.int({ min: 0, max: 6 }); // First 7 days
+		const createdAt = createSpreadDate(daysAgo);
+
 		const org = await db.organisation.create({
 			data: {
 				name: faker.company.name(),
-				ownerId: adminProfile.id,
+				createdAt: createdAt,
 			},
 		});
 		organizations.push(org);
-		console.log(`✅ Created organization: ${org.name}`);
+		console.log(`✅ Created organization (early): ${org.name}`);
+	}
+
+	// Create 2 organizations in the middle period (days 7-22)
+	for (let i = 1; i <= 2; i++) {
+		const daysAgo = faker.number.int({ min: 7, max: 22 }); // Middle period
+		const createdAt = createSpreadDate(daysAgo);
+
+		const org = await db.organisation.create({
+			data: {
+				name: faker.company.name(),
+				createdAt: createdAt,
+			},
+		});
+		organizations.push(org);
+		console.log(`✅ Created organization (middle): ${org.name}`);
+	}
+
+	// Create 2 organizations in the last 7 days (days 23-29)
+	for (let i = 1; i <= 2; i++) {
+		const daysAgo = faker.number.int({ min: 23, max: 29 }); // Last 7 days
+		const createdAt = createSpreadDate(daysAgo);
+
+		const org = await db.organisation.create({
+			data: {
+				name: faker.company.name(),
+				createdAt: createdAt,
+			},
+		});
+		organizations.push(org);
+		console.log(`✅ Created organization (recent): ${org.name}`);
 	}
 
 	// Create 150 users with profiles
@@ -85,6 +144,9 @@ async function main() {
 			},
 		});
 
+		const daysAgo = faker.number.int({ min: 0, max: 29 }); // Spread across 30 days
+		const createdAt = createSpreadDate(daysAgo);
+
 		const userProfile = await db.userProfile.create({
 			data: {
 				userId: user.id,
@@ -99,6 +161,7 @@ async function main() {
 				hasDoneIntro: faker.datatype.boolean(),
 				jobTitle: faker.person.jobTitle(),
 				bio: faker.lorem.sentence(),
+				createdAt: createdAt,
 			},
 		});
 
@@ -112,37 +175,123 @@ async function main() {
 
 	console.log('✅ Created all 150 users and profiles');
 
-	// Create teams for each organization (3-6 teams per org)
+	// Create teams with a clear negative trend over 6 months
+	// More teams in early months, fewer in recent months
 	const teams = [];
 
-	for (let orgIndex = 0; orgIndex < organizations.length; orgIndex++) {
-		const org = organizations[orgIndex];
-		if (!org) continue;
+	// Create teams with a clear negative trend pattern
+	// Month 1-2 (days 150-120): 40% of teams - High activity early
+	// Month 3-4 (days 119-60): 35% of teams - Moderate activity
+	// Month 5-6 (days 59-0): 25% of teams - Low activity recently
 
-		const teamCount = faker.number.int({ min: 3, max: 6 });
+	// Calculate total teams needed for a clear negative trend
+	const totalTeamsNeeded = organizations.length * 5; // Average 5 teams per org
+	const earlyTeams = Math.floor(totalTeamsNeeded * 0.4); // 40% in first 2 months
+	const middleTeams = Math.floor(totalTeamsNeeded * 0.35); // 35% in middle 2 months
+	const recentTeams = totalTeamsNeeded - earlyTeams - middleTeams; // 25% in last 2 months
 
-		for (let teamIndex = 0; teamIndex < teamCount; teamIndex++) {
-			const team = await db.team.create({
-				data: {
-					name: faker.company.name() + ' Team',
-					description: faker.lorem.sentence(),
-					organisationId: org.id,
-					ownerId: adminProfile.id,
-					state: faker.helpers.arrayElement(['active', 'inactive']),
-				},
-			});
-			teams.push(team);
-		}
-		console.log(`✅ Created ${teamCount} teams for organization: ${org.name}`);
+	console.log(`📊 Team creation plan for negative 6-month trend:`);
+	console.log(`   - Early teams (months 1-2): ${earlyTeams}`);
+	console.log(`   - Middle teams (months 3-4): ${middleTeams}`);
+	console.log(`   - Recent teams (months 5-6): ${recentTeams}`);
+	console.log(`   - Total teams: ${totalTeamsNeeded}`);
+
+	// Create early teams (days 150-120)
+	for (let i = 0; i < earlyTeams; i++) {
+		const daysAgo = faker.number.int({ min: 120, max: 150 }); // Months 1-2
+		const createdAt = createSpreadDate6Months(daysAgo);
+		const randomOrg = faker.helpers.arrayElement(organizations);
+
+		const team = await db.team.create({
+			data: {
+				name: faker.company.name() + ' Team',
+				description: faker.lorem.sentence(),
+				organisationId: randomOrg.id,
+				state: faker.helpers.arrayElement(['active', 'inactive']),
+				createdAt: createdAt,
+			},
+		});
+		teams.push(team);
 	}
 
-	console.log(`✅ Created ${teams.length} total teams`);
+	// Create middle teams (days 119-60)
+	for (let i = 0; i < middleTeams; i++) {
+		const daysAgo = faker.number.int({ min: 60, max: 119 }); // Months 3-4
+		const createdAt = createSpreadDate6Months(daysAgo);
+		const randomOrg = faker.helpers.arrayElement(organizations);
+
+		const team = await db.team.create({
+			data: {
+				name: faker.company.name() + ' Team',
+				description: faker.lorem.sentence(),
+				organisationId: randomOrg.id,
+				state: faker.helpers.arrayElement(['active', 'inactive']),
+				createdAt: createdAt,
+			},
+		});
+		teams.push(team);
+	}
+
+	// Create recent teams (days 59-0)
+	for (let i = 0; i < recentTeams; i++) {
+		const daysAgo = faker.number.int({ min: 0, max: 59 }); // Months 5-6
+		const createdAt = createSpreadDate6Months(daysAgo);
+		const randomOrg = faker.helpers.arrayElement(organizations);
+
+		const team = await db.team.create({
+			data: {
+				name: faker.company.name() + ' Team',
+				description: faker.lorem.sentence(),
+				organisationId: randomOrg.id,
+				state: faker.helpers.arrayElement(['active', 'inactive']),
+				createdAt: createdAt,
+			},
+		});
+		teams.push(team);
+	}
+
+	console.log(
+		`✅ Created ${teams.length} total teams with negative 6-month trend`
+	);
+
+	// Create owner memberships for organizations
+	console.log('👑 Creating owner memberships for organizations...');
+	for (const org of organizations) {
+		// Assign admin as owner of all organizations
+		await db.membership.create({
+			data: {
+				userProfileId: adminProfile.id,
+				organisationId: org.id,
+				role: Role.owner,
+			},
+		});
+	}
+	console.log(
+		`✅ Created owner memberships for ${organizations.length} organizations`
+	);
+
+	// Create owner memberships for teams
+	console.log('👑 Creating owner memberships for teams...');
+	for (const team of teams) {
+		// Assign admin as owner of all teams
+		await db.membership.create({
+			data: {
+				userProfileId: adminProfile.id,
+				teamContextId: team.id,
+				role: Role.owner,
+			},
+		});
+	}
+	console.log(`✅ Created owner memberships for ${teams.length} teams`);
 
 	// Create organization memberships for users
 	console.log('🏢 Creating organization memberships...');
 
-	for (let i = 0; i < userProfiles.length; i++) {
-		const userProfile = userProfiles[i];
+	// Include admin user in membership creation
+	const allUserProfiles = [adminProfile, ...userProfiles];
+
+	for (let i = 0; i < allUserProfiles.length; i++) {
+		const userProfile = allUserProfiles[i];
 		if (!userProfile) continue;
 
 		// Each user belongs to 1-3 organizations
@@ -152,7 +301,6 @@ async function main() {
 		for (const org of selectedOrgs) {
 			const role = faker.helpers.arrayElement([
 				Role.owner,
-				Role.admin,
 				Role.member,
 				Role.assignee,
 			]);
@@ -176,8 +324,8 @@ async function main() {
 	// Create team memberships for users
 	console.log('👥 Creating team memberships...');
 
-	for (let i = 0; i < userProfiles.length; i++) {
-		const userProfile = userProfiles[i];
+	for (let i = 0; i < allUserProfiles.length; i++) {
+		const userProfile = allUserProfiles[i];
 		if (!userProfile) continue;
 
 		// Each user belongs to 1-4 teams
@@ -186,7 +334,7 @@ async function main() {
 
 		for (const team of selectedTeams) {
 			const role = faker.helpers.arrayElement([
-				Role.admin,
+				Role.owner,
 				Role.member,
 				Role.assignee,
 			]);
@@ -229,12 +377,12 @@ async function main() {
 		const orgCount = faker.number.int({ min: 1, max: 3 });
 		const selectedOrgs = faker.helpers.arrayElements(organizations, orgCount);
 
-		for (const org of selectedOrgs) {
+		for (const _org of selectedOrgs) {
 			await db.membership.create({
 				data: {
 					teamId: faker.helpers.arrayElement(teams).id,
 					clientId: client.id,
-					role: Role.client,
+					role: Role.member,
 				},
 			});
 		}
@@ -286,7 +434,7 @@ async function main() {
 			data: {
 				userProfileId: adminProfile.id,
 				caseId: caseItem.id,
-				role: Role.admin,
+				role: Role.owner,
 			},
 		});
 	}
@@ -343,7 +491,7 @@ async function main() {
 	};
 
 	// Helper function to create recent date (less than 72 hours ago)
-	const createRecentDate = () => {
+	const _createRecentDate = () => {
 		const now = new Date();
 		return new Date(
 			now.getTime() - faker.number.int({ min: 1, max: 71 }) * 60 * 60 * 1000
@@ -451,11 +599,11 @@ async function main() {
 				role: faker.helpers.arrayElement([
 					Role.member,
 					Role.assignee,
-					Role.admin,
+					Role.owner,
 				]),
 				token: generateToken(),
 				expiresAt: createExpiryDate(),
-				status: 'PENDING',
+				status: 'pending',
 			},
 		});
 	}
@@ -470,27 +618,27 @@ async function main() {
 				role: faker.helpers.arrayElement([Role.member, Role.assignee]),
 				token: generateToken(),
 				expiresAt: createExpiryDate(),
-				status: 'PENDING',
+				status: 'pending',
 			},
 		});
 	}
 
 	// Test User 2: Mix of pending and expired invites
-	// Pending invite to organization
+	// pending invite to organization
 	if (organizations[0] && testUser2Profile.email) {
 		await db.invite.create({
 			data: {
 				email: testUser2Profile.email,
 				organisationId: organizations[0].id,
-				role: Role.admin,
+				role: Role.owner,
 				token: generateToken(),
 				expiresAt: createExpiryDate(),
-				status: 'PENDING',
+				status: 'pending',
 			},
 		});
 	}
 
-	// Expired invite to organization
+	// expired invite to organization
 	if (organizations[1] && testUser2Profile.email) {
 		await db.invite.create({
 			data: {
@@ -499,12 +647,12 @@ async function main() {
 				role: Role.member,
 				token: generateToken(),
 				expiresAt: createExpiredDate(),
-				status: 'EXPIRED',
+				status: 'expired',
 			},
 		});
 	}
 
-	// Pending invite to team
+	// pending invite to team
 	const teamForUser2 = faker.helpers.arrayElement(teams);
 	if (teamForUser2 && testUser2Profile.email) {
 		await db.invite.create({
@@ -514,7 +662,7 @@ async function main() {
 				role: Role.assignee,
 				token: generateToken(),
 				expiresAt: createExpiryDate(),
-				status: 'PENDING',
+				status: 'pending',
 			},
 		});
 	}
@@ -531,7 +679,7 @@ async function main() {
 				role: faker.helpers.arrayElement([Role.member, Role.assignee]),
 				token: generateToken(),
 				expiresAt: createExpiredDate(),
-				status: 'EXPIRED',
+				status: 'expired',
 			},
 		});
 	}
@@ -548,11 +696,11 @@ async function main() {
 				role: faker.helpers.arrayElement([
 					Role.member,
 					Role.assignee,
-					Role.admin,
+					Role.owner,
 				]),
 				token: generateToken(),
 				expiresAt: createExpiryDate(),
-				status: 'PENDING',
+				status: 'pending',
 			},
 		});
 	}
@@ -566,7 +714,7 @@ async function main() {
 				role: Role.member,
 				token: generateToken(),
 				expiresAt: createExpiredDate(),
-				status: 'EXPIRED',
+				status: 'expired',
 			},
 		});
 	}
@@ -576,10 +724,11 @@ async function main() {
 	// Create diverse invites for existing users (team and case invites)
 	console.log('📧 Creating team and case invites for existing users...');
 
-	// Create team invites for existing users
-	for (let i = 0; i < 10; i++) {
+	// Create team invites for existing users with spread dates
+	for (let i = 0; i < 15; i++) {
 		const randomUserProfile = faker.helpers.arrayElement(userProfiles);
 		const randomTeam = faker.helpers.arrayElement(teams);
+		const daysAgo = faker.number.int({ min: 0, max: 29 }); // Spread across 30 days
 
 		if (randomUserProfile?.email && randomTeam) {
 			await db.invite.create({
@@ -589,22 +738,22 @@ async function main() {
 					role: faker.helpers.arrayElement([
 						Role.member,
 						Role.assignee,
-						Role.admin,
+						Role.owner,
 					]),
 					token: generateToken(),
-					expiresAt: faker.datatype.boolean()
-						? createExpiryDate()
-						: createExpiredDate(),
-					status: faker.helpers.arrayElement(['PENDING', 'EXPIRED']),
+					expiresAt: createExpiryDate(),
+					status: 'pending',
+					createdAt: createSpreadDate(daysAgo),
 				},
 			});
 		}
 	}
 
 	// Create case invites for existing users (simulated as team invites with specific context)
-	for (let i = 0; i < 8; i++) {
+	for (let i = 0; i < 12; i++) {
 		const randomUserProfile = faker.helpers.arrayElement(userProfiles);
 		const randomCase = faker.helpers.arrayElement(cases);
+		const daysAgo = faker.number.int({ min: 0, max: 29 }); // Spread across 30 days
 
 		if (randomUserProfile?.email && randomCase) {
 			// For case invites, we'll use the team context since cases belong to teams
@@ -614,10 +763,9 @@ async function main() {
 					teamId: randomCase.teamId,
 					role: Role.assignee, // Cases typically use assignee role
 					token: generateToken(),
-					expiresAt: faker.datatype.boolean()
-						? createExpiryDate()
-						: createExpiredDate(),
-					status: faker.helpers.arrayElement(['PENDING', 'EXPIRED']),
+					expiresAt: createExpiryDate(),
+					status: 'pending',
+					createdAt: createSpreadDate(daysAgo),
 				},
 			});
 		}
@@ -626,9 +774,13 @@ async function main() {
 	// Create invites for completely new users (no UserProfile yet)
 	console.log('📧 Creating invites for new users...');
 
-	// New user organization invites
-	for (let i = 0; i < 15; i++) {
+	// New user organization invites with more consistent distribution
+	for (let i = 0; i < 20; i++) {
 		const randomOrg = faker.helpers.arrayElement(organizations);
+		// Distribute more evenly across the 30 days
+		const daysAgo =
+			Math.floor((i * 30) / 20) + faker.number.int({ min: 0, max: 1 }); // More consistent spread
+
 		if (randomOrg) {
 			await db.invite.create({
 				data: {
@@ -637,21 +789,24 @@ async function main() {
 					role: faker.helpers.arrayElement([
 						Role.member,
 						Role.assignee,
-						Role.admin,
+						Role.owner,
 					]),
 					token: generateToken(),
-					expiresAt: faker.datatype.boolean()
-						? createExpiryDate()
-						: createExpiredDate(),
-					status: faker.helpers.arrayElement(['PENDING', 'EXPIRED']),
+					expiresAt: createExpiryDate(),
+					status: 'pending',
+					createdAt: createSpreadDate(daysAgo),
 				},
 			});
 		}
 	}
 
-	// New user team invites
-	for (let i = 0; i < 12; i++) {
+	// New user team invites with more consistent distribution
+	for (let i = 0; i < 15; i++) {
 		const randomTeam = faker.helpers.arrayElement(teams);
+		// Distribute more evenly across the 30 days
+		const daysAgo =
+			Math.floor((i * 30) / 15) + faker.number.int({ min: 0, max: 1 }); // More consistent spread
+
 		if (randomTeam) {
 			await db.invite.create({
 				data: {
@@ -659,20 +814,21 @@ async function main() {
 					teamId: randomTeam.id,
 					role: faker.helpers.arrayElement([Role.member, Role.assignee]),
 					token: generateToken(),
-					expiresAt: faker.datatype.boolean()
-						? createExpiryDate()
-						: createExpiredDate(),
-					status: faker.helpers.arrayElement(['PENDING', 'EXPIRED']),
+					expiresAt: createExpiryDate(),
+					status: 'pending',
+					createdAt: createSpreadDate(daysAgo),
 				},
 			});
 		}
 	}
 
-	// Create regular invites for other organizations
+	// Create regular invites for other organizations with more consistent distribution
 	for (const org of organizations) {
-		// Create 2-4 pending invites (not expired yet)
-		const pendingCount = faker.number.int({ min: 2, max: 4 });
-		for (let i = 0; i < pendingCount; i++) {
+		// Create 4 pending invites with more consistent spread
+		for (let i = 0; i < 4; i++) {
+			// Distribute more evenly across the 30 days
+			const daysAgo =
+				Math.floor((i * 30) / 4) + faker.number.int({ min: 0, max: 2 }); // More consistent spread
 			await db.invite.create({
 				data: {
 					email: faker.internet.email(),
@@ -680,19 +836,24 @@ async function main() {
 					role: faker.helpers.arrayElement([
 						Role.member,
 						Role.assignee,
-						Role.admin,
+						Role.owner,
 					]),
 					token: generateToken(),
 					expiresAt: createExpiryDate(),
-					status: 'PENDING',
+					status: 'pending',
+					createdAt: createSpreadDate(daysAgo),
 				},
 			});
 		}
 
-		// Create 1-2 accepted invites
-		const acceptedCount = faker.number.int({ min: 1, max: 2 });
-		for (let i = 0; i < acceptedCount; i++) {
+		// Create 3 accepted invites with consistent spread
+		for (let i = 0; i < 3; i++) {
 			const randomUserProfile = faker.helpers.arrayElement(userProfiles);
+			// Distribute more evenly across the 30 days
+			const daysAgo =
+				Math.floor((i * 30) / 3) + faker.number.int({ min: 0, max: 3 }); // More consistent spread
+			const acceptedDaysAgo = faker.number.int({ min: 0, max: daysAgo }); // Accepted after creation
+
 			if (randomUserProfile?.email) {
 				await db.invite.create({
 					data: {
@@ -701,21 +862,24 @@ async function main() {
 						role: faker.helpers.arrayElement([
 							Role.member,
 							Role.assignee,
-							Role.admin,
+							Role.owner,
 						]),
 						token: generateToken(),
-						expiresAt: createRecentDate(),
-						status: 'ACCEPTED',
-						acceptedAt: createRecentDate(),
+						expiresAt: createExpiryDate(),
+						status: 'accepted',
+						createdAt: createSpreadDate(daysAgo),
+						acceptedAt: createSpreadDate(acceptedDaysAgo),
 						acceptedById: randomUserProfile.id,
 					},
 				});
 			}
 		}
 
-		// Create 1-3 expired invites (need to be re-invited)
-		const expiredCount = faker.number.int({ min: 1, max: 3 });
-		for (let i = 0; i < expiredCount; i++) {
+		// Create 2 expired invites with consistent spread
+		for (let i = 0; i < 2; i++) {
+			// Distribute more evenly across the 30 days
+			const daysAgo =
+				Math.floor((i * 30) / 2) + faker.number.int({ min: 0, max: 2 }); // More consistent spread
 			await db.invite.create({
 				data: {
 					email: faker.internet.email(),
@@ -723,36 +887,334 @@ async function main() {
 					role: faker.helpers.arrayElement([
 						Role.member,
 						Role.assignee,
-						Role.admin,
+						Role.owner,
 					]),
 					token: generateToken(),
 					expiresAt: createExpiredDate(),
-					status: 'EXPIRED',
+					status: 'expired',
+					createdAt: createSpreadDate(daysAgo),
 				},
 			});
 		}
 
-		// Create 0-1 cancelled invites
-		const cancelledCount = faker.number.int({ min: 0, max: 1 });
-		for (let i = 0; i < cancelledCount; i++) {
+		// Create 1 cancelled invite with spread dates
+		const cancelledDaysAgo = faker.number.int({ min: 0, max: 29 }); // Spread across 30 days
+		await db.invite.create({
+			data: {
+				email: faker.internet.email(),
+				organisationId: org.id,
+				role: faker.helpers.arrayElement([
+					Role.member,
+					Role.assignee,
+					Role.owner,
+				]),
+				token: generateToken(),
+				expiresAt: createExpiredDate(),
+				status: 'cancelled',
+				createdAt: createSpreadDate(cancelledDaysAgo),
+			},
+		});
+	}
+
+	// Create additional accepted invites with more consistent distribution
+	console.log(
+		'📧 Creating additional accepted invites for better chart data...'
+	);
+
+	for (let i = 0; i < 20; i++) {
+		const randomUserProfile = faker.helpers.arrayElement(userProfiles);
+		const randomOrg = faker.helpers.arrayElement(organizations);
+		// Distribute more evenly across the 30 days
+		const daysAgo =
+			Math.floor((i * 30) / 20) + faker.number.int({ min: 0, max: 1 }); // More consistent spread
+		const acceptedDaysAgo = faker.number.int({ min: 0, max: daysAgo }); // Accepted after creation
+
+		if (randomUserProfile?.email && randomOrg) {
 			await db.invite.create({
 				data: {
-					email: faker.internet.email(),
-					organisationId: org.id,
+					email: randomUserProfile.email,
+					organisationId: randomOrg.id,
 					role: faker.helpers.arrayElement([
 						Role.member,
 						Role.assignee,
-						Role.admin,
+						Role.owner,
+					]),
+					token: generateToken(),
+					expiresAt: createExpiryDate(),
+					status: 'accepted',
+					createdAt: createSpreadDate(daysAgo),
+					acceptedAt: createSpreadDate(acceptedDaysAgo),
+					acceptedById: randomUserProfile.id,
+				},
+			});
+		}
+	}
+
+	// Create additional cancelled invites for better chart data
+	console.log(
+		'📧 Creating additional cancelled invites for better chart data...'
+	);
+
+	for (let i = 0; i < 15; i++) {
+		const randomOrg = faker.helpers.arrayElement(organizations);
+		// Distribute more evenly across the 30 days
+		const daysAgo =
+			Math.floor((i * 30) / 15) + faker.number.int({ min: 0, max: 1 }); // More consistent spread
+
+		if (randomOrg) {
+			await db.invite.create({
+				data: {
+					email: faker.internet.email(),
+					organisationId: randomOrg.id,
+					role: faker.helpers.arrayElement([
+						Role.member,
+						Role.assignee,
+						Role.owner,
 					]),
 					token: generateToken(),
 					expiresAt: createExpiredDate(),
-					status: 'CANCELLED',
+					status: 'cancelled',
+					createdAt: createSpreadDate(daysAgo),
 				},
 			});
 		}
 	}
 
 	console.log('✅ Created invites with different statuses');
+
+	// Manually create metric events with correct timestamps for historical data
+	console.log('📊 Creating historical metric events...');
+
+	// Clear existing metric events first
+	await db.metricEvent.deleteMany();
+
+	// Create organization events with correct timestamps
+	for (const org of organizations) {
+		await db.metricEvent.create({
+			data: {
+				type: 'organization_created',
+				entityId: org.id,
+				timestamp: org.createdAt,
+				metadata: {},
+			},
+		});
+	}
+
+	// Create team events with correct timestamps
+	for (const team of teams) {
+		await db.metricEvent.create({
+			data: {
+				type: 'team_created',
+				entityId: team.id,
+				timestamp: team.createdAt,
+				metadata: {
+					organisationId: team.organisationId,
+				},
+			},
+		});
+	}
+
+	// Create user profile events with correct timestamps
+	for (const userProfile of userProfiles) {
+		await db.metricEvent.create({
+			data: {
+				type: 'user_profile_created',
+				entityId: userProfile.id,
+				timestamp: userProfile.createdAt,
+				metadata: {},
+			},
+		});
+	}
+
+	// Create invite events with correct timestamps
+	const allInvites = await db.invite.findMany();
+	for (const invite of allInvites) {
+		await db.metricEvent.create({
+			data: {
+				type: 'invite_created',
+				entityId: invite.id,
+				timestamp: invite.createdAt,
+				metadata: {
+					organisationId: invite.organisationId,
+					teamId: invite.teamId,
+				},
+			},
+		});
+
+		// Create accepted events for accepted invites
+		if (invite.status === 'accepted' && invite.acceptedAt) {
+			await db.metricEvent.create({
+				data: {
+					type: 'invite_accepted',
+					entityId: invite.id,
+					timestamp: invite.acceptedAt,
+					metadata: {
+						organisationId: invite.organisationId,
+						teamId: invite.teamId,
+					},
+				},
+			});
+		}
+
+		// Create expired events for expired invites
+		if (invite.status === 'expired') {
+			await db.metricEvent.create({
+				data: {
+					type: 'invite_expired',
+					entityId: invite.id,
+					timestamp: invite.expiresAt,
+					metadata: {
+						organisationId: invite.organisationId,
+						teamId: invite.teamId,
+					},
+				},
+			});
+		}
+
+		// Create deleted events for cancelled invites
+		if (invite.status === 'cancelled') {
+			await db.metricEvent.create({
+				data: {
+					type: 'invite_deleted',
+					entityId: invite.id,
+					timestamp: invite.createdAt, // Use creation date as deletion date for seed data
+					metadata: {
+						organisationId: invite.organisationId,
+						teamId: invite.teamId,
+					},
+				},
+			});
+		}
+	}
+
+	// Create case events with correct timestamps
+	const allCases = await db.case.findMany();
+	for (const caseItem of allCases) {
+		await db.metricEvent.create({
+			data: {
+				type: 'case_created',
+				entityId: caseItem.id,
+				timestamp: caseItem.createdAt,
+				metadata: {
+					teamId: caseItem.teamId,
+					clientId: caseItem.clientId,
+				},
+			},
+		});
+	}
+
+	// Create deletion events for some entities to show realistic patterns
+	console.log('🗑️ Creating deletion events for realistic chart data...');
+
+	// Delete some organizations (about 20% of them)
+	const orgsToDelete = faker.helpers.arrayElements(
+		organizations,
+		Math.floor(organizations.length * 0.2)
+	);
+	for (const org of orgsToDelete) {
+		const deletionDate = createSpreadDate(
+			faker.number.int({ min: 5, max: 25 })
+		); // Delete 5-25 days ago
+		await db.metricEvent.create({
+			data: {
+				type: 'organization_deleted',
+				entityId: org.id,
+				timestamp: deletionDate,
+				metadata: {},
+			},
+		});
+	}
+
+	// Delete some teams (about 15% of them)
+	const teamsToDelete = faker.helpers.arrayElements(
+		teams,
+		Math.floor(teams.length * 0.15)
+	);
+	for (const team of teamsToDelete) {
+		const deletionDate = createSpreadDate(
+			faker.number.int({ min: 3, max: 20 })
+		); // Delete 3-20 days ago
+		await db.metricEvent.create({
+			data: {
+				type: 'team_deleted',
+				entityId: team.id,
+				timestamp: deletionDate,
+				metadata: {
+					organisationId: team.organisationId,
+				},
+			},
+		});
+	}
+
+	// Delete some user profiles (about 10% of them)
+	const usersToDelete = faker.helpers.arrayElements(
+		userProfiles,
+		Math.floor(userProfiles.length * 0.1)
+	);
+	for (const userProfile of usersToDelete) {
+		const deletionDate = createSpreadDate(
+			faker.number.int({ min: 1, max: 15 })
+		); // Delete 1-15 days ago
+		await db.metricEvent.create({
+			data: {
+				type: 'user_profile_deleted',
+				entityId: userProfile.id,
+				timestamp: deletionDate,
+				metadata: {},
+			},
+		});
+	}
+
+	// Delete some cases (about 25% of them)
+	const casesToDelete = faker.helpers.arrayElements(
+		allCases,
+		Math.floor(allCases.length * 0.25)
+	);
+	for (const caseItem of casesToDelete) {
+		const deletionDate = createSpreadDate(
+			faker.number.int({ min: 2, max: 18 })
+		); // Delete 2-18 days ago
+		await db.metricEvent.create({
+			data: {
+				type: 'case_deleted',
+				entityId: caseItem.id,
+				timestamp: deletionDate,
+				metadata: {
+					teamId: caseItem.teamId,
+					clientId: caseItem.clientId,
+				},
+			},
+		});
+	}
+
+	// Create additional invite deletion events for better chart data
+	console.log('🗑️ Creating additional invite deletion events...');
+
+	// Create some invite deletion events with different timestamps than creation
+	for (let i = 0; i < 10; i++) {
+		const randomInvite = faker.helpers.arrayElement(allInvites);
+		if (randomInvite && randomInvite.status !== 'cancelled') {
+			// Create a deletion event that happens after the invite was created
+			const deletionDate = new Date(
+				randomInvite.createdAt.getTime() +
+					faker.number.int({ min: 1, max: 48 }) * 60 * 60 * 1000
+			); // 1-48 hours after creation
+
+			await db.metricEvent.create({
+				data: {
+					type: 'invite_deleted',
+					entityId: randomInvite.id,
+					timestamp: deletionDate,
+					metadata: {
+						organisationId: randomInvite.organisationId,
+						teamId: randomInvite.teamId,
+					},
+				},
+			});
+		}
+	}
+
+	console.log('✅ Created historical metric events');
 
 	console.log('🎉 Seed completed successfully!');
 	console.log(`📊 Summary:`);
@@ -771,11 +1233,20 @@ async function main() {
 		`     * mike.expiredonly@example.com - Only expired invites (needs re-invite)`
 	);
 	console.log(`     * lisa.noprofile@example.com - No profile, only invites`);
-	console.log(`   - 10 Organizations`);
+	console.log(
+		`   - 10 Organizations (with negative 7-day trend, positive 30-day trend)`
+	);
 	console.log(`   - ${teams.length} Teams`);
 	console.log(`   - 25 Clients`);
 	console.log(`   - ${cases.length} Cases`);
-	console.log(`   - Multiple events`);
+	console.log(`   - Comprehensive metric events:`);
+	console.log(`     * organization_created, organization_deleted`);
+	console.log(`     * team_created, team_deleted`);
+	console.log(`     * user_profile_created, user_profile_deleted`);
+	console.log(
+		`     * invite_created, invite_accepted, invite_expired, invite_deleted`
+	);
+	console.log(`     * case_created, case_deleted`);
 	console.log(`   - Diverse invite types:`);
 	console.log(`     * Organization invites (for existing and new users)`);
 	console.log(`     * Team invites (for existing and new users)`);

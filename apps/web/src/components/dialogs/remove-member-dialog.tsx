@@ -10,6 +10,7 @@ import {
 	DialogClose,
 } from '@shadcn/ui/dialog';
 import { Button } from '@shadcn/ui/button';
+import { useTranslations } from 'next-intl';
 
 interface RemoveMemberDialogProps {
 	open: boolean;
@@ -24,6 +25,8 @@ export default function RemoveMemberDialog({
 	onConfirm,
 	memberName,
 }: RemoveMemberDialogProps) {
+	const t = useTranslations('common');
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
@@ -36,10 +39,10 @@ export default function RemoveMemberDialog({
 				</DialogHeader>
 				<DialogFooter className="gap-2">
 					<DialogClose asChild>
-						<Button variant="outline">Cancel</Button>
+						<Button variant="outline">{t('cancel')}</Button>
 					</DialogClose>
 					<Button variant="destructive" onClick={onConfirm}>
-						Remove
+						{t('remove')}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
