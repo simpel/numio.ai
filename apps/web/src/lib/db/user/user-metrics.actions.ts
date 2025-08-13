@@ -8,7 +8,13 @@ export async function getUserMetricsAction(
 	days: number = 30
 ): Promise<
 	ActionState<
-		Array<{ date: string; total: number; created: number; deleted: number }>
+		Array<{
+			date: string;
+			dateLabel: string;
+			total: number;
+			created: number;
+			deleted: number;
+		}>
 	>
 > {
 	try {
@@ -92,6 +98,7 @@ export async function getUserMetricsAction(
 				}
 				return {
 					date: dateKey,
+					dateLabel: new Date(dateKey).toLocaleDateString(),
 					total: dayData.total,
 					created: dayData.created,
 					deleted: dayData.deleted,

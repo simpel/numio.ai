@@ -15,13 +15,13 @@ interface TeamCasesPageProps {
 interface CaseData {
 	id: string;
 	title: string;
-	description: string | null;
+	description?: string;
 	client?: string;
 	clientId?: string;
 	status: string;
 	state: string;
-	createdAt: Date | string;
-	updatedAt: Date | string;
+	createdAt: string;
+	updatedAt: string;
 }
 
 // Type for case with client
@@ -78,19 +78,17 @@ export default async function TeamCasesPage({ params }: TeamCasesPageProps) {
 		);
 	}
 
-	const casesTableData: CaseData[] = casesData.map(
-		(caseItem: CaseWithClient) => ({
-			id: caseItem.id,
-			title: caseItem.title,
-			description: caseItem.description,
-			client: caseItem.client?.name,
-			clientId: caseItem.client?.id,
-			status: caseItem.state || 'created',
-			state: caseItem.state || 'created',
-			createdAt: caseItem.createdAt,
-			updatedAt: caseItem.updatedAt,
-		})
-	);
+	const casesTableData: CaseData[] = casesData.map((caseItem: any) => ({
+		id: caseItem.id,
+		title: caseItem.title,
+		description: caseItem.description,
+		client: caseItem.client?.name,
+		clientId: caseItem.client?.id,
+		status: caseItem.state || 'created',
+		state: caseItem.state || 'created',
+		createdAt: caseItem.createdAt.toISOString(),
+		updatedAt: caseItem.updatedAt.toISOString(),
+	}));
 
 	return (
 		<div className="space-y-4">

@@ -86,7 +86,7 @@ export default function MembersTable({
 
 	const handleChangeRole = async (
 		membershipId: string,
-		newRole: 'admin' | 'member'
+		newRole: 'owner' | 'member'
 	) => {
 		if (!teamId) return;
 
@@ -195,7 +195,7 @@ function MembersActionsCell({
 	onRemove,
 }: {
 	member: MemberData;
-	onChangeRole: (role: 'admin' | 'member') => void;
+	onChangeRole: (role: 'owner' | 'member') => void;
 	onRemove: () => void;
 }) {
 	const [open, setOpen] = React.useState(false);
@@ -216,14 +216,14 @@ function MembersActionsCell({
 							<DropdownMenuRadioGroup
 								value={member.role}
 								onValueChange={(value) =>
-									onChangeRole(value as 'admin' | 'member')
+									onChangeRole(value as 'owner' | 'member')
 								}
 							>
 								<DropdownMenuRadioItem value="member">
 									Member
 								</DropdownMenuRadioItem>
-								<DropdownMenuRadioItem value="admin">
-									Admin
+								<DropdownMenuRadioItem value="owner">
+									Owner
 								</DropdownMenuRadioItem>
 							</DropdownMenuRadioGroup>
 						</DropdownMenuSubContent>

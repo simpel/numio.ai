@@ -5,11 +5,7 @@ import { ActionState } from '@src/types/global';
 import { createInviteAction } from '@src/lib/db/membership/invite.actions';
 import { sendInviteEmail } from '@src/mails/invite';
 import { auth } from '@src/lib/auth/auth';
-import {
-	getMemberships,
-	getTeamMemberships,
-	getMembership,
-} from '@src/lib/db/membership/membership.utils';
+import { getMembership } from '@src/lib/db/membership/membership.utils';
 
 // Helper function to check if user has permission to manage team
 async function hasTeamManagementPermission(
@@ -30,7 +26,7 @@ async function hasTeamManagementPermission(
 		type: 'all',
 		userProfileId: userProfileId,
 		prismaArgs: {
-			where: { teamContextId: teamId },
+			where: { teamId: teamId },
 		},
 	});
 
@@ -65,15 +61,14 @@ export async function createTeamAction(input: {
 				data: {
 					name,
 					organisationId,
-					ownerId: userProfile.id,
 				},
 			});
 
 			// Add current user to the team using Membership model
 			await tx.membership.create({
 				data: {
-					userProfileId: userProfile.id,
-					teamContextId: newTeam.id,
+					memberUserProfileId: userProfile.id,
+					teamId: newTeam.id,
 					role: 'owner',
 				},
 			});
@@ -159,26 +154,26 @@ export async function getTeamsForUserAction(): Promise<
 			return { isSuccess: false, message: 'User profile not found', data: [] };
 		}
 
-		const memberships = await getTeamMemberships({
-			userProfileId: userProfile.id,
-			prismaArgs: {
-				include: {
-					teamContext: {
-						include: {
-							_count: {
-								select: { teamMemberships: true, contextMemberships: true },
-							},
-							owner: true,
+		const memberships = await db.membership.findMany({
+			where: {
+				teamId: { not: null },
+				memberUserProfileId: userProfile.id,
+			},
+			include: {
+				team: {
+					include: {
+						_count: {
+							select: { memberships: true, members: true },
 						},
 					},
 				},
-				orderBy: { createdAt: 'desc' },
 			},
+			orderBy: { createdAt: 'desc' },
 		});
 
 		const teamData: TeamData[] = memberships
 			.map((membership) => {
-				const team = membership.teamContext;
+				const team = membership.team;
 				if (!team) {
 					return null;
 				}
@@ -186,12 +181,10 @@ export async function getTeamsForUserAction(): Promise<
 					id: membership.id,
 					name: team.name,
 					teamId: team.id,
-					membersCount: team._count?.teamMemberships ?? 0,
-					casesCount: team._count?.contextMemberships ?? 0,
+					membersCount: team._count?.memberships ?? 0,
+					casesCount: team._count?.members ?? 0,
 					description: team.description || undefined,
-					ownerName: team.owner?.firstName
-						? `${team.owner.firstName} ${team.owner.lastName || ''}`.trim()
-						: undefined,
+					ownerName: undefined, // Teams don't have owners in new schema
 					createdAt: membership.createdAt.toISOString(),
 				} as TeamData;
 			})
@@ -209,26 +202,26 @@ export async function getTeamsForUserByIdAction(
 	userProfileId: string
 ): Promise<ActionState<TeamData[]>> {
 	try {
-		const memberships = await getTeamMemberships({
-			userProfileId: userProfileId,
-			prismaArgs: {
-				include: {
-					teamContext: {
-						include: {
-							_count: {
-								select: { teamMemberships: true, contextMemberships: true },
-							},
-							owner: true,
+		const memberships = await db.membership.findMany({
+			where: {
+				teamId: { not: null },
+				memberUserProfileId: userProfileId,
+			},
+			include: {
+				team: {
+					include: {
+						_count: {
+							select: { memberships: true, members: true },
 						},
 					},
 				},
-				orderBy: { createdAt: 'desc' },
 			},
+			orderBy: { createdAt: 'desc' },
 		});
 
 		const teamData: TeamData[] = memberships
 			.map((membership) => {
-				const team = membership.teamContext;
+				const team = membership.team;
 				if (!team) {
 					return null;
 				}
@@ -236,12 +229,10 @@ export async function getTeamsForUserByIdAction(
 					id: membership.id,
 					name: team.name,
 					teamId: team.id,
-					membersCount: team._count?.teamMemberships ?? 0,
-					casesCount: team._count?.contextMemberships ?? 0,
+					membersCount: team._count?.memberships ?? 0,
+					casesCount: team._count?.members ?? 0,
 					description: team.description || undefined,
-					ownerName: team.owner?.firstName
-						? `${team.owner.firstName} ${team.owner.lastName || ''}`.trim()
-						: undefined,
+					ownerName: undefined, // Teams don't have owners in new schema
 					createdAt: membership.createdAt.toISOString(),
 				} as TeamData;
 			})
@@ -272,40 +263,35 @@ export async function getTeamsWhereUserIsOwnerAction(): Promise<
 			return { isSuccess: false, message: 'User profile not found', data: [] };
 		}
 
-		const memberships = await getMemberships({
-			type: 'team',
-			userProfileId: userProfile.id,
-			prismaArgs: {
-				where: {
-					role: 'owner',
-				},
-				include: {
-					teamContext: {
-						include: {
-							_count: {
-								select: { teamMemberships: true, contextMemberships: true },
-							},
-							owner: true,
+		const memberships = await db.membership.findMany({
+			where: {
+				teamId: { not: null },
+				memberUserProfileId: userProfile.id,
+				role: 'owner',
+			},
+			include: {
+				team: {
+					include: {
+						_count: {
+							select: { memberships: true, members: true },
 						},
 					},
 				},
-				orderBy: { createdAt: 'desc' },
 			},
+			orderBy: { createdAt: 'desc' },
 		});
 
 		const teamData: TeamData[] = memberships
 			.map((membership) => {
-				const team = membership.teamContext!;
+				const team = membership.team!;
 				return {
 					id: membership.id,
 					name: team.name,
 					teamId: team.id,
-					membersCount: team._count?.teamMemberships ?? 0,
-					casesCount: team._count?.contextMemberships ?? 0,
+					membersCount: team._count?.memberships ?? 0,
+					casesCount: team._count?.members ?? 0,
 					description: team.description || undefined,
-					ownerName: team.owner?.firstName
-						? `${team.owner.firstName} ${team.owner.lastName || ''}`.trim()
-						: undefined,
+					ownerName: undefined, // Teams don't have owners in new schema
 					createdAt: membership.createdAt.toISOString(),
 				} as TeamData;
 			})
@@ -321,13 +307,12 @@ export async function getTeamsWhereUserIsOwnerAction(): Promise<
 export async function getTeamDetailsAction(teamId: string): Promise<
 	ActionState<Prisma.TeamGetPayload<{
 		include: {
-			contextMemberships: {
+			members: {
 				include: {
-					userProfile: true;
+					memberUserProfile: true;
 				};
 			};
 			organisation: true;
-			owner: true;
 		};
 	}> | null>
 > {
@@ -348,20 +333,19 @@ export async function getTeamDetailsAction(teamId: string): Promise<
 		const team = await db.team.findFirst({
 			where: {
 				id: teamId,
-				contextMemberships: {
+				members: {
 					some: {
-						userProfileId: userProfile.id,
+						memberUserProfileId: userProfile.id,
 					},
 				},
 			},
 			include: {
-				contextMemberships: {
+				members: {
 					include: {
-						userProfile: true,
+						memberUserProfile: true,
 					},
 				},
 				organisation: true,
-				owner: true,
 			},
 		});
 		return { isSuccess: true, message: 'Team details fetched', data: team };
@@ -374,13 +358,12 @@ export async function getTeamDetailsAction(teamId: string): Promise<
 export async function getTeamDetailsPublicAction(teamId: string): Promise<
 	ActionState<Prisma.TeamGetPayload<{
 		include: {
-			contextMemberships: {
+			members: {
 				include: {
-					userProfile: true;
+					memberUserProfile: true;
 				};
 			};
 			organisation: true;
-			owner: true;
 		};
 	}> | null>
 > {
@@ -403,13 +386,12 @@ export async function getTeamDetailsPublicAction(teamId: string): Promise<
 				id: teamId,
 			},
 			include: {
-				contextMemberships: {
+				members: {
 					include: {
-						userProfile: true,
+						memberUserProfile: true,
 					},
 				},
 				organisation: true,
-				owner: true,
 			},
 		});
 		return { isSuccess: true, message: 'Team details fetched', data: team };
@@ -427,8 +409,8 @@ export async function leaveTeamAction(
 	try {
 		await db.membership.deleteMany({
 			where: {
-				teamContextId: teamId,
-				userProfileId: userProfileId,
+				teamId: teamId,
+				memberUserProfileId: userProfileId,
 			},
 		});
 		return { isSuccess: true, message: 'Left team successfully', data: null };
@@ -445,11 +427,6 @@ export async function getUserTeamMembershipsAction(
 	ActionState<
 		Prisma.MembershipGetPayload<{
 			include: {
-				teamContext: {
-					include: {
-						organisation: true;
-					};
-				};
 				team: {
 					include: {
 						organisation: true;
@@ -460,23 +437,15 @@ export async function getUserTeamMembershipsAction(
 	>
 > {
 	try {
-		const memberships = await getMemberships({
-			type: 'all',
-			userProfileId: userProfileId,
-			prismaArgs: {
-				where: {
-					OR: [{ teamContextId: { not: null } }, { teamId: { not: null } }],
-				},
-				include: {
-					teamContext: {
-						include: {
-							organisation: true,
-						},
-					},
-					team: {
-						include: {
-							organisation: true,
-						},
+		const memberships = await db.membership.findMany({
+			where: {
+				memberUserProfileId: userProfileId,
+				teamId: { not: null },
+			},
+			include: {
+				team: {
+					include: {
+						organisation: true,
 					},
 				},
 			},
@@ -498,10 +467,10 @@ export async function getAllTeamsAction(): Promise<
 		Prisma.TeamGetPayload<{
 			include: {
 				organisation: true;
-				_count: { select: { teamMemberships: true; contextMemberships: true } };
-				contextMemberships: {
+				_count: { select: { memberships: true; members: true } };
+				members: {
 					include: {
-						userProfile: {
+						memberUserProfile: {
 							select: {
 								id: true;
 								firstName: true;
@@ -519,10 +488,10 @@ export async function getAllTeamsAction(): Promise<
 		const teams = await db.team.findMany({
 			include: {
 				organisation: true,
-				_count: { select: { teamMemberships: true, contextMemberships: true } },
-				contextMemberships: {
+				_count: { select: { memberships: true, members: true } },
+				members: {
 					include: {
-						userProfile: {
+						memberUserProfile: {
 							select: {
 								id: true,
 								firstName: true,
@@ -593,16 +562,11 @@ export async function removeTeamMemberAction(
 			where: { id: membershipId },
 		});
 
-		if (!membershipToRemove || membershipToRemove.teamContextId !== teamId) {
+		if (!membershipToRemove || membershipToRemove.teamId !== teamId) {
 			return { isSuccess: false, message: 'Membership not found' };
 		}
 
-		// Prevent removing the team owner
-		const team = await db.team.findUnique({
-			where: { id: teamId },
-		});
-
-		if (team?.ownerId === membershipToRemove.userProfileId) {
+		if (membershipToRemove.role === 'owner') {
 			return { isSuccess: false, message: 'Cannot remove team owner' };
 		}
 
@@ -626,7 +590,7 @@ export async function removeTeamMemberAction(
 export async function changeTeamMemberRoleAction(
 	teamId: string,
 	membershipId: string,
-	newRole: 'admin' | 'member'
+	newRole: 'owner' | 'member'
 ): Promise<ActionState<null>> {
 	const session = await auth();
 	if (!session?.user?.id) {
@@ -656,23 +620,18 @@ export async function changeTeamMemberRoleAction(
 			where: { id: membershipId },
 		});
 
-		if (!membershipToUpdate || membershipToUpdate.teamContextId !== teamId) {
+		if (!membershipToUpdate || membershipToUpdate.teamId !== teamId) {
 			return { isSuccess: false, message: 'Membership not found' };
 		}
 
-		// Prevent changing the team owner's role
-		const team = await db.team.findUnique({
-			where: { id: teamId },
-		});
-
-		if (team?.ownerId === membershipToUpdate.userProfileId) {
+		if (membershipToUpdate.role === 'owner') {
 			return { isSuccess: false, message: 'Cannot change team owner role' };
 		}
 
 		// Update the membership role
 		await db.membership.update({
 			where: { id: membershipId },
-			data: { role: newRole },
+			data: { role: newRole as 'owner' | 'member' },
 		});
 
 		return {

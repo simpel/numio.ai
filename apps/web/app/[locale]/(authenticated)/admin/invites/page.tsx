@@ -1,12 +1,11 @@
 'use server';
 
-import RoleGuard from '@src/components/auth/role-guard';
-import { Role } from '@src/lib/auth/auth.utils';
 import { getAllInvitesAction } from '@src/lib/db/membership/invite.actions';
 import { getInviteMetricsAction } from '@src/lib/db/membership/invite-metrics.actions';
 import InvitesTable from '@src/components/tables/invites-table';
 import MetricsChart from '@src/components/charts/metrics-chart';
 import ErrorBoundary from '@src/components/error-boundary';
+import { Role } from '@numio/ai-database';
 
 interface InviteData {
 	id: string;
@@ -16,7 +15,7 @@ interface InviteData {
 	createdAt: string;
 	contextName: string;
 	contextType: string;
-	role: string;
+	role: Role;
 	hasUser: boolean;
 	userProfileId?: string;
 	userName?: string;
@@ -47,16 +46,8 @@ interface InviteWithRelations {
 	};
 }
 
-export default async function SettingsInvitesPage() {
-	return (
-		<RoleGuard requiredRoles={[Role.superadmin]}>
-			<SettingsInvitesContent />
-		</RoleGuard>
-	);
-}
-
-async function SettingsInvitesContent() {
-	// Get all invites
+export default async function AdminInvitesPage() {
+	// Get all invites (no role filtering in admin)
 	const { data: allInvites } = await getAllInvitesAction();
 
 	// Get invite metrics for the last 30 days
@@ -65,7 +56,7 @@ async function SettingsInvitesContent() {
 	const activeInvites: InviteData[] = [];
 	const expiredInvites: InviteData[] = [];
 
-	allInvites?.forEach((invite: InviteWithRelations) => {
+	allInvites?.forEach((invite: any) => {
 		const isExpired =
 			invite.status === 'expired' || new Date(invite.expiresAt) < new Date();
 		const contextName =
@@ -104,36 +95,42 @@ async function SettingsInvitesContent() {
 
 	return (
 		<div className="space-y-6">
+			{/* Invite Metrics Chart */}
 			{inviteMetrics && inviteMetrics.length > 0 && (
-				<MetricsChart
-					data={inviteMetrics}
-					title="Invite Metrics"
-					entityType="invites"
-				/>
+				<ErrorBoundary>
+					<MetricsChart
+						data={inviteMetrics}
+						title="Invite Metrics"
+						entityType="invites"
+					/>
+				</ErrorBoundary>
 			)}
 
+			{/* Active Invites */}
 			{activeInvites.length > 0 && (
 				<ErrorBoundary>
 					<InvitesTable
 						data={activeInvites}
 						title="Active Invites"
 						description="Pending and accepted invites"
-						type={'active'}
+						state={'pending'}
 					/>
 				</ErrorBoundary>
 			)}
 
+			{/* Expired Invites */}
 			{expiredInvites.length > 0 && (
 				<ErrorBoundary>
 					<InvitesTable
 						data={expiredInvites}
 						title="Expired Invites"
 						description="Expired and cancelled invites"
-						type={'expired'}
+						state={'expired'}
 					/>
 				</ErrorBoundary>
 			)}
 
+			{/* Empty state */}
 			{activeInvites.length === 0 && expiredInvites.length === 0 && (
 				<div className="py-8 text-center">
 					<p className="text-muted-foreground">No invites found.</p>

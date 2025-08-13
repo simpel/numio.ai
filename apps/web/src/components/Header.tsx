@@ -133,14 +133,8 @@ export default async function Header() {
 									<DropdownMenuSeparator />
 									<DropdownMenuItem asChild>
 										<Link href="/settings" className="flex items-center">
-											<Settings className="mr-2 h-4 w-4" />
-											{nav('settings')}
-										</Link>
-									</DropdownMenuItem>
-									<DropdownMenuItem asChild>
-										<Link href="/profile" className="flex items-center">
 											<User className="mr-2 h-4 w-4" />
-											{nav('profile')}
+											{nav('settings')}
 										</Link>
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />

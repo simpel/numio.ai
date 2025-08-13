@@ -7,6 +7,7 @@ import { getUserProfileByIdAction } from '@src/lib/db/user-profile/user-profile.
 import { canViewUserProfileAction } from '@src/lib/db/user-profile/user-profile.actions';
 import ErrorBoundary from '@src/components/error-boundary';
 import InvitesTable from '@src/components/tables/invites-table';
+import { Role } from '@numio/ai-database';
 
 interface UserInvitesPageProps {
 	params: Promise<{ id: string }>;
@@ -19,7 +20,7 @@ interface InviteWithRelations {
 	status: string;
 	expiresAt: string;
 	createdAt: string;
-	role: string;
+	role: Role;
 	organisationId?: string;
 	teamId?: string;
 	organisation?: {
@@ -39,14 +40,16 @@ interface InviteData {
 	createdAt: string;
 	contextName: string;
 	contextType: string;
-	role: string;
+	role: Role;
 	hasUser: boolean;
 	userProfileId?: string;
 	organisationId?: string;
 	teamId?: string;
 }
 
-export default async function UserInvitesPage({ params }: UserInvitesPageProps) {
+export default async function UserInvitesPage({
+	params,
+}: UserInvitesPageProps) {
 	const user = await getCurrentUser();
 	if (!user?.id) {
 		redirect('/signin');
@@ -93,7 +96,7 @@ export default async function UserInvitesPage({ params }: UserInvitesPageProps) 
 
 	// Transform active invites to match InvitesTable format
 	const activeInvites: InviteData[] =
-		targetUserProfile.activeInvites?.map((invite: InviteWithRelations) => ({
+		targetUserProfile.activeInvites?.map((invite: any) => ({
 			id: invite.id,
 			email: invite.email,
 			status: invite.status,
@@ -102,8 +105,8 @@ export default async function UserInvitesPage({ params }: UserInvitesPageProps) 
 			contextName: invite.organisation?.name || invite.team?.name || 'Unknown',
 			contextType: invite.organisation ? 'Organisation' : 'Team',
 			role: invite.role,
-			hasUser: !!targetUserProfile.userProfile,
-			userProfileId: targetUserProfile.userProfile?.id,
+			hasUser: !!targetUserProfile.user,
+			userProfileId: targetUserProfile.user?.id,
 			organisationId: invite.organisationId,
 			teamId: invite.teamId,
 		})) || [];
@@ -130,7 +133,7 @@ export default async function UserInvitesPage({ params }: UserInvitesPageProps) 
 						data={pendingInvites}
 						title="pending Invites"
 						description="Active invitations for this user."
-						type="active"
+						state="pending"
 						isCurrentUser={isCurrentUser}
 						currentUserProfileId={currentUserProfile.id}
 					/>
@@ -142,7 +145,7 @@ export default async function UserInvitesPage({ params }: UserInvitesPageProps) 
 						data={expiredInvites}
 						title="expired Invites"
 						description="Invitations that have expired and need to be re-sent."
-						type="expired"
+						state="expired"
 						isCurrentUser={isCurrentUser}
 						currentUserProfileId={currentUserProfile.id}
 					/>

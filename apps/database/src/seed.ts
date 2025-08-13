@@ -260,7 +260,7 @@ async function main() {
 		// Assign admin as owner of all organizations
 		await db.membership.create({
 			data: {
-				userProfileId: adminProfile.id,
+				memberUserProfileId: adminProfile.id,
 				organisationId: org.id,
 				role: Role.owner,
 			},
@@ -276,8 +276,8 @@ async function main() {
 		// Assign admin as owner of all teams
 		await db.membership.create({
 			data: {
-				userProfileId: adminProfile.id,
-				teamContextId: team.id,
+				memberUserProfileId: adminProfile.id,
+				teamId: team.id,
 				role: Role.owner,
 			},
 		});
@@ -307,7 +307,7 @@ async function main() {
 
 			await db.membership.create({
 				data: {
-					userProfileId: userProfile.id,
+					memberUserProfileId: userProfile.id,
 					organisationId: org.id,
 					role: role,
 				},
@@ -341,8 +341,8 @@ async function main() {
 
 			await db.membership.create({
 				data: {
-					userProfileId: userProfile.id,
-					teamContextId: team.id,
+					memberUserProfileId: userProfile.id,
+					teamId: team.id,
 					role: role,
 				},
 			});
@@ -380,7 +380,7 @@ async function main() {
 		for (const _org of selectedOrgs) {
 			await db.membership.create({
 				data: {
-					teamId: faker.helpers.arrayElement(teams).id,
+					memberTeamId: faker.helpers.arrayElement(teams).id,
 					clientId: client.id,
 					role: Role.member,
 				},
@@ -423,7 +423,7 @@ async function main() {
 		// Add team membership for the case
 		await db.membership.create({
 			data: {
-				teamId: caseItem.teamId,
+				memberTeamId: caseItem.teamId,
 				caseId: caseItem.id,
 				role: Role.assignee,
 			},
@@ -432,7 +432,7 @@ async function main() {
 		// Add admin user membership to the case
 		await db.membership.create({
 			data: {
-				userProfileId: adminProfile.id,
+				memberUserProfileId: adminProfile.id,
 				caseId: caseItem.id,
 				role: Role.owner,
 			},

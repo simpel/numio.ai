@@ -12,13 +12,13 @@ import ProfileUpdateDialog from '@src/components/dialogs/profile-update-dialog';
 interface User {
 	id: string;
 	userId: string;
-	firstName?: string;
-	lastName?: string;
-	email: string;
+	firstName?: string | null;
+	lastName?: string | null;
+	email: string | null;
 	role: string;
-	image?: string;
-	bio?: string;
-	jobTitle?: string;
+	image?: string | null;
+	bio?: string | null;
+	jobTitle?: string | null;
 	createdAt: string;
 }
 

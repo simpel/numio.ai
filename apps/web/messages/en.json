@@ -518,12 +518,7 @@
 		},
 		"settings": {
 			"title": "Settings",
-			"general": "General Settings",
-			"teams": "Teams",
-			"organizations": "Organizations",
-			"users": "Users",
-			"invites": "Invites",
-			"description": "Manage system-wide settings, teams, organizations, and users."
+			"description": "Manage your profile information and preferences."
 		},
 		"teams": {
 			"title": "Your Teams",

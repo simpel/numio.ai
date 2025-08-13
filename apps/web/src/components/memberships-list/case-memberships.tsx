@@ -21,7 +21,7 @@ interface CaseMembership {
 	id: string;
 	role: string;
 	createdAt: string;
-	caseItem?: {
+	case: {
 		id: string;
 		title: string;
 		team: {
@@ -67,7 +67,7 @@ export default function CaseMemberships({
 				</div>
 				<div className="divide-y">
 					{memberships.map((membership) => {
-						const caseItem = membership.caseItem;
+						const caseItem = membership.case;
 						if (!caseItem) return null;
 
 						return (

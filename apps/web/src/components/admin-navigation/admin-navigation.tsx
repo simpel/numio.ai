@@ -3,31 +3,31 @@
 import { Link, usePathname } from '@src/i18n/navigation';
 import { cn } from '@src/utils';
 
-export default function SettingsNavigation() {
+export default function AdminNavigation() {
 	const pathname = usePathname();
 
-	const isSettingsActive = pathname === '/settings';
-	const isTeamsActive = pathname === '/settings/teams';
-	const isOrganisationsActive = pathname === '/settings/organisations';
-	const isUsersActive = pathname === '/settings/users';
-	const isInvitesActive = pathname === '/settings/invites';
+	const isAdminActive = pathname === '/admin';
+	const isTeamsActive = pathname === '/admin/teams';
+	const isOrganisationsActive = pathname === '/admin/organisations';
+	const isUsersActive = pathname === '/admin/users';
+	const isInvitesActive = pathname === '/admin/invites';
 
 	return (
 		<div className="border-b">
 			<nav className="-mb-px flex space-x-8">
 				<Link
-					href="/settings"
+					href="/admin"
 					className={cn(
 						'border-b-2 py-2 text-sm font-medium transition-colors',
-						isSettingsActive
+						isAdminActive
 							? 'border-primary text-primary'
 							: 'text-muted-foreground hover:text-foreground border-transparent'
 					)}
 				>
-					General Settings
+					Admin Dashboard
 				</Link>
 				<Link
-					href="/settings/teams"
+					href="/admin/teams"
 					className={cn(
 						'border-b-2 py-2 text-sm font-medium transition-colors',
 						isTeamsActive
@@ -38,7 +38,7 @@ export default function SettingsNavigation() {
 					Teams
 				</Link>
 				<Link
-					href="/settings/organisations"
+					href="/admin/organisations"
 					className={cn(
 						'border-b-2 py-2 text-sm font-medium transition-colors',
 						isOrganisationsActive
@@ -49,7 +49,7 @@ export default function SettingsNavigation() {
 					Organisations
 				</Link>
 				<Link
-					href="/settings/users"
+					href="/admin/users"
 					className={cn(
 						'border-b-2 py-2 text-sm font-medium transition-colors',
 						isUsersActive
@@ -60,7 +60,7 @@ export default function SettingsNavigation() {
 					Users
 				</Link>
 				<Link
-					href="/settings/invites"
+					href="/admin/invites"
 					className={cn(
 						'border-b-2 py-2 text-sm font-medium transition-colors',
 						isInvitesActive

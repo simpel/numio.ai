@@ -2,60 +2,48 @@
 
 import { db, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
-import { getMemberships, getMembership } from './membership.utils';
+import { getMemberships } from './membership.utils';
 
-export async function createMembershipAction(
-	input: Prisma.MembershipCreateInput
-): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>>> {
-	try {
-		const membership = await db.membership.create({ data: input });
-		return { isSuccess: true, message: 'Membership created', data: membership };
-	} catch {
-		return { isSuccess: false, message: 'Failed to create membership' };
-	}
-}
-
-export async function getMembershipAction(
-	id: string
-): Promise<
-	ActionState<Prisma.MembershipGetPayload<Record<string, never>> | null>
-> {
-	try {
-		const membership = await getMembership({
-			type: 'all',
-			prismaArgs: { where: { id } },
-		});
-		return { isSuccess: true, message: 'Membership fetched', data: membership };
-	} catch {
-		return { isSuccess: false, message: 'Failed to fetch membership' };
-	}
-}
-
-export async function updateMembershipAction(
-	id: string,
-	data: Prisma.MembershipUpdateInput
-): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>>> {
-	try {
-		const membership = await db.membership.update({ where: { id }, data });
-		return { isSuccess: true, message: 'Membership updated', data: membership };
-	} catch {
-		return { isSuccess: false, message: 'Failed to update membership' };
-	}
-}
-
-export async function deleteMembershipAction(
-	id: string
-): Promise<ActionState<null>> {
-	try {
-		await db.membership.delete({ where: { id } });
-		return { isSuccess: true, message: 'Membership deleted', data: null };
-	} catch {
-		return { isSuccess: false, message: 'Failed to delete membership' };
-	}
-}
+// Type for membership with all relations
+type MembershipWithAllRelations = Prisma.MembershipGetPayload<{
+	include: {
+		organisation: {
+			select: {
+				id: true;
+				name: true;
+			};
+		};
+		team: {
+			select: {
+				id: true;
+				name: true;
+				organisation: {
+					select: {
+						id: true;
+						name: true;
+					};
+				};
+			};
+		};
+		case: {
+			select: {
+				id: true;
+				title: true;
+				team: {
+					select: {
+						id: true;
+						name: true;
+					};
+				};
+			};
+		};
+	};
+}>;
 
 // Get all memberships for a user with detailed information
-export async function getUserMembershipsAction(userProfileId: string): Promise<
+export async function getUserMembershipsAction(
+	memberUserProfileId: string
+): Promise<
 	ActionState<
 		Prisma.MembershipGetPayload<{
 			include: {
@@ -63,18 +51,6 @@ export async function getUserMembershipsAction(userProfileId: string): Promise<
 					select: {
 						id: true;
 						name: true;
-					};
-				};
-				teamContext: {
-					select: {
-						id: true;
-						name: true;
-						organisation: {
-							select: {
-								id: true;
-								name: true;
-							};
-						};
 					};
 				};
 				team: {
@@ -89,7 +65,7 @@ export async function getUserMembershipsAction(userProfileId: string): Promise<
 						};
 					};
 				};
-				caseItem: {
+				case: {
 					select: {
 						id: true;
 						title: true;
@@ -108,25 +84,13 @@ export async function getUserMembershipsAction(userProfileId: string): Promise<
 	try {
 		const memberships = await getMemberships<MembershipWithAllRelations>({
 			type: 'all',
-			userProfileId: userProfileId,
+			userProfileId: memberUserProfileId,
 			prismaArgs: {
 				include: {
 					organisation: {
 						select: {
 							id: true,
 							name: true,
-						},
-					},
-					teamContext: {
-						select: {
-							id: true,
-							name: true,
-							organisation: {
-								select: {
-									id: true,
-									name: true,
-								},
-							},
 						},
 					},
 					team: {
@@ -141,7 +105,7 @@ export async function getUserMembershipsAction(userProfileId: string): Promise<
 							},
 						},
 					},
-					caseItem: {
+					case: {
 						select: {
 							id: true,
 							title: true,
@@ -185,113 +149,128 @@ export async function removeMembershipAction(
 		return {
 			isSuccess: true,
 			message: 'Membership removed successfully',
-			data: null,
 		};
 	} catch (error) {
 		console.error('Error removing membership:', error);
 		return {
 			isSuccess: false,
 			message: 'Failed to remove membership',
-			data: null,
 		};
 	}
 }
 
-// List all memberships for a given context (org, team, case, or client)
-export async function listMembershipsForContext(context: {
-	organisationId?: string;
-	teamContextId?: string;
-	caseId?: string;
-	clientId?: string;
-}): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
+// Delete a membership
+export async function deleteMembershipAction(
+	membershipId: string
+): Promise<ActionState<null>> {
+	return removeMembershipAction(membershipId);
+}
+
+// Get memberships for a specific organisation
+export async function getOrganisationMembershipsAction(
+	organisationId: string
+): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
 	try {
-		const memberships = await getMemberships({
-			type: 'all',
-			prismaArgs: {
-				where: context,
-			},
-		});
-		return {
-			isSuccess: true,
-			message: 'Memberships fetched',
-			data: memberships,
-		};
-	} catch {
-		return {
-			isSuccess: false,
-			message: 'Failed to fetch memberships',
-			data: [],
-		};
-	}
-}
-
-// List all memberships for a user or team
-export async function listMembershipsForUserOrTeam(member: {
-	userProfileId?: string;
-	teamId?: string;
-}): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
-	try {
-		const memberships = await getMemberships({
-			type: 'all',
-			userProfileId: member.userProfileId,
-			prismaArgs: {
-				where: member,
-			},
-		});
-		return {
-			isSuccess: true,
-			message: 'Memberships fetched',
-			data: memberships,
-		};
-	} catch {
-		return {
-			isSuccess: false,
-			message: 'Failed to fetch memberships',
-			data: [],
-		};
-	}
-}
-
-export async function getCaseMembershipsAction(caseId: string): Promise<
-	ActionState<
-		Prisma.MembershipGetPayload<{
+		const memberships = await db.membership.findMany({
+			where: { organisationId },
 			include: {
-				userProfile: {
+				memberUserProfile: {
 					select: {
-						id: true;
-						firstName: true;
-						lastName: true;
-						email: true;
-					};
-				};
-			};
-		}>[]
-	>
-> {
+						id: true,
+						firstName: true,
+						lastName: true,
+						email: true,
+					},
+				},
+			},
+			orderBy: { createdAt: 'desc' },
+		});
+
+		return {
+			isSuccess: true,
+			message: 'Organisation memberships fetched',
+			data: memberships,
+		};
+	} catch (error) {
+		console.error('Error fetching organisation memberships:', error);
+		return {
+			isSuccess: false,
+			message: 'Failed to fetch organisation memberships',
+			data: [],
+		};
+	}
+}
+
+// Get memberships for a specific team
+export async function getTeamMembershipsAction(
+	teamId: string
+): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
 	try {
-		const memberships = await getMemberships({
-			type: 'case',
-			prismaArgs: {
-				where: { caseId },
-				include: {
-					userProfile: {
-						select: {
-							id: true,
-							firstName: true,
-							lastName: true,
-							email: true,
+		const memberships = await db.membership.findMany({
+			where: { teamId },
+			include: {
+				team: {
+					select: {
+						id: true,
+						name: true,
+						organisation: {
+							select: {
+								id: true,
+								name: true,
+							},
 						},
 					},
 				},
-				orderBy: { createdAt: 'desc' },
 			},
+			orderBy: { createdAt: 'desc' },
 		});
+
+		return {
+			isSuccess: true,
+			message: 'Team memberships fetched',
+			data: memberships,
+		};
+	} catch (error) {
+		console.error('Error fetching team memberships:', error);
+		return {
+			isSuccess: false,
+			message: 'Failed to fetch team memberships',
+			data: [],
+		};
+	}
+}
+
+// Get memberships for a specific case
+export async function getCaseMembershipsAction(
+	caseId: string
+): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
+	try {
+		const memberships = await db.membership.findMany({
+			where: { caseId },
+			include: {
+				case: {
+					select: {
+						id: true,
+						title: true,
+						team: {
+							select: {
+								id: true,
+								name: true,
+							},
+						},
+					},
+				},
+			},
+			orderBy: { createdAt: 'desc' },
+		});
+
 		return {
 			isSuccess: true,
 			message: 'Case memberships fetched',
 			data: memberships,
 		};
-	} catch {
+	} catch (error) {
+		console.error('Error fetching case memberships:', error);
 		return {
 			isSuccess: false,
 			message: 'Failed to fetch case memberships',
@@ -300,60 +279,83 @@ export async function getCaseMembershipsAction(caseId: string): Promise<
 	}
 }
 
-// Get team memberships for a user
-export async function getUserTeamMembershipsAction(
-	userProfileId: string
-): Promise<
-	ActionState<
-		Prisma.MembershipGetPayload<{
-			include: {
-				teamContext: {
-					select: {
-						id: true;
-						name: true;
-						organisation: {
-							select: {
-								id: true;
-								name: true;
-							};
-						};
-					};
-				};
-			};
-		}>[]
-	>
-> {
+// Get memberships for a specific client
+export async function getClientMembershipsAction(
+	clientId: string
+): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
 	try {
-		const memberships = await getMemberships({
-			type: 'team',
-			userProfileId: userProfileId,
-			prismaArgs: {
-				include: {
-					teamContext: {
-						select: {
-							id: true,
-							name: true,
-							organisation: {
-								select: {
-									id: true,
-									name: true,
-								},
-							},
-						},
+		const memberships = await db.membership.findMany({
+			where: { clientId },
+			include: {
+				client: {
+					select: {
+						id: true,
+						name: true,
 					},
 				},
 			},
+			orderBy: { createdAt: 'desc' },
 		});
+
 		return {
 			isSuccess: true,
-			message: 'Team memberships fetched',
+			message: 'Client memberships fetched',
 			data: memberships,
 		};
-	} catch {
+	} catch (error) {
+		console.error('Error fetching client memberships:', error);
 		return {
 			isSuccess: false,
-			message: 'Failed to fetch team memberships',
+			message: 'Failed to fetch client memberships',
 			data: [],
+		};
+	}
+}
+
+// Create a new membership
+export async function createMembershipAction(
+	data: Prisma.MembershipCreateInput
+): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>>> {
+	try {
+		const membership = await db.membership.create({
+			data,
+		});
+
+		return {
+			isSuccess: true,
+			message: 'Membership created successfully',
+			data: membership,
+		};
+	} catch (error) {
+		console.error('Error creating membership:', error);
+		return {
+			isSuccess: false,
+			message: 'Failed to create membership',
+		};
+	}
+}
+
+// Update a membership
+export async function updateMembershipAction(
+	id: string,
+	data: Prisma.MembershipUpdateInput
+): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>>> {
+	try {
+		const membership = await db.membership.update({
+			where: { id },
+			data,
+		});
+
+		return {
+			isSuccess: true,
+			message: 'Membership updated successfully',
+			data: membership,
+		};
+	} catch (error) {
+		console.error('Error updating membership:', error);
+		return {
+			isSuccess: false,
+			message: 'Failed to update membership',
 		};
 	}
 }

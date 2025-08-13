@@ -37,10 +37,18 @@ interface MembershipWithRelations {
 		id: string;
 		title: string;
 		state: string;
+		team?: {
+			id: string;
+			name: string;
+		};
 	};
 	client?: {
 		id: string;
 		name: string;
+		organisation?: {
+			id: string;
+			name: string;
+		};
 	};
 }
 
@@ -49,9 +57,8 @@ type TransformedMembership = Omit<MembershipWithRelations, 'createdAt'> & {
 	type: 'membership';
 	// Convert null values to undefined for frontend compatibility
 	organisation?: NonNullable<MembershipWithRelations['organisation']>;
-	teamContext?: NonNullable<MembershipWithRelations['teamContext']>;
 	team?: NonNullable<MembershipWithRelations['team']>;
-	caseItem?: NonNullable<MembershipWithRelations['caseItem']>;
+	case?: NonNullable<MembershipWithRelations['caseItem']>;
 	client?: NonNullable<MembershipWithRelations['client']>;
 };
 
@@ -89,20 +96,29 @@ export default function MembershipsList({
 		organisation: NonNullable<TransformedMembership['organisation']>;
 	})[];
 	const teamMemberships = memberships.filter(
-		(m) => m.teamContext || m.team
+		(m) => m.team && m.team.organisation
 	) as (TransformedMembership & {
-		teamContext?: NonNullable<TransformedMembership['teamContext']>;
-		team?: NonNullable<TransformedMembership['team']>;
+		team: NonNullable<TransformedMembership['team']> & {
+			organisation: NonNullable<
+				NonNullable<TransformedMembership['team']>['organisation']
+			>;
+		};
 	})[];
 	const caseMemberships = memberships.filter(
-		(m) => m.caseItem
+		(m) => m.case && m.case.team
 	) as (TransformedMembership & {
-		caseItem: NonNullable<TransformedMembership['caseItem']>;
+		case: NonNullable<TransformedMembership['case']> & {
+			team: NonNullable<NonNullable<TransformedMembership['case']>['team']>;
+		};
 	})[];
 	const clientMemberships = memberships.filter(
-		(m) => m.client
+		(m) => m.client && m.client.organisation
 	) as (TransformedMembership & {
-		client: NonNullable<TransformedMembership['client']>;
+		client: NonNullable<TransformedMembership['client']> & {
+			organisation: NonNullable<
+				NonNullable<TransformedMembership['client']>['organisation']
+			>;
+		};
 	})[];
 
 	if (memberships.length === 0) {

@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+---
+
+Whenever you add copy in a page, component or similar you must implement the next-intl framwork.
+
+BAD EXAMPLE:
+
+<div className="mb-8">
+					<h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+					<p className="text-muted-foreground mb-6">
+						Manage your profile information and preferences.
+					</p>
+				</div>
+
+GOOD EXAMPLE:
+const t = await getTranslations('settings');
+
+    return (
+    	<div className="container mx-auto px-6 py-8">
+    		<div className="mx-auto max-w-4xl">
+    			<div className="mb-8">
+    				<h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+    				<p className="text-muted-foreground mb-6">
+    					{t('settings_description')}
+    				</p>
+    			</div>
+
+    			{children}
+    		</div>
+    	</div>
+    );

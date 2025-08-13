@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Never place components in the App router folder, they're only allowed in /src/components.

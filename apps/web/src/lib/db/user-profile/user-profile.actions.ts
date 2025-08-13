@@ -159,7 +159,7 @@ export async function getUserProfileByIdAction(userProfileId: string): Promise<
 									name: true;
 								};
 							};
-							teamContext: {
+							team: {
 								select: {
 									id: true;
 									name: true;
@@ -171,7 +171,7 @@ export async function getUserProfileByIdAction(userProfileId: string): Promise<
 									};
 								};
 							};
-							caseItem: {
+							case: {
 								select: {
 									id: true;
 									title: true;
@@ -232,7 +232,7 @@ export async function getUserProfileByIdAction(userProfileId: string): Promise<
 								name: true,
 							},
 						},
-						teamContext: {
+						team: {
 							select: {
 								id: true,
 								name: true,
@@ -244,7 +244,7 @@ export async function getUserProfileByIdAction(userProfileId: string): Promise<
 								},
 							},
 						},
-						caseItem: {
+						case: {
 							select: {
 								id: true,
 								title: true,
@@ -355,7 +355,7 @@ export async function canViewUserProfileAction(
 			userProfileId: currentUserProfile.id,
 			prismaArgs: {
 				where: {
-					role: { in: ['admin', 'owner'] },
+					role: { in: ['member', 'owner'] },
 				},
 			},
 		});
@@ -374,11 +374,11 @@ export async function canViewUserProfileAction(
 
 		// Check for team overlap
 		const targetTeams = targetUserMemberships
-			.filter((m) => m.teamContextId)
-			.map((m) => m.teamContextId);
+			.filter((m) => m.teamId)
+			.map((m) => m.teamId);
 		const currentAdminTeams = currentUserMemberships
-			.filter((m) => m.teamContextId)
-			.map((m) => m.teamContextId);
+			.filter((m) => m.teamId)
+			.map((m) => m.teamId);
 
 		const teamOverlap = targetTeams.some((teamId) =>
 			currentAdminTeams.includes(teamId)

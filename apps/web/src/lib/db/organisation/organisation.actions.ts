@@ -4,7 +4,6 @@ import { db, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
 import { sendOrganisationRoleEmail } from '@src/mails/organisation';
 import { auth } from '@src/lib/auth/auth';
-import { getMemberships } from '@src/lib/db/membership/membership.utils';
 
 // Interface for organisation data that matches table expectations
 export interface OrganisationData {
@@ -44,15 +43,12 @@ export async function createOrganisationAction(input: {
 			const newOrganisation = await tx.organisation.create({
 				data: {
 					name,
-					owner: {
-						connect: { id: userProfile.id },
-					},
 				},
 			});
 
 			await tx.membership.create({
 				data: {
-					userProfileId: userProfile.id,
+					memberUserProfileId: userProfile.id,
 					organisationId: newOrganisation.id,
 					role: 'owner',
 				},
@@ -98,20 +94,19 @@ export async function getOrganisationsForUserAction(): Promise<
 			return { isSuccess: false, message: 'User profile not found', data: [] };
 		}
 
-		const memberships = await getMemberships({
-			type: 'organisation',
-			userProfileId: userProfile.id,
-			prismaArgs: {
-				include: {
-					organisation: {
-						include: {
-							_count: { select: { teams: true, memberships: true } },
-							owner: true,
-						},
+		const memberships = await db.membership.findMany({
+			where: {
+				memberUserProfileId: userProfile.id,
+				organisationId: { not: null },
+			},
+			include: {
+				organisation: {
+					include: {
+						_count: { select: { teams: true, members: true } },
 					},
 				},
-				orderBy: { createdAt: 'desc' },
 			},
+			orderBy: { createdAt: 'desc' },
 		});
 
 		const organisationData: OrganisationData[] = memberships.map(
@@ -122,10 +117,8 @@ export async function getOrganisationsForUserAction(): Promise<
 					name: org.name,
 					organisationId: org.id,
 					teamsCount: org._count?.teams ?? 0,
-					usersCount: org._count?.memberships ?? 0,
-					ownerName: org.owner?.firstName
-						? `${org.owner.firstName} ${org.owner.lastName || ''}`.trim()
-						: undefined,
+					usersCount: org._count?.members ?? 0,
+					ownerName: undefined, // No owner field in new schema
 					createdAt: membership.createdAt.toISOString(),
 				};
 			}
@@ -166,16 +159,14 @@ export async function getOrganisationAction(
 export async function getOrganisationWithDetailsAction(id: string): Promise<
 	ActionState<Prisma.OrganisationGetPayload<{
 		include: {
-			owner: true;
 			teams: {
 				include: {
-					owner: true;
 					_count: {
-						select: { teamMemberships: true; contextMemberships: true };
+						select: { memberships: true; members: true };
 					};
-					contextMemberships: {
+					members: {
 						include: {
-							userProfile: {
+							memberUserProfile: {
 								select: {
 									id: true;
 									firstName: true;
@@ -187,9 +178,9 @@ export async function getOrganisationWithDetailsAction(id: string): Promise<
 					};
 				};
 			};
-			memberships: {
+			members: {
 				include: {
-					userProfile: true;
+					memberUserProfile: true;
 				};
 			};
 		};
@@ -199,16 +190,14 @@ export async function getOrganisationWithDetailsAction(id: string): Promise<
 		const organisation = await db.organisation.findUnique({
 			where: { id },
 			include: {
-				owner: true,
 				teams: {
 					include: {
-						owner: true,
 						_count: {
-							select: { teamMemberships: true, contextMemberships: true },
+							select: { memberships: true, members: true },
 						},
-						contextMemberships: {
+						members: {
 							include: {
-								userProfile: {
+								memberUserProfile: {
 									select: {
 										id: true,
 										firstName: true,
@@ -220,9 +209,9 @@ export async function getOrganisationWithDetailsAction(id: string): Promise<
 						},
 					},
 				},
-				memberships: {
+				members: {
 					include: {
-						userProfile: true,
+						memberUserProfile: true,
 					},
 				},
 			},
@@ -308,16 +297,14 @@ export async function getOrgsWithAdminRightsAction(): Promise<
 			return { isSuccess: false, message: 'User profile not found', data: [] };
 		}
 
-		const memberships = await getMemberships({
-			type: 'organisation',
-			userProfileId: userProfile.id,
-			prismaArgs: {
-				where: {
-					role: { in: ['owner', 'admin'] },
-				},
-				include: {
-					organisation: true,
-				},
+		const memberships = await db.membership.findMany({
+			where: {
+				memberUserProfileId: userProfile.id,
+				organisationId: { not: null },
+				role: { in: ['owner', 'member'] },
+			},
+			include: {
+				organisation: true,
 			},
 		});
 
@@ -345,14 +332,20 @@ export async function getOrgsWithAdminRightsAction(): Promise<
 
 export async function getAllOrganisationsAction(): Promise<
 	ActionState<
-		Prisma.OrganisationGetPayload<{
+		(Prisma.OrganisationGetPayload<{
 			include: {
 				_count: {
-					select: { teams: true; memberships: true };
+					select: { teams: true; members: true };
 				};
-				owner: true;
 			};
-		}>[]
+		}> & {
+			owner?: {
+				id: string;
+				firstName: string | null;
+				lastName: string | null;
+				email: string | null;
+			};
+		})[]
 	>
 > {
 	try {
@@ -362,16 +355,42 @@ export async function getAllOrganisationsAction(): Promise<
 			},
 			include: {
 				_count: {
-					select: { teams: true, memberships: true },
+					select: { teams: true, members: true },
 				},
-				owner: true,
 			},
 		});
+
+		// Get owner information for each organisation
+		const organisationsWithOwners = await Promise.all(
+			organisations.map(async (org) => {
+				const ownerMembership = await db.membership.findFirst({
+					where: {
+						organisationId: org.id,
+						role: 'owner',
+					},
+					include: {
+						memberUserProfile: {
+							select: {
+								id: true,
+								firstName: true,
+								lastName: true,
+								email: true,
+							},
+						},
+					},
+				});
+
+				return {
+					...org,
+					owner: ownerMembership?.memberUserProfile || undefined,
+				};
+			})
+		);
 
 		return {
 			isSuccess: true,
 			message: 'All organisations retrieved',
-			data: organisations,
+			data: organisationsWithOwners,
 		};
 	} catch (error) {
 		console.error('Error getting all organisations:', error);

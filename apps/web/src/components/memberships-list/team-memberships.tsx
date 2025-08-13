@@ -21,15 +21,7 @@ interface TeamMembership {
 	id: string;
 	role: string;
 	createdAt: string;
-	teamContext?: {
-		id: string;
-		name: string;
-		organisation: {
-			id: string;
-			name: string;
-		};
-	};
-	team?: {
+	team: {
 		id: string;
 		name: string;
 		organisation: {
@@ -75,7 +67,7 @@ export default function TeamMemberships({
 				</div>
 				<div className="divide-y">
 					{memberships.map((membership) => {
-						const team = membership.teamContext || membership.team;
+						const team = membership.team;
 						if (!team) return null;
 
 						return (

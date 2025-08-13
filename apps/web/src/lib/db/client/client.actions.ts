@@ -3,7 +3,6 @@
 import { db, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
 import { auth } from '@src/lib/auth/auth';
-import { getMemberships } from '@src/lib/db/membership/membership.utils';
 
 export async function createClientAction(input: {
 	name: string;
@@ -31,11 +30,7 @@ export async function getClientsForUserAction(): Promise<
 	ActionState<
 		Prisma.MembershipGetPayload<{
 			include: {
-				client: {
-					include: {
-						organisation: true;
-					};
-				};
+				client: true;
 			};
 		}>[]
 	>
@@ -54,13 +49,13 @@ export async function getClientsForUserAction(): Promise<
 			return { isSuccess: false, message: 'User profile not found', data: [] };
 		}
 
-		const clientMemberships = await getMemberships({
-			type: 'client',
-			userProfileId: userProfile.id,
-			prismaArgs: {
-				include: {
-					client: true,
-				},
+		const clientMemberships = await db.membership.findMany({
+			where: {
+				clientId: { not: null },
+				memberUserProfileId: userProfile.id,
+			},
+			include: {
+				client: true,
 			},
 		});
 		return {
@@ -77,9 +72,9 @@ export async function getClientsForUserAction(): Promise<
 export async function getClientDetailsAction(clientId: string): Promise<
 	ActionState<Prisma.ClientGetPayload<{
 		include: {
-			memberships: {
+			members: {
 				include: {
-					userProfile: true;
+					memberUserProfile: true;
 				};
 			};
 			cases: {
@@ -107,16 +102,16 @@ export async function getClientDetailsAction(clientId: string): Promise<
 		const client = await db.client.findFirst({
 			where: {
 				id: clientId,
-				memberships: {
+				members: {
 					some: {
-						userProfileId: userProfile.id,
+						memberUserProfileId: userProfile.id,
 					},
 				},
 			},
 			include: {
-				memberships: {
+				members: {
 					include: {
-						userProfile: true,
+						memberUserProfile: true,
 					},
 				},
 				cases: {
@@ -138,15 +133,15 @@ export async function getUserClientMembershipsAction(
 	userProfileId: string
 ): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
 	try {
-		const clientMemberships = await getMemberships({
-			type: 'client',
-			userProfileId: userProfileId,
-			prismaArgs: {
-				include: {
-					client: true,
-				},
-				orderBy: { createdAt: 'desc' },
+		const clientMemberships = await db.membership.findMany({
+			where: {
+				clientId: { not: null },
+				memberUserProfileId: userProfileId,
 			},
+			include: {
+				client: true,
+			},
+			orderBy: { createdAt: 'desc' },
 		});
 
 		return {

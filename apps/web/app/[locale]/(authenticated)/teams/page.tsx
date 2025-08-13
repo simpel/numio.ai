@@ -34,7 +34,6 @@ export default async function TeamsPage() {
 						description={t('table_description')}
 						showDescription={false}
 						showOwner={false}
-						showAdmin={true}
 						showCreatedAt={true}
 					/>
 				</ErrorBoundary>

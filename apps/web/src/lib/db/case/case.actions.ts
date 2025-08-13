@@ -201,7 +201,7 @@ export async function getCasesForUserAction(): Promise<
 		const memberships = await getMemberships<
 			Prisma.MembershipGetPayload<{
 				include: {
-					caseItem: {
+					case: {
 						include: {
 							client: {
 								select: { id: true; name: true };
@@ -223,7 +223,7 @@ export async function getCasesForUserAction(): Promise<
 			userProfileId: userProfile.id,
 			prismaArgs: {
 				include: {
-					caseItem: {
+					case: {
 						include: {
 							client: {
 								select: {
@@ -253,7 +253,7 @@ export async function getCasesForUserAction(): Promise<
 		});
 
 		const caseData: CaseData[] = memberships.map((membership) => {
-			const caseItem = membership.caseItem!;
+			const caseItem = membership.case!;
 			return {
 				id: caseItem.id,
 				title: caseItem.title,
@@ -286,7 +286,7 @@ export async function getCasesForUserByIdAction(
 		const memberships = await getMemberships<
 			Prisma.MembershipGetPayload<{
 				include: {
-					caseItem: {
+					case: {
 						include: {
 							client: {
 								select: { id: true; name: true };
@@ -308,7 +308,7 @@ export async function getCasesForUserByIdAction(
 			userProfileId: userProfileId,
 			prismaArgs: {
 				include: {
-					caseItem: {
+					case: {
 						include: {
 							client: {
 								select: {
@@ -338,7 +338,7 @@ export async function getCasesForUserByIdAction(
 		});
 
 		const caseData: CaseData[] = memberships.map((membership) => {
-			const caseItem = membership.caseItem!;
+			const caseItem = membership.case!;
 			return {
 				id: caseItem.id,
 				title: caseItem.title,
@@ -436,12 +436,12 @@ export async function getCaseCreationDataAction(): Promise<
 		// Get clients that belong to the user's organisations via membership links
 		const rawClients = await db.client.findMany({
 			where: {
-				memberships: { some: { organisationId: { in: organisationIds } } },
+				members: { some: { organisationId: { in: organisationIds } } },
 			},
 			select: {
 				id: true,
 				name: true,
-				memberships: {
+				members: {
 					where: { organisationId: { in: organisationIds } },
 					select: { organisationId: true },
 				},
@@ -452,7 +452,7 @@ export async function getCaseCreationDataAction(): Promise<
 		const clients = rawClients.map((c) => ({
 			id: c.id,
 			name: c.name,
-			organisationIds: c.memberships
+			organisationIds: c.members
 				.map((m) => m.organisationId)
 				.filter((id): id is string => !!id),
 		}));

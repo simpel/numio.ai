@@ -47,14 +47,14 @@ export default async function OrganisationTeamsPage({
 
 	const teamsData: TeamData[] =
 		organisation.teams?.map((team) => {
-			const contextMemberships = team.contextMemberships || [];
+			const memberships = team.members || [];
 
 			// Map all members with their roles
-			const members = contextMemberships.map((m: TeamMembership) => ({
-				id: m.userProfile.id,
-				name: `${m.userProfile.firstName || ''} ${m.userProfile.lastName || ''}`.trim(),
+			const members = memberships.map((m: any) => ({
+				id: m.memberUserProfile?.id || '',
+				name: `${m.memberUserProfile?.firstName || ''} ${m.memberUserProfile?.lastName || ''}`.trim(),
 				role: m.role,
-				image: m.userProfile.image,
+				image: m.memberUserProfile?.image,
 			}));
 
 			return {
@@ -63,11 +63,8 @@ export default async function OrganisationTeamsPage({
 				description: team.description || undefined,
 				organisation: organisation.name,
 				organisationId: organisation.id,
-				owner: team.owner
-					? `${team.owner.firstName} ${team.owner.lastName}`
-					: undefined,
-				usersCount:
-					team._count?.contextMemberships ?? team._count?.teamMemberships ?? 0,
+				owner: undefined, // Teams don't have owners in new schema
+				usersCount: team._count?.members ?? 0,
 				members,
 				createdAt: team.createdAt?.toISOString(),
 			};
@@ -83,7 +80,6 @@ export default async function OrganisationTeamsPage({
 					showDescription={true}
 					showOrganisation={false}
 					showOwner={true}
-					showAdmin={true}
 					showCreatedAt={true}
 				/>
 			) : (

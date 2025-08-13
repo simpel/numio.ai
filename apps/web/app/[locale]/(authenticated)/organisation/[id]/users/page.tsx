@@ -41,11 +41,11 @@ export default async function OrganisationUsersPage({
 	}
 
 	const membersData: MemberData[] =
-		organisation.memberships?.map((membership) => ({
-			id: membership.userProfile?.id || '',
+		organisation.members?.map((membership) => ({
+			id: membership.memberUserProfile?.id || '',
 			membershipId: membership.id || '',
-			name: `${membership.userProfile?.firstName || ''} ${membership.userProfile?.lastName || ''}`.trim(),
-			email: membership.userProfile?.email || '',
+			name: `${membership.memberUserProfile?.firstName || ''} ${membership.memberUserProfile?.lastName || ''}`.trim(),
+			email: membership.memberUserProfile?.email || '',
 			role: membership.role,
 		})) || [];
 

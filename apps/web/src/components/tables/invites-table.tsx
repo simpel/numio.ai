@@ -129,7 +129,7 @@ export default function InvitesTable({
 				email: invite.email,
 				organisationId: invite.organisationId,
 				teamId: invite.teamId,
-				role: invite.role as 'admin' | 'member',
+				role: invite.role as 'owner' | 'member',
 			});
 			if (result.isSuccess) {
 				toast.success(`Re-invite sent to ${invite.email}`, {
@@ -278,7 +278,7 @@ export default function InvitesTable({
 						email: row.original.email,
 						organisationId: row.original.organisationId,
 						teamId: row.original.teamId,
-						role: row.original.role as 'admin' | 'member',
+						role: row.original.role as 'owner' | 'member',
 					})
 				)
 			);

@@ -1,26 +1,18 @@
-import { db, Prisma } from '@numio/ai-database';
 import { getUserProfileId } from '../user-profile/user-profile.actions';
+import { db, Prisma } from '@numio/ai-database';
 
-// Simple membership types
-export type MembershipType =
-	| 'organisation'
-	| 'team'
-	| 'case'
-	| 'client'
-	| 'all';
-
-type MembershipParams = {
-	type: MembershipType;
+// Type for membership parameters
+interface MembershipParams {
+	type: 'organisation' | 'team' | 'case' | 'client' | 'all';
 	userProfileId?: string;
 	prismaArgs?: Prisma.MembershipFindManyArgs;
-};
+}
 
-// Simple unified membership function
+// Generic function to get memberships
 export async function getMemberships<
 	T = Prisma.MembershipGetPayload<Record<string, never>>,
 >({ type, userProfileId, prismaArgs }: MembershipParams): Promise<T[]> {
 	try {
-		// Get user profile ID if not provided
 		let targetUserProfileId = userProfileId;
 		if (!targetUserProfileId) {
 			const profileId = await getUserProfileId();
@@ -32,7 +24,7 @@ export async function getMemberships<
 
 		// Build where clause based on type
 		const where: Prisma.MembershipWhereInput = {
-			userProfileId: targetUserProfileId,
+			memberUserProfileId: targetUserProfileId,
 		};
 
 		// Add type-specific filtering
@@ -41,7 +33,7 @@ export async function getMemberships<
 				where.organisationId = { not: null };
 				break;
 			case 'team':
-				where.teamContextId = { not: null };
+				where.teamId = { not: null };
 				break;
 			case 'case':
 				where.caseId = { not: null };
@@ -132,138 +124,4 @@ export async function getClientMemberships<
 	prismaArgs?: Prisma.MembershipFindManyArgs;
 }): Promise<T[]> {
 	return getMemberships<T>({ type: 'client', ...params });
-}
-
-// Singular convenience functions
-export async function getOrganisationMembership<
-	T = Prisma.MembershipGetPayload<Record<string, never>>,
->(params?: {
-	userProfileId?: string;
-	prismaArgs?: Prisma.MembershipFindFirstArgs;
-}): Promise<T | null> {
-	return getMembership<T>({ type: 'organisation', ...params });
-}
-
-export async function getTeamMembership<
-	T = Prisma.MembershipGetPayload<Record<string, never>>,
->(params?: {
-	userProfileId?: string;
-	prismaArgs?: Prisma.MembershipFindFirstArgs;
-}): Promise<T | null> {
-	return getMembership<T>({ type: 'team', ...params });
-}
-
-export async function getCaseMembership<
-	T = Prisma.MembershipGetPayload<Record<string, never>>,
->(params?: {
-	userProfileId?: string;
-	prismaArgs?: Prisma.MembershipFindFirstArgs;
-}): Promise<T | null> {
-	return getMembership<T>({ type: 'case', ...params });
-}
-
-export async function getClientMembership<
-	T = Prisma.MembershipGetPayload<Record<string, never>>,
->(params?: {
-	userProfileId?: string;
-	prismaArgs?: Prisma.MembershipFindFirstArgs;
-}): Promise<T | null> {
-	return getMembership<T>({ type: 'client', ...params });
-}
-
-// Legacy interface for backward compatibility
-export interface OrganisationData {
-	id: string;
-	name: string;
-	organisationId?: string;
-	teamsCount?: number;
-	usersCount?: number;
-	activeCasesCount?: number;
-	description?: string;
-	ownerName?: string;
-	createdAt?: string;
-}
-
-// Specific transformers for different entity types (kept for backward compatibility)
-export function transformOrganizationMemberships(
-	memberships: Prisma.MembershipGetPayload<{
-		include: {
-			organisation: {
-				include: {
-					_count: { select: { teams: true; memberships: true } };
-					owner: true;
-				};
-			};
-		};
-	}>[]
-): OrganisationData[] {
-	return memberships.map((membership) => {
-		const org = membership.organisation!;
-		return {
-			id: membership.id,
-			name: org.name,
-			organisationId: org.id,
-			teamsCount: org._count?.teams ?? 0,
-			usersCount: org._count?.memberships ?? 0,
-			ownerName: org.owner?.firstName
-				? `${org.owner.firstName} ${org.owner.lastName || ''}`.trim()
-				: undefined,
-			createdAt: membership.createdAt.toISOString(),
-		};
-	});
-}
-
-export function transformTeamMemberships(
-	memberships: Prisma.MembershipGetPayload<{
-		include: {
-			teamContext: {
-				include: {
-					_count: {
-						select: { teamMemberships: true; contextMemberships: true };
-					};
-					owner: true;
-				};
-			};
-		};
-	}>[]
-) {
-	return memberships.map((membership) => {
-		const team = membership.teamContext!;
-		return {
-			id: membership.id,
-			entityId: team.id,
-			entityName: team.name,
-			memberSince: new Date(membership.createdAt).toLocaleDateString(),
-			role: membership.role,
-			entity: team,
-			membersCount: team._count?.teamMemberships ?? 0,
-			casesCount: team._count?.contextMemberships ?? 0,
-		};
-	});
-}
-
-export function transformCaseMemberships(
-	memberships: Prisma.MembershipGetPayload<{
-		include: {
-			caseItem: {
-				include: {
-					_count: { select: { memberships: true } };
-					team: { include: { owner: true } };
-				};
-			};
-		};
-	}>[]
-) {
-	return memberships.map((membership) => {
-		const caseItem = membership.caseItem!;
-		return {
-			id: membership.id,
-			entityId: caseItem.id,
-			entityName: caseItem.title,
-			memberSince: new Date(membership.createdAt).toLocaleDateString(),
-			role: membership.role,
-			entity: caseItem,
-			membersCount: caseItem._count?.memberships ?? 0,
-		};
-	});
 }

@@ -8,7 +8,13 @@ export async function getTeamMetricsAction(
 	days: number = 30
 ): Promise<
 	ActionState<
-		Array<{ date: string; total: number; created: number; deleted: number }>
+		Array<{
+			date: string;
+			dateLabel: string;
+			total: number;
+			created: number;
+			deleted: number;
+		}>
 	>
 > {
 	try {
@@ -93,6 +99,7 @@ export async function getTeamMetricsAction(
 			if (!dayData) {
 				return {
 					date: dateKey,
+					dateLabel: new Date(dateKey).toLocaleDateString(),
 					total: 0,
 					created: 0,
 					deleted: 0,
@@ -100,6 +107,7 @@ export async function getTeamMetricsAction(
 			}
 			return {
 				date: dateKey,
+				dateLabel: new Date(dateKey).toLocaleDateString(),
 				total: dayData.total,
 				created: dayData.created,
 				deleted: dayData.deleted,

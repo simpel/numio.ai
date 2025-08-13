@@ -28,9 +28,9 @@ export default async function UserLayout({
 		redirect('/signin');
 	}
 
-	// If current user is viewing their own profile, redirect to /profile
+	// If current user is viewing their own profile, redirect to /settings
 	if (currentUserProfile.id === targetUserId) {
-		redirect('/profile');
+		redirect('/settings');
 	}
 
 	// Get target user's profile to check for active invites

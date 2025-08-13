@@ -14,38 +14,15 @@ interface UserMembershipsPageParams {
 	params: Promise<{ id: string }>;
 }
 
-// Type for membership with relations
-interface MembershipWithRelations {
-	id: string;
-	role: string;
-	createdAt: string;
-	organisation?: {
-		name: string;
-	};
-	teamContext?: {
-		name: string;
-		organisation?: {
-			name: string;
-		};
-	};
-	team?: {
-		organisation?: {
-			name: string;
-		};
-	};
-	caseItem?: {
-		title: string;
-	};
-}
-
 // Type for membership data for table
 interface MembershipData {
 	id: string;
 	name: string;
-	type: string;
+	type: 'organization' | 'team' | 'case';
 	role: string;
 	organisation?: string;
 	createdAt: string;
+	href: string;
 }
 
 export default async function UserMembershipsPage({
@@ -84,25 +61,37 @@ export default async function UserMembershipsPage({
 
 	// Transform memberships data for the table
 	const membershipsData: MembershipData[] =
-		targetUserProfile.memberships?.map((membership: MembershipWithRelations) => ({
-			id: membership.id,
-			name:
+		targetUserProfile.memberships?.map((membership: any) => {
+			const name =
 				membership.organisation?.name ||
-				membership.teamContext?.name ||
-				membership.caseItem?.title ||
-				'Unknown',
-			type: membership.organisation
-				? 'Organisation'
-				: membership.teamContext
-					? 'Team'
-					: 'Case',
-			role: membership.role,
-			organisation:
-				membership.teamContext?.organisation?.name ||
-				membership.team?.organisation?.name ||
-				undefined,
-			createdAt: membership.createdAt,
-		})) || [];
+				membership.team?.name ||
+				membership.case?.title ||
+				'Unknown';
+
+			const type = membership.organisation
+				? 'organization'
+				: membership.team
+					? 'team'
+					: 'case';
+
+			const href = membership.organisation
+				? `/organisation/${membership.organisation.id}`
+				: membership.team
+					? `/team/${membership.team.id}`
+					: membership.case
+						? `/case/${membership.case.id}`
+						: '#';
+
+			return {
+				id: membership.id,
+				name,
+				type,
+				role: membership.role,
+				organisation: membership.team?.organisation?.name || undefined,
+				createdAt: membership.createdAt.toISOString(),
+				href,
+			};
+		}) || [];
 
 	return (
 		<div className="space-y-6">

@@ -74,7 +74,7 @@ export async function checkUserAccess(
 					type: 'all',
 					userProfileId: userProfile.id,
 					prismaArgs: {
-						where: { teamContextId: entityId },
+						where: { teamId: entityId },
 					},
 				});
 				return !!teamMembership;
@@ -132,7 +132,7 @@ export async function getUserRole(
 					type: 'all',
 					userProfileId: userProfile.id,
 					prismaArgs: {
-						where: { teamContextId: entityId },
+						where: { teamId: entityId },
 					},
 				});
 				return teamMembership?.role || null;

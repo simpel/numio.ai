@@ -10,16 +10,33 @@ import { Card, CardContent, CardHeader } from '@shadcn/ui/card';
 import Tabs from '@src/components/tabs';
 import InvitesTable from '@src/components/tables/invites-table';
 import ProfileUpdateDialog from '@src/components/dialogs/profile-update-dialog';
+import { Role, InviteStatus } from '@numio/ai-database';
+
+// Type for invite data for table
+interface InviteData {
+	id: string;
+	email: string;
+	status: string;
+	expiresAt: string;
+	createdAt: string;
+	contextName: string;
+	contextType: string;
+	role: Role;
+	hasUser: boolean;
+	userProfileId?: string;
+	organisationId?: string;
+	teamId?: string;
+}
 
 // Type for user with profile
 interface UserWithProfile {
 	id: string;
-	firstName?: string;
-	lastName?: string;
+	firstName?: string | null;
+	lastName?: string | null;
 	email: string;
 	role: string;
-	image?: string;
-	bio?: string;
+	image?: string | null;
+	bio?: string | null;
 	createdAt: string;
 	userProfile?: {
 		id: string;
@@ -43,22 +60,6 @@ interface InviteWithRelations {
 	team?: {
 		name: string;
 	};
-}
-
-// Type for invite data for table
-interface InviteData {
-	id: string;
-	email: string;
-	status: string;
-	expiresAt: string;
-	createdAt: string;
-	contextName: string;
-	contextType: string;
-	role: string;
-	hasUser: boolean;
-	userProfileId?: string;
-	organisationId?: string;
-	teamId?: string;
 }
 
 interface UserDetailViewProps {
@@ -96,7 +97,7 @@ export default function UserDetailView({
 			contextName:
 				invite.organisation?.name || invite.team?.name || t('unknown'),
 			contextType: invite.organisation ? t('organisation') : t('team'),
-			role: invite.role,
+			role: invite.role as Role,
 			hasUser: !!targetUser.userProfile,
 			userProfileId: targetUser.userProfile?.id,
 			organisationId: invite.organisationId,
@@ -176,7 +177,7 @@ export default function UserDetailView({
 							data={pendingInvites}
 							title="pending Invites"
 							description="Active invitations for this user."
-							type="active"
+							state={InviteStatus.pending}
 							isCurrentUser={isCurrentUser}
 							currentUserProfileId={currentUser.id}
 						/>
@@ -188,7 +189,7 @@ export default function UserDetailView({
 							data={expiredInvites}
 							title="expired Invites"
 							description="Invitations that have expired and need to be re-sent."
-							type="expired"
+							state={InviteStatus.expired}
 							isCurrentUser={isCurrentUser}
 							currentUserProfileId={currentUser.id}
 						/>
@@ -240,7 +241,8 @@ export default function UserDetailView({
 						lastName: targetUser.lastName || '',
 						email: targetUser.email || '',
 						bio: targetUser.bio || '',
-						jobTitle: (targetUser as any).jobTitle || '',
+						jobTitle:
+							(targetUser as { jobTitle?: string | null }).jobTitle || '',
 					}}
 				/>
 			)}

@@ -81,7 +81,7 @@ export async function acceptInviteAction({
 		// Create membership
 		await db.membership.create({
 			data: {
-				userProfileId,
+				memberUserProfileId: userProfileId,
 				organisationId: invite.organisationId ?? undefined,
 				teamId: invite.teamId ?? undefined,
 				role: invite.role,
@@ -188,7 +188,7 @@ export async function acceptInviteByIdAction({
 		// Create membership
 		await db.membership.create({
 			data: {
-				userProfileId,
+				memberUserProfileId: userProfileId,
 				organisationId: invite.organisationId ?? undefined,
 				teamId: invite.teamId ?? undefined,
 				role: invite.role,

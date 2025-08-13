@@ -1,7 +1,5 @@
 'use server';
 
-import RoleGuard from '@src/components/auth/role-guard';
-import { Role } from '@src/lib/auth/auth.utils';
 import { getAllUsersAction } from '@src/lib/db/user/user.actions';
 import { getUserMetricsAction } from '@src/lib/db/user/user-metrics.actions';
 import ErrorBoundary from '@src/components/error-boundary';
@@ -29,40 +27,36 @@ interface UserWithProfile {
 	};
 }
 
-export default async function SettingsUsersPage() {
-	return (
-		<RoleGuard requiredRoles={[Role.superadmin]}>
-			<SettingsUsersContent />
-		</RoleGuard>
-	);
-}
-
-async function SettingsUsersContent() {
-	// Get all users for superadmin
+export default async function AdminUsersPage() {
+	// Get all users (no role filtering in admin)
 	const { data: allUsers } = await getAllUsersAction();
 
 	// Get user metrics for chart
 	const { data: userMetrics } = await getUserMetricsAction(30);
 
 	const allUsersData: UserData[] =
-		allUsers?.map((user: UserWithProfile) => ({
+		allUsers?.map((user: any) => ({
 			id: user.profile?.id || user.id, // Use profile ID if available, fallback to user ID
 			name:
 				`${user.profile?.firstName || ''} ${user.profile?.lastName || ''}`.trim() ||
 				'Unknown',
-			email: user.email || '',
+			email: user.profile?.email || user.email || '',
 			status: user.profile?.role || 'active',
-			lastLogin: user.updatedAt
-				? new Date(user.updatedAt).toLocaleDateString()
+			lastLogin: user.profile?.updatedAt
+				? new Date(user.profile.updatedAt).toLocaleDateString()
 				: 'Never',
 		})) || [];
 
 	return (
 		<div className="space-y-6">
+			{/* User Metrics Chart */}
 			{userMetrics && userMetrics.length > 0 && (
-				<UserMetricsChart data={userMetrics} />
+				<ErrorBoundary>
+					<UserMetricsChart data={userMetrics} />
+				</ErrorBoundary>
 			)}
 
+			{/* All Users */}
 			{allUsersData.length > 0 ? (
 				<ErrorBoundary>
 					<UsersTable

@@ -6,8 +6,10 @@ import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 
 interface InviteMetricsData {
 	date: string;
+	dateLabel: string;
+	total: number;
 	created: number;
-	deleted?: number;
+	deleted: number;
 }
 
 export async function getInviteMetricsAction(
@@ -46,13 +48,16 @@ export async function getInviteMetricsAction(
 		console.log('Found', events.length, 'invite events');
 
 		// Initialize data structure for each day
-		const dailyData: Record<string, { created: number; deleted: number }> = {};
+		const dailyData: Record<
+			string,
+			{ total: number; created: number; deleted: number }
+		> = {};
 
 		// Initialize all days in range
 		for (let i = 0; i <= days; i++) {
 			const date = subDays(endDate, days - i);
 			const dateKey = format(date, 'yyyy-MM-dd');
-			dailyData[dateKey] = { created: 0, deleted: 0 };
+			dailyData[dateKey] = { total: 0, created: 0, deleted: 0 };
 		}
 
 		// Count created and deleted invites per day
@@ -67,17 +72,29 @@ export async function getInviteMetricsAction(
 			}
 		});
 
+		// Calculate cumulative totals
+		let runningTotal = 0;
+		const sortedDates = Object.keys(dailyData).sort();
+
+		sortedDates.forEach((dateKey) => {
+			const dayData = dailyData[dateKey];
+			if (dayData) {
+				runningTotal += dayData.created - dayData.deleted;
+				dayData.total = runningTotal;
+			}
+		});
+
 		// Convert to array format for chart
-		const chartData: InviteMetricsData[] = Object.keys(dailyData)
-			.sort()
-			.map((dateKey) => {
-				const dayData = dailyData[dateKey];
-				return {
-					date: dateKey,
-					created: dayData?.created || 0,
-					deleted: dayData?.deleted || 0,
-				};
-			});
+		const chartData: InviteMetricsData[] = sortedDates.map((dateKey) => {
+			const dayData = dailyData[dateKey];
+			return {
+				date: dateKey,
+				dateLabel: new Date(dateKey).toLocaleDateString(),
+				total: dayData?.total || 0,
+				created: dayData?.created || 0,
+				deleted: dayData?.deleted || 0,
+			};
+		});
 
 		console.log('Chart data:', chartData.slice(0, 5), '...');
 

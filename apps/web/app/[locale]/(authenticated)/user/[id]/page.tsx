@@ -28,9 +28,9 @@ export default async function UserPage({ params }: UserPageParams) {
 		redirect('/signin');
 	}
 
-	// If current user is viewing their own profile, redirect to /profile
+	// If current user is viewing their own profile, redirect to /settings
 	if (currentUserProfile.id === targetUserId) {
-		redirect('/profile');
+		redirect('/settings');
 	}
 
 	// Check if current user can view the target user
@@ -53,7 +53,10 @@ export default async function UserPage({ params }: UserPageParams) {
 		<ErrorBoundary>
 			{/* Profile Information */}
 			<UserProfileCard
-				user={targetUserProfile}
+				user={{
+					...targetUserProfile,
+					createdAt: targetUserProfile.createdAt.toISOString(),
+				}}
 				isCurrentUser={isCurrentUser}
 				isSuperAdmin={currentUserProfile.role === 'superadmin'}
 			/>

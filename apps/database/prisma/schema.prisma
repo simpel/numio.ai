@@ -17,7 +17,7 @@ model Organisation {
   teams        Team[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  memberships  Membership[]
+  members Membership[]
   invites      Invite[]
 }
 
@@ -31,8 +31,8 @@ model Team {
   casesCreated   Case[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  teamMemberships Membership[]  @relation("TeamMemberships")
-  contextMemberships Membership[] @relation("MembershipContextTeam")
+  memberships Membership[] @relation("TeamAsMember")
+  members Membership[]
   invites      Invite[]
 }
 
@@ -44,7 +44,7 @@ model Client {
   cases          Case[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  memberships    Membership[]
+  members Membership[]
 }
 
 model Case {
@@ -59,7 +59,7 @@ model Case {
   events        Event[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  memberships   Membership[]
+  members Membership[]
 }
 
 model Event {
@@ -148,7 +148,7 @@ model UserProfile {
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String        @unique
 
-  memberships Membership[]
+  memberships Membership[] @relation("UserAsMember")
   events      Event[]       @relation("EventActor")
 
   @@map("user_profiles")
@@ -166,25 +166,25 @@ model Membership {
   id           String   @id @default(cuid())
 
   // Polymorphic member: either user or team
-  userProfile  UserProfile? @relation(fields: [userProfileId], references: [id])
-  userProfileId String?
-  team         Team?        @relation("TeamMemberships", fields: [teamId], references: [id])
-  teamId       String?
+  memberUserProfile  UserProfile? @relation("UserAsMember", fields: [memberUserProfileId], references: [id])
+  memberUserProfileId String?
+  memberTeam         Team?        @relation("TeamAsMember", fields: [memberTeamId], references: [id])
+  memberTeamId       String?
 
-  // Polymorphic context: organisation, team, case, or client
+  // Polymorphic target: organisation, team, case, or client
   organisation Organisation? @relation(fields: [organisationId], references: [id])
   organisationId String?
-  teamContext   Team?        @relation("MembershipContextTeam", fields: [teamContextId], references: [id])
-  teamContextId String?
-  caseItem     Case?         @relation(fields: [caseId], references: [id])
-  caseId       String?
-  client       Client?       @relation(fields: [clientId], references: [id])
-  clientId     String?
+  team   Team?        @relation(fields: [teamId], references: [id])
+  teamId String?
+  case   Case?        @relation(fields: [caseId], references: [id])
+  caseId String?
+  client Client?      @relation(fields: [clientId], references: [id])
+  clientId String?
 
   role         Role
   createdAt    DateTime @default(now())
 
-  @@unique([userProfileId, teamId, organisationId, teamContextId, caseId, clientId])
+  @@unique([memberUserProfileId, memberTeamId, organisationId, teamId, caseId, clientId])
 }
 
 enum InviteStatus {
