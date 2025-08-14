@@ -348,18 +348,11 @@ else
   find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs wc -l 2>/dev/null | sort -nr | head -10 || echo "Fallback complexity analysis failed"
 fi
 
-# Scan the repository for hard‑coded secrets using secretlint
-# Scan all files but exclude common build artifacts and dependencies
+# Scan the repository for hard‑coded secrets
 echo "Scanning for secrets..."
-pnpm dlx secretlint "**/*" --format stylish --ignore "**/node_modules/**,**/dist/**,**/build/**,**/.next/**,**/.turbo/**,**/coverage/**,**/out/**,**/.vercel/**,**/*.log,**/*.lock,**/*.pem,**/*.min.js,**/*.map" 2>/dev/null || echo "secretlint failed - trying alternative approach"
-
-# Fallback secret scanning if secretlint fails
-if ! pnpm dlx secretlint --version >/dev/null 2>&1; then
-  echo "secretlint not available - using grep-based secret detection"
-  # Simple pattern-based secret detection
-  echo "Checking for common secret patterns..."
-  find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.json" -o -name "*.env*" 2>/dev/null | eval $GREP_EXCLUDE | xargs grep -l -i -E "(api_key|secret|password|token|private_key|access_key)" 2>/dev/null | head -10 || echo "No obvious secrets found"
-fi
+# Use grep-based secret detection (more reliable than secretlint with missing dependencies)
+echo "Checking for common secret patterns..."
+find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.json" -o -name "*.env*" 2>/dev/null | eval $GREP_EXCLUDE | xargs grep -l -i -E "(api_key|secret|password|token|private_key|access_key|client_secret|auth_token)" 2>/dev/null | head -10 || echo "No obvious secrets found"
 
 # Additional manual checks that don't require external tools:
 # 1. Check for common naming convention violations (using grep-based exclusions)
