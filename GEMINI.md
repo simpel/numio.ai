@@ -1,9 +1,71 @@
-# Numio AI Monorepo Overview
+# GEMINI.md - Structured Code Quality Assistant
 
+## Overview
+
+This assistant uses gated execution through delayed instructions to prevent context bloat and ensure focused, effective code quality improvements for the Numio AI monorepo.
+
+## Modes of Operation
+
+### Default State
+
+General assistance mode for everyday development tasks in the Numio AI monorepo.
+
+**Repository Overview:**
 This repository is a **Turborepo monorepo** that organizes multiple applications and packages for the Numio AI platform. The main apps are:
 
 - **@numio/web**: A Next.js 15 application (App Router) for the main web frontend. This app must follow all Next.js-specific rules and best practices described below, including the use of Server Actions, SWR, Tailwind CSS, shadcn/ui, and strict type safety.
 - **@numio/database**: Contains the Prisma ORM schema, migrations, and database utilities. This package is also bundled with TSUP for efficient builds and type-safe usage across the monorepo.
+
+### Code Quality Mode
+
+Entered when analyzing code quality issues. Uses `<PROTOCOL:CODE_QUALITY>`.
+
+### Refactoring Mode
+
+Entered when implementing specific refactoring tasks. Uses `<PROTOCOL:REFACTORING>`.
+
+## Protocol Blocks
+
+<PROTOCOL:CODE_QUALITY>
+
+- Analyze code for quality issues
+- Reference cursor rules in .cursor/rules/
+- Focus on architectural patterns and best practices
+- Provide actionable recommendations
+- Check for naming convention violations
+- Identify complexity hotspots
+- Detect architectural boundary violations
+- Review import patterns and dependencies
+- Assess file organization and structure
+  </PROTOCOL:CODE_QUALITY>
+
+<PROTOCOL:REFACTORING>
+
+- Implement specific refactoring tasks
+- Follow agent prompts from audit reports
+- Make incremental, safe changes
+- Validate changes against cursor rules
+- Ensure backward compatibility
+- Test functionality after changes
+- Maintain architectural boundaries
+- Follow established naming conventions
+  </PROTOCOL:REFACTORING>
+
+## PRAR Workflow
+
+- **Perceive**: Understand the current state and requirements
+- **Reason**: Analyze and plan the approach
+- **Act**: Implement the solution
+- **Refine**: Review and improve the implementation
+
+## Integration
+
+- Reference cursor rules in .cursor/rules/
+- Follow established naming conventions
+- Maintain architectural boundaries
+- Manage complexity appropriately
+- Use consistent import patterns
+- Follow file organization standards
 
 ## Monorepo Structure
 

@@ -1,0 +1,58 @@
+# Naming Conventions
+
+## File and Folder Naming
+
+- Use kebab-case for all files and folders
+- Examples: `user-profile-card.tsx`, `case-actions.ts`, `membership-utils.ts`
+
+## Component Naming
+
+- Use PascalCase for component names
+- Use kebab-case for file names
+- Examples: `UserProfileCard` in `user-profile-card.tsx`
+
+## Function and Variable Naming
+
+- Use camelCase for functions and variables
+- Use PascalCase for types and interfaces
+- Use UPPER_CASE for constants
+
+## Import and Export Naming
+
+- Use consistent absolute imports with path aliases
+- Avoid deep relative imports (../../..)
+- Prefer named exports over default exports for utilities
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// File: user-profile-card.tsx
+export default function UserProfileCard({ user }: UserProfileCardProps) {
+	const [isLoading, setIsLoading] = useState(false);
+	const MAX_RETRY_ATTEMPTS = 3;
+}
+
+// Import: use absolute paths
+import { UserProfileCard } from '@src/components/user-profile-card';
+```
+
+### ❌ Bad Examples
+
+```typescript
+// File: UserProfileCard.tsx (PascalCase file name)
+export default function userProfileCard({ user }: userProfileCardProps) {
+	const [loading, setLoading] = useState(false);
+	const maxRetryAttempts = 3;
+}
+
+// Import: deep relative imports
+import { UserProfileCard } from '../../../components/UserProfileCard';
+```
+
+description:
+globs:
+alwaysApply: false
+
+---

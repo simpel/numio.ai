@@ -234,23 +234,28 @@ if [ -f ".gitignore" ]; then
         # Absolute pattern from root
         GITIGNORE_EXCLUDE="$GITIGNORE_EXCLUDE -path './${line#/}' -prune -o"
       elif [[ $line == */ ]]; then
-        # Directory pattern
-        GITIGNORE_EXCLUDE="$GITIGNORE_EXCLUDE -path './$line' -prune -o"
+        # Directory pattern - exclude from any level in monorepo
+        GITIGNORE_EXCLUDE="$GITIGNORE_EXCLUDE -path '*/$line' -prune -o"
       else
-        # File pattern
+        # File pattern - exclude from any level in monorepo
         GITIGNORE_EXCLUDE="$GITIGNORE_EXCLUDE -name '$line' -o"
       fi
     fi
   done < .gitignore
 fi
 
-# Add common exclusions if not already in .gitignore
-COMMON_EXCLUDE="-name 'node_modules' -prune -o -name '.next' -prune -o -name 'dist' -prune -o -name 'build' -prune -o -name '.turbo' -prune -o -name 'coverage' -prune -o -name '.nyc_output' -prune -o -name '*.log' -o -name '*.lock' -o -name '.DS_Store' -o -name 'Thumbs.db'"
+# Add common monorepo exclusions if not already in .gitignore
+# Use -prune to stop find from descending into these directories
+COMMON_EXCLUDE="-path '*/node_modules' -prune -o -path '*/.next' -prune -o -path '*/dist' -prune -o -path '*/build' -prune -o -path '*/.turbo' -prune -o -path '*/coverage' -prune -o -path '*/.nyc_output' -prune -o -path '*/out' -prune -o -path '*/.vercel' -prune -o -name '*.log' -o -name '*.lock' -o -name '.DS_Store' -o -name 'Thumbs.db' -o -name '*.pem'"
 
 # Combine exclusions
 FIND_EXCLUDE="$GITIGNORE_EXCLUDE $COMMON_EXCLUDE"
 
+# Create a simpler grep-based exclusion for more reliable filtering
+GREP_EXCLUDE="grep -v 'node_modules' | grep -v '.next' | grep -v 'dist' | grep -v 'build' | grep -v '.turbo' | grep -v 'coverage' | grep -v 'out' | grep -v '.vercel' | grep -v '.nyc_output' | grep -v '*.log' | grep -v '*.lock' | grep -v '.DS_Store' | grep -v 'Thumbs.db' | grep -v '*.pem'"
+
 echo "Exclusion patterns: $FIND_EXCLUDE"
+echo "Grep exclusion: $GREP_EXCLUDE"
 
 # Generate a dependency graph and detect cycles (if depcruise is available)
 # If not available, skip this step and note in findings
@@ -287,8 +292,8 @@ done
 
 if [ -n "$SOURCE_DIRS" ]; then
   echo "Scanning for duplicates in: $SOURCE_DIRS"
-  # Use jscpd with .gitignore exclusions
-  pnpm dlx jscpd $SOURCE_DIRS --reporters console --min-lines 5 --ignore "node_modules,dist,build,.next,.turbo,coverage" 2>/dev/null || echo "jscpd failed"
+  # Use jscpd with glob patterns for reliable exclusions
+  pnpm dlx jscpd $SOURCE_DIRS --reporters console --min-lines 5 --ignore "**/node_modules/**,**/dist/**,**/build/**,**/.next/**,**/.turbo/**,**/coverage/**,**/out/**,**/.vercel/**,**/*.log,**/*.lock,**/*.pem,**/*.min.js,**/*.map" 2>/dev/null || echo "jscpd failed"
 else
   echo "No source directories found for duplication analysis"
 fi
@@ -310,7 +315,7 @@ fi
 echo "Generating CodeCharta metrics..."
 if command -v ccsh >/dev/null 2>&1 || pnpm dlx codecharta-analysis --version >/dev/null 2>&1; then
   # Generate metrics from source code using unifiedparser
-  pnpm dlx codecharta-analysis unifiedparser . --output-file metrics.cc.json --exclude "node_modules,.next,dist,build,.turbo,coverage" --not-compressed 2>/dev/null || echo "CodeCharta source-code analysis failed"
+  pnpm dlx codecharta-analysis unifiedparser . --output-file metrics.cc.json --exclude "node_modules,.next,dist,build,.turbo,coverage,out,.vercel" --not-compressed 2>/dev/null || echo "CodeCharta source-code analysis failed"
 
   # Generate git-based metrics if git repository
   if [ -d ".git" ]; then
@@ -340,35 +345,39 @@ if command -v ccsh >/dev/null 2>&1 || pnpm dlx codecharta-analysis --version >/d
 else
   echo "CodeCharta not available - using fallback complexity analysis"
   # Fallback: simple complexity estimation
-  find . $FIND_EXCLUDE -name "*.ts" -o -name "*.tsx" 2>/dev/null | xargs wc -l 2>/dev/null | sort -nr | head -10 || echo "Fallback complexity analysis failed"
+  find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs wc -l 2>/dev/null | sort -nr | head -10 || echo "Fallback complexity analysis failed"
 fi
 
 # Scan the repository for hard‑coded secrets using secretlint
 # Scan all files but exclude common build artifacts and dependencies
 echo "Scanning for secrets..."
-pnpm dlx secretlint "**/*" --format stylish --ignore "node_modules,dist,build,.next,.turbo,coverage" 2>/dev/null || echo "secretlint failed - trying alternative approach"
+pnpm dlx secretlint "**/*" --format stylish --ignore "**/node_modules/**,**/dist/**,**/build/**,**/.next/**,**/.turbo/**,**/coverage/**,**/out/**,**/.vercel/**,**/*.log,**/*.lock,**/*.pem,**/*.min.js,**/*.map" 2>/dev/null || echo "secretlint failed - trying alternative approach"
 
 # Fallback secret scanning if secretlint fails
 if ! pnpm dlx secretlint --version >/dev/null 2>&1; then
   echo "secretlint not available - using grep-based secret detection"
   # Simple pattern-based secret detection
   echo "Checking for common secret patterns..."
-  find . $FIND_EXCLUDE -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.json" -o -name "*.env*" 2>/dev/null | xargs grep -l -i -E "(api_key|secret|password|token|private_key|access_key)" 2>/dev/null | head -10 || echo "No obvious secrets found"
+  find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.json" -o -name "*.env*" 2>/dev/null | eval $GREP_EXCLUDE | xargs grep -l -i -E "(api_key|secret|password|token|private_key|access_key)" 2>/dev/null | head -10 || echo "No obvious secrets found"
 fi
 
 # Additional manual checks that don't require external tools:
-# 1. Check for common naming convention violations (respecting .gitignore)
-find . $FIND_EXCLUDE -name "*.ts" -o -name "*.tsx" 2>/dev/null | grep -E "(PascalCase|camelCase)" | head -20 2>/dev/null || echo "No naming convention violations found"
+# 1. Check for common naming convention violations (using grep-based exclusions)
+find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | grep -E "(PascalCase|camelCase)" | head -20 2>/dev/null || echo "No naming convention violations found"
 
-# 2. Check for deep relative imports (../../..) (respecting .gitignore)
-find . $FIND_EXCLUDE -name "*.ts" -o -name "*.tsx" 2>/dev/null | xargs grep -l "\.\./\.\./\.\./" 2>/dev/null | head -10 || echo "No deep relative imports found"
+# 2. Check for deep relative imports (../../..) (using grep-based exclusions)
+find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs grep -l "\.\./\.\./\.\./" 2>/dev/null | head -10 || echo "No deep relative imports found"
 
-# 3. Check for potential circular dependencies (simple heuristic) (respecting .gitignore)
-find . $FIND_EXCLUDE -name "*.ts" -o -name "*.tsx" 2>/dev/null | xargs grep -l "import.*from.*\.\." 2>/dev/null | head -10 || echo "No potential circular dependencies found"
+# 3. Check for potential circular dependencies (simple heuristic) (using grep-based exclusions)
+find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs grep -l "import.*from.*\.\." 2>/dev/null | head -10 || echo "No potential circular dependencies found"
 
 # 4. Count total lines of code (excluding ignored files)
 echo "Counting lines of code (excluding ignored files)..."
-TOTAL_LOC=$(find . $FIND_EXCLUDE -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
+  # Build exclusion patterns for find commands
+  GREP_EXCLUDE="grep -v 'node_modules' | grep -v '.next' | grep -v 'dist' | grep -v 'build' | grep -v '.turbo' | grep -v 'coverage' | grep -v 'out' | grep -v '.vercel' | grep -v '.nyc_output' | grep -v '*.log' | grep -v '*.lock' | grep -v '.DS_Store' | grep -v 'Thumbs.db' | grep -v '*.pem'"
+
+  # Count total lines of code
+  TOTAL_LOC=$(find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
 echo "Total lines of code: $TOTAL_LOC"
 ```
 
