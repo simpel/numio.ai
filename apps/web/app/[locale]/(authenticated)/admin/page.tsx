@@ -5,7 +5,6 @@ import { Button } from '@shadcn/ui/button';
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from '@shadcn/ui/card';

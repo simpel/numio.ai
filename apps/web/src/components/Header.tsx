@@ -11,7 +11,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@shadcn/ui/dropdown-menu';
-import { Settings, LogOut, User, Shield } from 'lucide-react';
+import { LogOut, User, Shield } from 'lucide-react';
 import { cn } from '@src/utils';
 import { HeaderLanguageSwitcher } from './header-language-switcher';
 import { getTranslations } from 'next-intl/server';

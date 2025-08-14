@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Search, User, ChevronDown } from 'lucide-react';
 import { Input } from '@shadcn/ui/input';
-import { Button } from '@shadcn/ui/button';
 import { UserProfileSearchData } from '@src/lib/db/user-profile/user-profile.types';
 import { searchUserProfilesAction } from '@src/lib/db/user-profile/user-profile.actions';
 
