@@ -1,0 +1,16 @@
+{
+	"extends": "@numio/typescript-config/base.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": "src",
+		"declaration": true,
+		"declarationMap": true
+	},
+	"include": [
+		"src"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
+}

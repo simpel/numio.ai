@@ -15,28 +15,6 @@ export const getCurrentUser = async () => {
 	return session?.user ?? null;
 };
 
-export const checkProfile = async ({
-	redirectTo,
-}: { redirectTo?: string } = {}) => {
-	const user = await getCurrentUser();
-
-	if (!user || !user.id) {
-		redirect('/signin');
-	}
-
-	const { data: profile } = await getUserProfileAction(user.id);
-
-	if (!profile?.hasDoneIntro) {
-		redirect('/welcome');
-	}
-
-	if (redirectTo) {
-		redirect(redirectTo);
-	}
-
-	return profile;
-};
-
 /**
  * Get the current user profile with role information.
  * This is a server-only function.

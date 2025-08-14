@@ -4,6 +4,7 @@ import { useTransition } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslations } from 'next-intl';
 import { updateUserProfileAction } from '@src/lib/auth/auth.actions';
 import {
 	Form,
@@ -19,37 +20,42 @@ import { Textarea } from '@shadcn/ui/textarea';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-const ProfileSchema = z.object({
-	firstName: z.string().min(1, 'First name is required'),
-	lastName: z.string().min(1, 'Last name is required'),
-	email: z.string().email(),
-	bio: z.string().optional(),
-	jobTitle: z.string().optional(),
-});
-
-type ProfileFormValues = z.infer<typeof ProfileSchema>;
-
-interface ProfileUpdateFormProps {
-	userId: string;
-	initialValues?: Partial<ProfileFormValues>;
-	/**
-	 * Optional path to redirect to after a successful update.
-	 */
-	onSuccessRedirect?: string;
-	/**
-	 * Optional callback to call after a successful update.
-	 */
-	onSuccess?: () => void;
-}
-
-export default function ProfileUpdateForm({
-	userId,
+export default function UserProfileUpdateForm({
+	userProfileId,
 	initialValues,
 	onSuccessRedirect,
 	onSuccess,
-}: ProfileUpdateFormProps) {
+}: {
+	userProfileId: string;
+	initialValues?: Partial<{
+		firstName: string;
+		lastName: string;
+		email: string;
+		bio: string;
+		jobTitle: string;
+	}>;
+	onSuccessRedirect?: string;
+	onSuccess?: () => void;
+}) {
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
+	const t = useTranslations('common');
+	const authT = useTranslations('auth.forms.signup');
+	const validationT = useTranslations('components.forms.validation');
+
+	const ProfileSchema = z.object({
+		firstName: z
+			.string()
+			.min(1, authT('first_name_label') + ' ' + t('is_required')),
+		lastName: z
+			.string()
+			.min(1, authT('last_name_label') + ' ' + t('is_required')),
+		email: z.string().email(validationT('email')),
+		bio: z.string().optional(),
+		jobTitle: z.string().optional(),
+	});
+
+	type ProfileFormValues = z.infer<typeof ProfileSchema>;
 
 	const form = useForm<ProfileFormValues>({
 		resolver: zodResolver(ProfileSchema),
@@ -64,9 +70,9 @@ export default function ProfileUpdateForm({
 
 	async function onSubmit(values: ProfileFormValues) {
 		startTransition(async () => {
-			const result = await updateUserProfileAction(userId, values);
+			const result = await updateUserProfileAction(userProfileId, values);
 			if (result.isSuccess) {
-				toast.success('Profile updated successfully!');
+				toast.success(t('profile_updated_successfully'));
 				if (onSuccessRedirect) {
 					router.push(onSuccessRedirect);
 				}
@@ -74,7 +80,7 @@ export default function ProfileUpdateForm({
 					onSuccess();
 				}
 			} else {
-				toast.error(result.message || 'Failed to update profile');
+				toast.error(result.message || t('failed_to_update_profile'));
 			}
 		});
 	}
@@ -87,7 +93,7 @@ export default function ProfileUpdateForm({
 					name="firstName"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>First Name</FormLabel>
+							<FormLabel>{authT('first_name_label')}</FormLabel>
 							<FormControl>
 								<Input {...field} disabled={pending} />
 							</FormControl>
@@ -100,7 +106,7 @@ export default function ProfileUpdateForm({
 					name="lastName"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Last Name</FormLabel>
+							<FormLabel>{authT('last_name_label')}</FormLabel>
 							<FormControl>
 								<Input {...field} disabled={pending} />
 							</FormControl>
@@ -113,7 +119,7 @@ export default function ProfileUpdateForm({
 					name="email"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Email</FormLabel>
+							<FormLabel>{authT('email_label')}</FormLabel>
 							<FormControl>
 								<Input type="email" {...field} disabled={pending} />
 							</FormControl>
@@ -126,7 +132,7 @@ export default function ProfileUpdateForm({
 					name="bio"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Bio</FormLabel>
+							<FormLabel>{t('bio')}</FormLabel>
 							<FormControl>
 								<Textarea {...field} disabled={pending} />
 							</FormControl>
@@ -139,7 +145,7 @@ export default function ProfileUpdateForm({
 					name="jobTitle"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Job Title</FormLabel>
+							<FormLabel>{t('job_title')}</FormLabel>
 							<FormControl>
 								<Input {...field} disabled={pending} />
 							</FormControl>
@@ -148,7 +154,7 @@ export default function ProfileUpdateForm({
 					)}
 				/>
 				<Button type="submit" disabled={pending}>
-					{pending ? 'Saving...' : 'Save Profile'}
+					{pending ? t('saving') : t('save_profile')}
 				</Button>
 			</form>
 		</Form>

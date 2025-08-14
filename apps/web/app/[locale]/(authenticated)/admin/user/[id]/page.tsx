@@ -1,10 +1,8 @@
 'use server';
 
-import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 
 import { UserDetailContent } from '@src/components/admin/user-detail-content';
-import { UserDetailSkeleton } from '@src/components/admin/user-detail-skeleton';
 import { getUserProfileByIdAction } from '@src/lib/db/user-profile/user-profile.actions';
 
 interface UserPageProps {
@@ -20,9 +18,5 @@ export default async function UserPage({ params }: UserPageProps) {
 		notFound();
 	}
 
-	return (
-		<Suspense fallback={<UserDetailSkeleton />}>
-			<UserDetailContent userId={id} />
-		</Suspense>
-	);
+	return <UserDetailContent userId={id} />;
 }

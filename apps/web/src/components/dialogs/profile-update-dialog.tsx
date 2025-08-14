@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
 	Dialog,
 	DialogContent,
@@ -9,11 +10,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@shadcn/ui/dialog';
-import ProfileUpdateForm from '@src/components/forms/profile-update-form';
+import UserProfileUpdateForm from '@src/components/forms/user-profile-update-form';
 
 // Profile update dialog component
 interface ProfileUpdateDialogProps {
-	userId: string;
+	userProfileId: string;
 	initialValues: {
 		firstName: string;
 		lastName: string;
@@ -26,15 +27,16 @@ interface ProfileUpdateDialogProps {
 }
 
 export default function ProfileUpdateDialog({
-	userId,
+	userProfileId,
 	initialValues,
 	open,
 	onOpenChange,
 }: ProfileUpdateDialogProps) {
 	const router = useRouter();
+	const t = useTranslations('common');
 
 	const handleSuccess = () => {
-		toast.success('Profile updated successfully!');
+		toast.success(t('profile_updated_successfully'));
 		onOpenChange(false);
 		// Revalidate the page
 		router.refresh();
@@ -44,14 +46,14 @@ export default function ProfileUpdateDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
-					<DialogTitle>Edit Profile</DialogTitle>
+					<DialogTitle>{t('edit_profile')}</DialogTitle>
 					<DialogDescription>
-						Update your profile information and preferences.
+						{t('update_profile_description')}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="py-4">
-					<ProfileUpdateForm
-						userId={userId}
+					<UserProfileUpdateForm
+						userProfileId={userProfileId}
 						initialValues={initialValues}
 						onSuccess={handleSuccess}
 					/>

@@ -104,7 +104,8 @@ export async function updateUserProfileAction(
 			},
 		});
 		return { isSuccess: true, message: 'Profile updated', data: profile };
-	} catch {
+	} catch (error) {
+		console.error('Error updating profile:', error);
 		return { isSuccess: false, message: 'Failed to update profile' };
 	}
 }

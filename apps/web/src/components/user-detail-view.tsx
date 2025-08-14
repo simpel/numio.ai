@@ -7,69 +7,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@shadcn/ui/avatar';
 import { Badge } from '@shadcn/ui/badge';
 import { Button } from '@shadcn/ui/button';
 import { Card, CardContent, CardHeader } from '@shadcn/ui/card';
-import Tabs from '@src/components/tabs';
-import InvitesTable from '@src/components/tables/invites-table';
 import ProfileUpdateDialog from '@src/components/dialogs/profile-update-dialog';
-import { Role, InviteStatus } from '@numio/ai-database';
-
-// Type for invite data for table
-interface InviteData {
-	id: string;
-	email: string;
-	status: string;
-	expiresAt: string;
-	createdAt: string;
-	contextName: string;
-	contextType: string;
-	role: Role;
-	hasUser: boolean;
-	userProfileId?: string;
-	organisationId?: string;
-	teamId?: string;
-}
-
-// Type for user with profile
-interface UserWithProfile {
-	id: string;
-	firstName?: string | null;
-	lastName?: string | null;
-	email: string;
-	role: string;
-	image?: string | null;
-	bio?: string | null;
-	createdAt: string;
-	userProfile?: {
-		id: string;
-	};
-	activeInvites?: InviteWithRelations[];
-}
-
-// Type for invite with relations
-interface InviteWithRelations {
-	id: string;
-	email: string;
-	status: string;
-	expiresAt: string;
-	createdAt: string;
-	role: string;
-	organisationId?: string;
-	teamId?: string;
-	organisation?: {
-		name: string;
-	};
-	team?: {
-		name: string;
-	};
-}
+import { UserProfile } from '@numio/ai-database';
 
 interface UserDetailViewProps {
-	targetUser: UserWithProfile;
-	currentUser: UserWithProfile;
+	user: UserProfile;
+	isEditable: boolean;
 }
 
 export default function UserDetailView({
-	targetUser,
-	currentUser,
+	user,
+	isEditable,
 }: UserDetailViewProps) {
 	const t = useTranslations('common');
 
@@ -79,70 +27,35 @@ export default function UserDetailView({
 		return new Date(dateString).toLocaleDateString();
 	};
 
-	// Check if current user can view sensitive information
-	const canViewSensitiveInfo =
-		currentUser.role === 'superadmin' || currentUser.id === targetUser.id;
-
-	// Check if current user is viewing their own profile
-	const isCurrentUser = currentUser.id === targetUser.id;
-
-	// Transform active invites to match InvitesTable format
-	const activeInvites: InviteData[] =
-		targetUser.activeInvites?.map((invite: InviteWithRelations) => ({
-			id: invite.id,
-			email: invite.email,
-			status: invite.status,
-			expiresAt: new Date(invite.expiresAt).toLocaleDateString(),
-			createdAt: new Date(invite.createdAt).toLocaleDateString(),
-			contextName:
-				invite.organisation?.name || invite.team?.name || t('unknown'),
-			contextType: invite.organisation ? t('organisation') : t('team'),
-			role: invite.role as Role,
-			hasUser: !!targetUser.userProfile,
-			userProfileId: targetUser.userProfile?.id,
-			organisationId: invite.organisationId,
-			teamId: invite.teamId,
-		})) || [];
-
-	// Separate active and expired invites
-	const pendingInvites = activeInvites.filter(
-		(invite: InviteData) =>
-			invite.status === 'pending' && new Date(invite.expiresAt) > new Date()
-	);
-	const expiredInvites = activeInvites.filter(
-		(invite: InviteData) =>
-			invite.status === 'expired' || new Date(invite.expiresAt) <= new Date()
-	);
-
-	// Profile Information Tab Content
-	const ProfileInformationContent = (
+	return (
 		<div className="space-y-6">
-			{/* User Header */}
+			{/* User Profile Card */}
 			<Card>
 				<CardHeader>
 					<div className="flex items-center justify-between">
 						<div className="flex items-center space-x-4">
 							<Avatar className="h-16 w-16">
-								<AvatarImage src={targetUser.image || ''} />
+								<AvatarImage src={user.image || ''} />
 								<AvatarFallback>
-									{targetUser.firstName?.[0]}
-									{targetUser.lastName?.[0]}
+									{user.firstName?.[0]}
+									{user.lastName?.[0]}
 								</AvatarFallback>
 							</Avatar>
 							<div className="flex-1">
 								<h2 className="text-2xl font-bold">
-									{targetUser.firstName} {targetUser.lastName}
+									{user.firstName} {user.lastName}
 								</h2>
-								<p className="text-muted-foreground">{targetUser.email}</p>
+								<p className="text-muted-foreground">{user.email}</p>
 								<div className="mt-2 flex items-center space-x-2">
-									<Badge variant="outline">{targetUser.role}</Badge>
+									<Badge variant="outline">{user.role}</Badge>
 									<span className="text-muted-foreground text-sm">
-										{t('member_since')} {formatDate(targetUser.createdAt)}
+										{t('member_since')}{' '}
+										{formatDate(user.createdAt.toISOString())}
 									</span>
 								</div>
 							</div>
 						</div>
-						{isCurrentUser && (
+						{isEditable && (
 							<Button
 								onClick={() => setShowEditDialog(true)}
 								variant="outline"
@@ -155,94 +68,27 @@ export default function UserDetailView({
 					</div>
 				</CardHeader>
 				<CardContent>
-					{targetUser.bio && (
+					{user.bio && (
 						<div className="mb-4">
 							<h3 className="mb-2 font-semibold">{t('bio')}</h3>
-							<p className="text-muted-foreground">{targetUser.bio}</p>
+							<p className="text-muted-foreground">{user.bio}</p>
 						</div>
 					)}
 				</CardContent>
 			</Card>
-		</div>
-	);
 
-	// Invites Tab Content
-	const InvitesContent = (
-		<div className="space-y-6">
-			{canViewSensitiveInfo ? (
-				<>
-					{/* pending Invites */}
-					{pendingInvites.length > 0 && (
-						<InvitesTable
-							data={pendingInvites}
-							title="pending Invites"
-							description="Active invitations for this user."
-							state={InviteStatus.pending}
-							isCurrentUser={isCurrentUser}
-							currentUserProfileId={currentUser.id}
-						/>
-					)}
-
-					{/* expired Invites */}
-					{expiredInvites.length > 0 && (
-						<InvitesTable
-							data={expiredInvites}
-							title="expired Invites"
-							description="Invitations that have expired and need to be re-sent."
-							state={InviteStatus.expired}
-							isCurrentUser={isCurrentUser}
-							currentUserProfileId={currentUser.id}
-						/>
-					)}
-
-					{/* No invites message */}
-					{pendingInvites.length === 0 && expiredInvites.length === 0 && (
-						<div className="py-8 text-center">
-							<p className="text-muted-foreground">No invites found.</p>
-						</div>
-					)}
-				</>
-			) : (
-				<div className="py-8 text-center">
-					<p className="text-muted-foreground">
-						You don&apos;t have permission to view this user&apos;s invites.
-					</p>
-				</div>
-			)}
-		</div>
-	);
-
-	const tabs = [
-		{
-			id: 'profile',
-			value: 'profile',
-			label: t('profile_information'),
-			content: ProfileInformationContent,
-		},
-		{
-			id: 'invites',
-			value: 'invites',
-			label: t('invites'),
-			content: InvitesContent,
-		},
-	];
-
-	return (
-		<div className="space-y-6">
-			<Tabs tabs={tabs} defaultTab="profile" />
-
+			{/* Edit Profile Dialog */}
 			{showEditDialog && (
 				<ProfileUpdateDialog
 					open={showEditDialog}
 					onOpenChange={setShowEditDialog}
-					userId={targetUser.id}
+					userProfileId={user.userId}
 					initialValues={{
-						firstName: targetUser.firstName || '',
-						lastName: targetUser.lastName || '',
-						email: targetUser.email || '',
-						bio: targetUser.bio || '',
-						jobTitle:
-							(targetUser as { jobTitle?: string | null }).jobTitle || '',
+						firstName: user.firstName || '',
+						lastName: user.lastName || '',
+						email: user.email || '',
+						bio: user.bio || '',
+						jobTitle: user.jobTitle || '',
 					}}
 				/>
 			)}

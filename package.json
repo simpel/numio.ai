@@ -23,13 +23,16 @@
     "db:seed": "pnpm --filter @numio/ai-database run seed",
     "envs:dev": "turbo run envs:dev",
     "envs:prod": "turbo run envs:prod",
-    "clean": "npx rimraf --glob \"**/node_modules\" \"**/pnpm-lock.yaml\" \"**/dist\" \"**/.next\""
+    "clean": "npx rimraf --glob \"**/node_modules\" \"**/pnpm-lock.yaml\" \"**/dist\" \"**/.next\"",
+    "secretlint": "secretlint \"**/*\" --format stylish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.28.1",
+    "@secretlint/secretlint-rule-preset-recommend": "^11.0.2",
     "@types/node": "^20.19.1",
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
+    "secretlint": "^11.0.2",
     "turbo": "^2.5.4",
     "typescript": "5.8.2"
   },
