@@ -1,9 +1,40 @@
----
-description:
-globs:
-alwaysApply: true
----
+# React Import Patterns
 
-When using React hooks etc like useState, useEffect etc. never use the React.useState<SortingState>([]); syntax, instead import useState and use it like this: useState<SortingState>([]);
+## Hook Import Guidelines
 
-Never create components in the app directory, always in the src directory!
+- **Never use the `React.` prefix** for hooks
+- **Always import hooks directly** from 'react'
+- Use proper TypeScript generics with imported hooks
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+import { useState, useEffect, useCallback } from 'react';
+
+// Proper hook usage with generics
+const [data, setData] = useState<SortingState>([]);
+const [isLoading, setIsLoading] = useState<boolean>(false);
+
+// Custom hook with proper typing
+export function useUserProfile(userId: string) {
+	const [profile, setProfile] = useState<UserProfile | null>(null);
+	const [loading, setLoading] = useState<boolean>(false);
+
+	return { profile, loading };
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+import React from 'react';
+
+// Wrong: Using React. prefix
+const [data, setData] = React.useState<SortingState>([]);
+const [loading, setLoading] = React.useState<boolean>(false);
+
+// Wrong: No type annotations
+const [profile, setProfile] = useState(null);
+```

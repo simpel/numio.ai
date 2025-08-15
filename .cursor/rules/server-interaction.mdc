@@ -1,5 +1,5 @@
 ---
-description:
+description: Next.js server/client component patterns
 globs:
   - src/**/*.{ts,tsx}
 alwaysApply: true

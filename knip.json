@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "apps/*/src/**/*.{ts,tsx}",
+    "packages/*/src/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "apps/*/src/**/*.{ts,tsx}",
+    "packages/*/src/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}"
+  ],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.next/**",
+    "**/build/**",
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}"
+  ]
+}

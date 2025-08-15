@@ -1,10 +1,58 @@
 ---
-description: 
-globs: 
+description: TypeScript type safety guidelines
+globs:
+  - src/**/*.{ts,tsx}
 alwaysApply: true
 ---
-#Type Safety
 
-- Never use stuff like // @ts-expect-error or // @ts-ignore
-- Never convert variables with "someVar as any", if there is no viable type you should create one
-   - if its not possible to create a type use "as unknown" instead of "as any". BUT THIS SHOULD REALLY ONLY HAPPEN IN EMERGENCY CASES!
+# TypeScript Type Safety
+
+## General Rules
+
+- **Never use `// @ts-expect-error` or `// @ts-ignore`**
+- **Never convert variables with `as any`**
+- **Create proper types** when viable types don't exist
+- **Use `as unknown`** only in emergency cases when no viable type can be created
+
+## Type Safety Guidelines
+
+### ✅ Good Examples
+
+```typescript
+// Proper type definition
+interface UserProfile {
+	id: string;
+	name: string;
+	email: string;
+}
+
+// Proper type assertion
+const userData = response.data as UserProfile;
+
+// Proper unknown usage (emergency only)
+const externalData = externalApi.getData() as unknown as UserProfile;
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Wrong: Using ts-ignore
+// @ts-ignore
+const userData = response.data;
+
+// Wrong: Using any
+const userData = response.data as any;
+
+// Wrong: Using ts-expect-error
+// @ts-expect-error - API returns wrong type
+const userData = response.data;
+```
+
+## When to Use `as unknown`
+
+Only use `as unknown` when:
+
+- Working with external APIs that have no type definitions
+- Dealing with legacy code that cannot be properly typed
+- Handling dynamic data that cannot be statically typed
+- As a temporary workaround while proper types are being created

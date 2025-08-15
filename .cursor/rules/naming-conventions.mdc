@@ -51,8 +51,10 @@ export default function userProfileCard({ user }: userProfileCardProps) {
 import { UserProfileCard } from '../../../components/UserProfileCard';
 ```
 
-description:
+description: File, component, and function naming standards
 globs:
-alwaysApply: false
+
+- src/\*_/_.{ts,tsx}
+  alwaysApply: true
 
 ---

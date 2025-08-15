@@ -1,5 +1,78 @@
----
-alwaysApply: true
----
+# UI Component Preferences
 
-When creating new UI do not use the shadcn Card component all the time. Prefer to list stuff using just a table. Common infoblocks such as organisation details etc, does not need to be contained by a card component.
+## General Rule
+
+- **Prefer tables over cards** for listing data
+- **Avoid overusing shadcn Card components**
+- **Use tables for structured data display**
+- **Reserve cards for complex, multi-faceted information**
+
+## When to Use Tables
+
+- **User lists** and member directories
+- **Data grids** and structured information
+- **Settings pages** with multiple options
+- **Any tabular data** that benefits from columns
+
+## When to Use Cards
+
+- **Dashboard widgets** with multiple metrics
+- **Complex entity details** (organization overview, user profiles)
+- **Feature highlights** or promotional content
+- **Multi-faceted information** that doesn't fit in a table
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// Table for user list
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead>Email</TableHead>
+      <TableHead>Role</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {users.map(user => (
+      <TableRow key={user.id}>
+        <TableCell>{user.name}</TableCell>
+        <TableCell>{user.email}</TableCell>
+        <TableCell>{user.role}</TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
+
+// Card for organization overview
+<Card>
+  <CardHeader>
+    <CardTitle>Organization Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="grid grid-cols-3 gap-4">
+      <div>Members: {org.memberCount}</div>
+      <div>Teams: {org.teamCount}</div>
+      <div>Cases: {org.caseCount}</div>
+    </div>
+  </CardContent>
+</Card>
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Wrong: Using cards for simple lists
+{users.map(user => (
+  <Card key={user.id}>
+    <CardContent>
+      <div>{user.name}</div>
+      <div>{user.email}</div>
+    </CardContent>
+  </Card>
+))}
+
+// Better: Use table for this data
+```

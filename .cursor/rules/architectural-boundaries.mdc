@@ -62,8 +62,10 @@ import { UserProfileCard } from '@src/components/user-profile-card';
 import { getUserProfile } from '../../../lib/db/user-profile/user-profile.actions';
 ```
 
-description:
+description: Layer separation and import rules
 globs:
-alwaysApply: false
+
+- src/\*_/_.{ts,tsx}
+  alwaysApply: true
 
 ---

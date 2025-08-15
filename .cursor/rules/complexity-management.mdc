@@ -98,8 +98,9 @@ export default function ComplexComponent({
 - Multiple responsibilities in single file
 - Deep nesting (more than 3 levels)
 - Repeated code patterns
-  description:
+  description: File size limits and refactoring strategies
   globs:
-  alwaysApply: false
+  - src/\*_/_.{ts,tsx}
+    alwaysApply: true
 
 ---

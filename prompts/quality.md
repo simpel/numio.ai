@@ -32,7 +32,7 @@ In addition to structural concerns, incorporate static analysis for **complexity
    Clear `apps/` vs `packages/` separation; no cross-layer leaks. Co-locate module code (`index.ts`, `types.ts`, `utils.ts`) and avoid barrel sprawl.
 
 3. **Architecture**  
-   Enforce boundaries (UI ↔ application ↔ domain ↔ infrastructure). No imports “up the stack”; no feature code inside `shared/` that depends on app code.
+   Enforce boundaries (UI ↔ application ↔ domain ↔ infrastructure). No imports "up the stack"; no feature code inside `shared/` that depends on app code.
 
 4. **Dependencies**  
    Detect import cycles, deep imports, and path alias misuse. Ensure stable modules depend only on more stable modules.
@@ -48,16 +48,248 @@ In addition to structural concerns, incorporate static analysis for **complexity
 
 ## Method
 
-- Map the dependency graph and list cycles and rule violations.
-- Sample a fixed number of modules per package to evaluate naming and structure.
-- Use automated tools to scan for duplication and unused exports. For duplication, run `jscpd` via `pnpm dlx jscpd` to detect copy-and-paste blocks and structurally similar code. For unused exports, run `ts-prune` via `pnpm dlx ts-prune` to list exported symbols that are not referenced anywhere.
-- In addition, measure complexity and detect secrets:
-  - **Complexity & Metrics:** use CodeCharta Shell (ccsh) via `pnpm dlx codecharta-analysis` to generate comprehensive metrics from source code. CodeCharta can analyze multiple languages, generate complexity metrics, and combine data from various sources like SonarQube, Tokei, and Git logs. It outputs a cc.json file that can be analyzed for complexity hotspots, code churn, and architectural patterns [oai_citation:0‡codecharta.com](https://codecharta.com/docs/overview/analysis).
+### Phase 0: Script Validation and Setup
 
-  - **Secrets:** run `secretlint` via `pnpm dlx secretlint` to scan for secret or credential data in source files. Secretlint accepts glob patterns (e.g. `"**/*"`) and reports any detected secrets [oai_citation:1‡npmjs.com](https://www.npmjs.com/package/secretlint/v/1.0.5).
+Before running any analysis, ensure all required scripts are present in `package.json`:
 
-- Report findings per package with concrete diffs or file paths.
-- For each pattern or convention found that is good and we should enfore, create a `.cursor/rules` file (MDC) containing a description and bullet-point guidelines.
+```bash
+# Check if all required quality analysis scripts exist
+REQUIRED_SCRIPTS=("quality:deps" "quality:unused" "quality:complexity" "quality:duplication" "quality:format")
+MISSING_SCRIPTS=()
+
+for script in "${REQUIRED_SCRIPTS[@]}"; do
+  if ! grep -q "\"$script\"" package.json; then
+    MISSING_SCRIPTS+=("$script")
+  fi
+done
+
+if [ ${#MISSING_SCRIPTS[@]} -gt 0 ]; then
+  echo "Missing scripts in package.json: ${MISSING_SCRIPTS[*]}"
+  echo "Adding missing scripts to package.json..."
+
+  # Add the missing scripts to package.json
+  # This should be done manually or via a script that modifies package.json
+  echo "Please add the following scripts to package.json:"
+  echo "  \"quality:deps\": \"depcruise src --include-only \\\"^src\\\" --output-type text\""
+  echo "  \"quality:deps:graph\": \"depcruise src --include-only \\\"^src\\\" --output-type dot\""
+  echo "  \"quality:deps:validate\": \"depcruise src --config .dependency-cruiser.js\""
+  echo "  \"quality:unused\": \"knip --reporter json --no-exit-code\""
+  echo "  \"quality:unused:text\": \"knip --reporter compact --no-exit-code\""
+  echo "  \"quality:complexity\": \"labinsight analyze --type deep --format json --silent\""
+  echo "  \"quality:complexity:text\": \"labinsight analyze --type deep --format text --silent\""
+  echo "  \"quality:duplication\": \"jscpd . --reporters json --ignore \\\"**/node_modules/**,**/dist/**,**/.next/**,**/build/**\\\"\""
+  echo "  \"quality:duplication:text\": \"jscpd . --reporters text --ignore \\\"**/node_modules/**,**/dist/**,**/.next/**,**/build/**\\\"\""
+  echo "  \"quality:format\": \"prettier --check \\\"**/*.{ts,tsx,js,jsx,json,css,scss,md}\\\"\""
+  echo "  \"quality:all\": \"pnpm run quality:deps && pnpm run quality:unused && pnpm run quality:complexity && pnpm run quality:duplication && pnpm run quality:format\""
+
+  exit 1
+fi
+
+# Check if Knip configuration exists
+if [ ! -f "knip.json" ] && [ ! -f "knip.jsonc" ] && [ ! -f "knip.config.js" ] && [ ! -f "knip.config.ts" ]; then
+  echo "Knip configuration not found. Initializing with pnpm create @knip/config..."
+  pnpm create @knip/config --yes 2>/dev/null || echo "Knip config creation failed, will use default configuration"
+
+  # If the create command didn't work, create a basic config manually
+  if [ ! -f "knip.json" ] && [ ! -f "knip.jsonc" ] && [ ! -f "knip.config.js" ] && [ ! -f "knip.config.ts" ]; then
+    echo "Creating basic knip.json manually..."
+    cat > knip.json << 'EOF'
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "apps/*/src/**/*.{ts,tsx}",
+    "packages/*/src/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "apps/*/src/**/*.{ts,tsx}",
+    "packages/*/src/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}"
+  ],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.next/**",
+    "**/build/**",
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}"
+  ]
+}
+EOF
+    echo "Created knip.json configuration file manually"
+  else
+    echo "Knip configuration created successfully"
+  fi
+fi
+
+echo "All required scripts found in package.json"
+```
+
+### Phase 1: Tool Research and Understanding
+
+Before installing or configuring any tools, thoroughly research and understand each tool's capabilities, configuration options, and best practices:
+
+#### 1. **Dependency Cruiser** ([GitHub](https://github.com/sverweij/dependency-cruiser))
+
+- **Purpose**: Validate and visualize dependencies with custom rules
+- **Capabilities**:
+  - Detect circular dependencies
+  - Enforce architectural boundaries
+  - Generate dependency graphs
+  - Custom rule validation
+- **Configuration**: `.dependency-cruiser.js` or `.dependency-cruiser.mjs`
+- **Key Features**: Support for TypeScript, JavaScript, Vue, JSX/TSX
+- **Output Formats**: Text, dot, json, html, mermaid
+
+#### 2. **ESLint** ([Official Site](https://eslint.org/))
+
+- **Purpose**: Static code analysis and linting
+- **Capabilities**:
+  - Code quality enforcement
+  - Naming convention validation
+  - Import/export analysis
+  - TypeScript integration
+- **Configuration**: `eslint.config.js` (flat config) or `.eslintrc.*`
+- **Key Features**: Extensible with plugins, supports modern JavaScript/TypeScript
+
+#### 3. **Knip** ([GitHub](https://github.com/webpro-nl/knip))
+
+- **Purpose**: Find unused files, dependencies, and exports
+- **Capabilities**:
+  - Detect unused exports
+  - Find dead code
+  - Identify unused dependencies
+  - TypeScript support
+- **Configuration**: `knip.json` or `knip.jsonc`
+- **Key Features**: Monorepo support, multiple project types
+
+#### 4. **LabInsight** ([GitHub](https://github.com/techfever-soft/labinsight))
+
+- **Purpose**: Code complexity and quality analysis
+- **Capabilities**:
+  - Cyclomatic complexity analysis
+  - Cognitive complexity measurement
+  - Code quality metrics
+  - Custom rule support
+- **Configuration**: `.labinsight` file
+- **Key Features**: Multi-language support, detailed reporting
+- **Important**: Must be configured to ignore build artifacts and cache directories
+
+#### 5. **Prettier** ([Official Site](https://prettier.io/))
+
+- **Purpose**: Code formatting and style consistency
+- **Capabilities**:
+  - Automatic code formatting
+  - Style enforcement
+  - Integration with editors
+- **Configuration**: `.prettierrc` or `prettier.config.js`
+- **Key Features**: Opinionated formatting, wide language support
+
+#### 6. **jscpd** ([GitHub](https://github.com/kucherenko/jscpd))
+
+- **Purpose**: Copy/paste detection and code duplication analysis
+- **Capabilities**:
+  - Detect duplicate code blocks
+  - Structural similarity analysis
+  - Multiple output formats
+- **Configuration**: `.jscpd.json` or command line options
+- **Key Features**: Support for 150+ languages, detailed reporting
+
+### Phase 2: Tool Installation and Configuration
+
+After understanding each tool, install and configure them properly:
+
+#### Installation Strategy
+
+1. **Install tools as dev dependencies** in the root package.json
+2. **Create proper configuration files** for each tool
+3. **Set up integration** with existing build processes
+4. **Configure ignore patterns** to exclude build artifacts and dependencies
+
+#### Installation Process
+
+**Step 1: Install All Tools**
+
+```bash
+# Install all quality analysis tools as dev dependencies
+pnpm add -D -w dependency-cruiser knip @techfever/labinsight jscpd
+
+# Note: eslint and prettier are already installed in the project
+```
+
+**Step 2: Update package.json Scripts**
+Add the following scripts to the root package.json:
+
+```json
+{
+	"scripts": {
+		"quality:deps": "depcruise src --include-only \"^src\" --output-type text",
+		"quality:unused": "knip --reporter --files json",
+		"quality:complexity": "labinsight analyze --type deep --format json --silent --ignore \"**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**,**/.DS_Store\"",
+		"quality:duplication": "jscpd . --reporters json --ignore \"**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**\"",
+		"quality:format": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\" --ignore \"audits/**\""
+	}
+}
+```
+
+#### Configuration Approach
+
+1. **Start with sensible defaults** from each tool
+2. **Customize rules** based on project requirements
+3. **Ensure tools work together** without conflicts
+4. **Set up proper output formats** for analysis
+5. **Configure ignore patterns** to exclude build artifacts and cache files
+
+#### Critical Ignore Patterns
+
+All analysis tools must ignore these directories and files:
+
+- `**/node_modules/**` - Dependencies
+- `**/dist/**` - Build outputs
+- `**/.next/**` - Next.js build cache
+- `**/.turbo/**` - Turborepo cache
+- `**/build/**` - General build outputs
+- `**/.DS_Store` - macOS system files
+- `**/*.test.{ts,tsx}` - Test files (for complexity analysis)
+- `**/*.spec.{ts,tsx}` - Spec files (for complexity analysis)
+
+### Phase 3: Analysis Execution
+
+Execute each tool in the correct order and capture comprehensive output:
+
+#### Analysis Order
+
+1. **Dependency Cruiser** - Architectural analysis
+2. **ESLint** - Code quality and style
+3. **Knip** - Unused code detection
+4. **LabInsight** - Complexity analysis
+5. **Prettier** - Formatting consistency
+6. **jscpd** - Duplication detection
+
+#### Output Capture
+
+- **Store raw output** from each tool in timestamped directories
+- **Parse and summarize** key findings
+- **Generate actionable insights** from tool output
+- **Create comprehensive reports** with specific recommendations
+
+### Phase 4: Results Processing
+
+Process and analyze the results from all tools:
+
+#### Data Aggregation
+
+- **Combine findings** from all tools
+- **Identify patterns** across different analysis types
+- **Prioritize issues** by severity and impact
+- **Generate metrics** for tracking improvement
+
+#### Report Generation
+
+- **Create detailed findings** with specific file references
+- **Provide actionable recommendations** for each issue
+- **Generate agent prompts** for implementation
+- **Update cursor rules** based on findings
 
 ## Output
 
@@ -88,12 +320,13 @@ In addition to structural concerns, incorporate static analysis for **complexity
 
 3. **Actions**: For every finding produce a clear agent instruction describing how to apply the recommended change (rename, move, delete, simplify). These instructions should be actionable tasks that can be followed to refactor the codebase.
 
-4. **Agent Prompts**: For each issue category, provide a specific agent prompt in the format "You're an expert Next.js, TypeScript developer and architect..." that includes:
+4. **Agent Prompts**: For each issue, provide a specific markdown formated agent prompt in the format "You're an expert Next.js, TypeScript developer and architect..." that includes:
    - Exact file references with full paths
    - Specific line numbers or code blocks that need changes
    - Code samples showing the current problematic code and the desired solution
    - Step-by-step instructions for the fix
    - Expected outcome after the change
+   - Step-by-step instructions on how to test the change made so we can verify that it was an improvement
 
    **Generate prompts for ALL issues found, not just major categories. Include prompts for:**
    - Every duplicated function/component (not just categories)
@@ -104,21 +337,13 @@ In addition to structural concerns, incorporate static analysis for **complexity
    - Every architectural boundary violation
    - Every configuration issue
 
-   **Format each agent prompt in a markdown code block for easy copying:**
+   **Prompt instructions**
+   - Make sure each prompt you generate follows the PRAR workflow.
+   - If possible provide desired outcomes and examples.
+   - Format each prompt in a markdown code block for easy copying
+   - Start each prompt by explaining that your a senior typescript developer and architect
 
-   ````markdown
-   ### Prompt X: [Brief Description]
-
-   ```bash
-   You're an expert Next.js, TypeScript developer and architect. [Detailed prompt content]
-   ```
-   ````
-
-   ```
-
-   ```
-
-5. **Rules**: For each pattern or convention identified (naming conventions, structure, architecture, dependencies, abstraction, config hygiene) generate, delete or update a rule file under `.cursor/rules` following MDC format with a description, appropriate globs and bullet-point guidelines. Read more about cursor rules here: https://docs.cursor.com/en/context/rules
+5. **Rules**: For each pattern or convention identified (naming conventions, structure, architecture, dependencies, abstraction, config hygiene) generate, delete or update a rule file under `.cursor/rules` following MDC format with a description, appropriate globs and bullet-point guidelines. Make sure to not duplicate rules or add contradictionary instructions. Be sure to check for existing rules before adding new ones. Editing/improving on existing rules is preferred. Read more about cursor rules here: https://docs.cursor.com/en/context/rules
 
 6. **GEMINI.md Structure**: Create or update the GEMINI.md file at the root of the project using the gated execution pattern described in the [Medium article about structured Gemini CLI approaches](https://medium.com/google-cloud/practical-gemini-cli-structured-approach-to-bloated-gemini-md-360d8a5c7487). The GEMINI.md should include:
    - **Default State**: Basic instructions for general assistance
@@ -177,244 +402,264 @@ In addition to structural concerns, incorporate static analysis for **complexity
    - **Refine**: Review and improve the implementation
    ```
 
-7. **AUDIT File**: Generate a datestamped markdown file named `AUDIT_<datetimestamp>.md` in a audits folder in the repository root containing all findings, analysis, proposed agent prompts, and the comprehensive refactoring plan. This file should serve as a complete record of the code quality assessment and actionable roadmap for improvements. It should also include a list of cursor rules that are either added, removed or edited
+7. **AUDIT File**: Generate a markdown file named `AUDIT.md` in the timestamped audit directory (`audits/<timestamp>/AUDIT.md`) containing all findings, analysis, proposed agent prompts, and the comprehensive refactoring plan. This file should serve as a complete record of the code quality assessment and actionable roadmap for improvements. It should also include a list of cursor rules that are either added, removed or edited
 
-### Example ESLint rules and config baselines
+8. **TOOL REPORTS**: Store all tool outputs in the `audits/<timestamp>/reports/` directory with descriptive filenames:
+   - `dependency-analysis.txt` and `dependency-graph.svg` (dependency-cruiser)
+   - `eslint-report.json` and `eslint-report.txt` (ESLint)
+   - `knip-report.json` and `knip-report.txt` (knip)
+   - `complexity-report.json` and `complexity-report.txt` (LabInsight)
+   - `prettier-report.txt` (Prettier)
+   - `duplication-report.json` and `duplication-report.txt` (jscpd)
 
-Use ESLint with plugins such as `@typescript-eslint`, `import`, `unused-imports` and `boundaries`. Enforce naming conventions, unused imports detection, import order and boundary rules. A typical configuration might look like:
+   This allows the end user to do deeper analysis of the raw tool outputs.
 
-```js
-// .eslintrc.cjs
-module.exports = {
-	root: true,
-	parser: '@typescript-eslint/parser',
-	plugins: ['@typescript-eslint', 'import', 'unused-imports', 'boundaries'],
-	extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
-	rules: {
-		'unused-imports/no-unused-imports': 'error',
-		'import/order': ['error', { 'newlines-between': 'always' }],
-		'import/no-cycle': ['error', { maxDepth: 1 }],
-		'@typescript-eslint/naming-convention': [
-			'error',
-			{ selector: 'variable', format: ['camelCase', 'UPPER_CASE'] },
-			{ selector: 'function', format: ['camelCase'] },
-			{ selector: 'typeLike', format: ['PascalCase'] },
-		],
-		'boundaries/element-types': ['error', { default: 'disallow' }],
-		'boundaries/no-external': 'off',
-		'boundaries/no-unknown': 'error',
-		'boundaries/entry-point': 'error',
-	},
-	settings: {
-		'boundaries/types': ['app', 'feature', 'shared', 'infra', 'domain'],
-		'boundaries/ignore': ['**/*.test.ts', '**/*.spec.ts'],
-	},
-};
-```
+## Tool-Specific Analysis Scripts
 
-## Auto-Checks
+### Dependency Cruiser Analysis
 
 ```bash
-# Read .gitignore patterns and create exclusion list
-GITIGNORE_EXCLUDE=""
-if [ -f ".gitignore" ]; then
-  echo "Using .gitignore patterns for exclusions"
-  # Convert .gitignore patterns to find/grep exclusions
-  while IFS= read -r line; do
-    # Skip comments and empty lines
-    [[ $line =~ ^[[:space:]]*# ]] && continue
-    [[ -z "${line// }" ]] && continue
-
-    # Remove leading/trailing whitespace
-    line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-    if [[ -n "$line" ]]; then
-      # Convert .gitignore pattern to find exclusion
-      if [[ $line == /* ]]; then
-        # Absolute pattern from root
-        GITIGNORE_EXCLUDE="$GITIGNORE_EXCLUDE -path './${line#/}' -prune -o"
-      elif [[ $line == */ ]]; then
-        # Directory pattern - exclude from any level in monorepo
-        GITIGNORE_EXCLUDE="$GITIGNORE_EXCLUDE -path '*/$line' -prune -o"
-      else
-        # File pattern - exclude from any level in monorepo
-        GITIGNORE_EXCLUDE="$GITIGNORE_EXCLUDE -name '$line' -o"
-      fi
-    fi
-  done < .gitignore
+# Check if dependency-cruiser is installed and add scripts if needed
+if ! grep -q "quality:deps" package.json; then
+  echo "Adding quality analysis scripts to package.json..."
+  # Add the scripts to package.json (this should be done manually or via script)
 fi
 
-# Add common monorepo exclusions if not already in .gitignore
-# Use -prune to stop find from descending into these directories
-COMMON_EXCLUDE="-path '*/node_modules' -prune -o -path '*/.next' -prune -o -path '*/dist' -prune -o -path '*/build' -prune -o -path '*/.turbo' -prune -o -path '*/coverage' -prune -o -path '*/.nyc_output' -prune -o -path '*/out' -prune -o -path '*/.vercel' -prune -o -name '*.log' -o -name '*.lock' -o -name '.DS_Store' -o -name 'Thumbs.db' -o -name '*.pem'"
+# Run analysis for circular dependencies using pnpm run
+pnpm run quality:deps > audits/$(date +"%Y%m%d_%H%M%S")/reports/dependency-analysis.txt
 
-# Combine exclusions
-FIND_EXCLUDE="$GITIGNORE_EXCLUDE $COMMON_EXCLUDE"
+# Generate dependency graph
+pnpm run quality:deps:graph | dot -T svg > audits/$(date +"%Y%m%d_%H%M%S")/reports/dependency-graph.svg
 
-# Create a simpler grep-based exclusion for more reliable filtering
-GREP_EXCLUDE="grep -v 'node_modules' | grep -v '.next' | grep -v 'dist' | grep -v 'build' | grep -v '.turbo' | grep -v 'coverage' | grep -v 'out' | grep -v '.vercel' | grep -v '.nyc_output' | grep -v '*.log' | grep -v '*.lock' | grep -v '.DS_Store' | grep -v 'Thumbs.db' | grep -v '*.pem'"
+# Validate against rules
+pnpm run quality:deps:validate
+```
 
-echo "Exclusion patterns: $FIND_EXCLUDE"
-echo "Grep exclusion: $GREP_EXCLUDE"
+### ESLint Analysis
 
-# Generate a dependency graph and detect cycles (if depcruise is available)
-# If not available, skip this step and note in findings
-if command -v depcruise &> /dev/null; then
-  pnpm dlx depcruise src --exclude "^(@types|node_modules)/" --output-type dot > deps.dot 2>/dev/null || echo "depcruise failed"
-else
-  echo "depcruise not available - skipping dependency analysis"
+```bash
+# Use existing lint command from package.json
+pnpm lint > audits/$(date +"%Y%m%d_%H%M%S")/reports/eslint-report.txt
+
+# Run ESLint with JSON format for programmatic analysis
+pnpm lint --format json > audits/$(date +"%Y%m%d_%H%M%S")/reports/eslint-report.json
+
+# Check for specific rule violations
+pnpm lint --format compact | grep -E "(naming-convention|import|no-unused)"
+```
+
+### Knip Analysis
+
+```bash
+# Check if knip is installed and add scripts if needed
+if ! grep -q "quality:unused" package.json; then
+  echo "Adding quality analysis scripts to package.json..."
+  # Add the scripts to package.json (this should be done manually or via script)
 fi
 
-# Run ESLint if available (check for .eslintrc files)
-if [ -f ".eslintrc.js" ] || [ -f ".eslintrc.cjs" ] || [ -f ".eslintrc.json" ] || [ -f ".eslintrc.yml" ]; then
-  pnpm lint 2>/dev/null || npm run lint 2>/dev/null || pnpm lint 2>/dev/null || echo "ESLint not configured or failed"
-else
-  echo "No ESLint config found - skipping linting analysis"
+# Initialize Knip configuration if not present
+if [ ! -f "knip.json" ] && [ ! -f "knip.jsonc" ] && [ ! -f "knip.config.js" ] && [ ! -f "knip.config.ts" ]; then
+  echo "Initializing Knip configuration with pnpm create @knip/config..."
+  pnpm create @knip/config --yes 2>/dev/null || echo "Knip config creation failed, will use default configuration"
+
+  # If the create command didn't work, create a basic config manually
+  if [ ! -f "knip.json" ] && [ ! -f "knip.jsonc" ] && [ ! -f "knip.config.js" ] && [ ! -f "knip.config.ts" ]; then
+    echo "Creating basic knip.json manually..."
+    cat > knip.json << 'EOF'
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "apps/*/src/**/*.{ts,tsx}",
+    "packages/*/src/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "apps/*/src/**/*.{ts,tsx}",
+    "packages/*/src/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}"
+  ],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.next/**",
+    "**/.turbo/**",
+    "**/build/**",
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}",
+    "**/.DS_Store"
+  ]
+}
+EOF
+    echo "Created knip.json configuration file manually"
+  else
+    echo "Knip configuration created successfully"
+  fi
 fi
 
-# Detect duplicate or copy‑pasted code across all source folders in the monorepo using jscpd
-# Build list of existing source directories only, respecting .gitignore
-SOURCE_DIRS=""
-for pattern in "apps/*/src" "packages/*/src" "src"; do
-  for dir in $pattern; do
-    if [ -d "$dir" ]; then
-      # Check if directory is ignored by .gitignore
-      if [ -f ".gitignore" ]; then
-        if grep -q "^${dir#./}$" .gitignore || grep -q "^${dir#./}/" .gitignore; then
-          echo "Skipping ignored directory: $dir"
-          continue
-        fi
-      fi
-      SOURCE_DIRS="$SOURCE_DIRS $dir"
-    fi
-  done
+# Run analysis for unused exports using pnpm run
+pnpm run quality:unused > audits/$(date +"%Y%m%d_%H%M%S")/reports/knip-report.json
+
+# Run compact version for readability
+pnpm run quality:unused:text > audits/$(date +"%Y%m%d_%H%M%S")/reports/knip-report.txt
+
+# Check specific categories
+pnpm dlx knip --include dependencies,exports,types > audits/$(date +"%Y%m%d_%H%M%S")/reports/knip-categories.txt
+```
+
+### LabInsight Analysis
+
+```bash
+# Check if labinsight is installed and add scripts if needed
+if ! grep -q "quality:complexity" package.json; then
+  echo "Adding quality analysis scripts to package.json..."
+  # Add the scripts to package.json (this should be done manually or via script)
+fi
+
+# Run complexity analysis using pnpm run
+pnpm run quality:complexity > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-report.json
+
+# Run text version for readability
+pnpm run quality:complexity:text > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-report.txt
+
+# Run basic analysis for comparison
+labinsight analyze --type basic --format json --silent --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**,**/.DS_Store" > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-basic.json
+```
+
+### Prettier Analysis
+
+```bash
+# Check if prettier is installed and add scripts if needed
+if ! grep -q "quality:format" package.json; then
+  echo "Adding quality analysis scripts to package.json..."
+  # Add the scripts to package.json (this should be done manually or via script)
+fi
+
+# Check formatting consistency using pnpm run
+# IMPORTANT: Use quality:format script, NOT pnpm format
+# The quality:format script uses prettier --check which provides proper output
+pnpm run quality:format > audits/$(date +"%Y%m%d_%H%M%S")/reports/prettier-report.txt 2>&1
+
+# Alternative: Run prettier directly if needed
+# prettier --check "**/*.{ts,tsx,js,jsx,json,css,scss,md}" > audits/$(date +"%Y%m%d_%H%M%S")/reports/prettier-report.txt 2>&1
+```
+
+**Important Notes:**
+
+- Prettier output shows `[warn]` for files that need formatting
+- Prettier output shows `[error]` for files with syntax errors
+- Exit code 0 = all files properly formatted
+- Exit code 1 = some files need formatting
+- Exit code 2 = syntax errors found
+- The output should contain file paths and formatting status, not content from other files
+- **Note:** Audit directories should be excluded from prettier analysis to avoid analyzing generated reports
+
+### jscpd Analysis
+
+```bash
+# Check if jscpd is installed and add scripts if needed
+if ! grep -q "quality:duplication" package.json; then
+  echo "Adding quality analysis scripts to package.json..."
+  # Add the scripts to package.json (this should be done manually or via script)
+fi
+
+# Run duplication analysis using pnpm run
+pnpm run quality:duplication > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-report.json
+
+# Run text version for readability
+pnpm run quality:duplication:text > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-report.txt
+
+# Generate detailed report with console and HTML output
+jscpd . --reporters console,html --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**" > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-detailed.txt
+```
+
+## Comprehensive Analysis Execution
+
+### Phase 3: Run Complete Analysis
+
+Execute the analysis in this order:
+
+#### Step 1: Setup Audit Directory
+
+```bash
+# Create timestamped audit directory
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+AUDIT_DIR="audits/${TIMESTAMP}"
+mkdir -p "${AUDIT_DIR}/reports"
+echo "Audit directory created: ${AUDIT_DIR}"
+```
+
+#### Step 2: Run All Analysis Tools
+
+```bash
+# Check if all required scripts exist in package.json
+echo "Checking for required quality analysis scripts..."
+REQUIRED_SCRIPTS=("quality:deps" "quality:unused" "quality:complexity" "quality:duplication" "quality:format")
+MISSING_SCRIPTS=()
+
+for script in "${REQUIRED_SCRIPTS[@]}"; do
+  if ! grep -q "\"$script\"" package.json; then
+    MISSING_SCRIPTS+=("$script")
+  fi
 done
 
-if [ -n "$SOURCE_DIRS" ]; then
-  echo "Scanning for duplicates in: $SOURCE_DIRS"
-  # Use jscpd with glob patterns for reliable exclusions
-  pnpm dlx jscpd $SOURCE_DIRS --reporters console --min-lines 5 --ignore "**/node_modules/**,**/dist/**,**/build/**,**/.next/**,**/.turbo/**,**/coverage/**,**/out/**,**/.vercel/**,**/*.log,**/*.lock,**/*.pem,**/*.min.js,**/*.map" 2>/dev/null || echo "jscpd failed"
-else
-  echo "No source directories found for duplication analysis"
+if [ ${#MISSING_SCRIPTS[@]} -gt 0 ]; then
+  echo "Missing scripts in package.json: ${MISSING_SCRIPTS[*]}"
+  echo "Please add the missing scripts to package.json before running the analysis"
+  exit 1
 fi
 
-# Find exported symbols that are never used anywhere using ts-prune
-# Check for TypeScript config files and run ts-prune for each
-TS_CONFIGS=$(find . $FIND_EXCLUDE -name "tsconfig.json" -type f 2>/dev/null | head -10)
-if [ -n "$TS_CONFIGS" ]; then
-  echo "$TS_CONFIGS" | while read -r tsconfig; do
-    echo "Running ts-prune on $tsconfig"
-    pnpm dlx ts-prune -p "$tsconfig" 2>/dev/null || echo "ts-prune failed for $tsconfig"
-  done
-else
-  echo "No tsconfig.json files found"
-fi
+echo "All required scripts found in package.json"
 
-# Generate comprehensive metrics using CodeCharta Shell (ccsh)
-# This provides complexity, churn, and architectural metrics
-echo "Generating CodeCharta metrics..."
-if command -v ccsh >/dev/null 2>&1 || pnpm dlx codecharta-analysis --version >/dev/null 2>&1; then
-  # Generate metrics from source code using unifiedparser
-  pnpm dlx codecharta-analysis unifiedparser . --output-file metrics.cc.json --exclude "node_modules,.next,dist,build,.turbo,coverage,out,.vercel" --not-compressed 2>/dev/null || echo "CodeCharta source-code analysis failed"
+# Primary analysis using pnpm run scripts
+pnpm run quality:deps > "${AUDIT_DIR}/reports/dependency-analysis.txt"
+pnpm run quality:unused > "${AUDIT_DIR}/reports/knip-report.json"
+pnpm run quality:complexity > "${AUDIT_DIR}/reports/complexity-report.json"
+pnpm run quality:duplication > "${AUDIT_DIR}/reports/duplication-report.json"
 
-  # Generate git-based metrics if git repository
-  if [ -d ".git" ]; then
-    pnpm dlx codecharta-analysis gitlog . --output-file git-metrics.cc.json --not-compressed 2>/dev/null || echo "CodeCharta git-log analysis failed"
-  fi
+# Code quality checks
+pnpm lint > "${AUDIT_DIR}/reports/eslint-report.txt"
+pnpm run quality:format > "${AUDIT_DIR}/reports/prettier-report.txt" 2>&1
 
-  # Use Tokei for language statistics if available
-  if command -v tokei >/dev/null 2>&1; then
-    tokei --output json . > tokei-stats.json 2>/dev/null
-    pnpm dlx codecharta-analysis tokei tokei-stats.json --output-file tokei-metrics.cc.json --not-compressed 2>/dev/null || echo "CodeCharta tokei import failed"
-  fi
+# Additional formats and analysis using pnpm run
+# Compact versions of JSON reports for readability
+pnpm run quality:unused:text > "${AUDIT_DIR}/reports/knip-report.txt"
+pnpm run quality:complexity:text > "${AUDIT_DIR}/reports/complexity-report.txt"
+pnpm run quality:duplication:text > "${AUDIT_DIR}/reports/duplication-report.txt"
 
-  # Merge all metrics if multiple files exist
-  if [ -f "metrics.cc.json" ] && [ -f "git-metrics.cc.json" ]; then
-    pnpm dlx codecharta-analysis merge metrics.cc.json git-metrics.cc.json --output-file combined-metrics.cc.json --not-compressed 2>/dev/null || echo "CodeCharta merge failed"
-  fi
+# Additional analysis for comprehensive coverage
+# ESLint JSON format for programmatic analysis
+pnpm lint --format json > "${AUDIT_DIR}/reports/eslint-report.json"
 
-  # Analyze the metrics file for complexity hotspots
-  if [ -f "combined-metrics.cc.json" ]; then
-    echo "Analyzing CodeCharta metrics for complexity hotspots..."
-    # Extract high complexity files from cc.json (recursive search through folder structure)
-    cat combined-metrics.cc.json | jq -r '.data.nodes[] | recurse(.children[]?) | select(.type=="File") | select(.attributes.complexity > 10) | "\(.name): \(.attributes.complexity) complexity"' 2>/dev/null | head -20 || echo "No high complexity files found"
-  elif [ -f "metrics.cc.json" ]; then
-    echo "Analyzing source code metrics for complexity hotspots..."
-    cat metrics.cc.json | jq -r '.data.nodes[] | recurse(.children[]?) | select(.type=="File") | select(.attributes.complexity > 10) | "\(.name): \(.attributes.complexity) complexity"' 2>/dev/null | head -20 || echo "No high complexity files found"
-  fi
-else
-  echo "CodeCharta not available - using fallback complexity analysis"
-  # Fallback: simple complexity estimation
-  find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs wc -l 2>/dev/null | sort -nr | head -10 || echo "Fallback complexity analysis failed"
-fi
+# Knip specific categories analysis
+pnpm dlx knip --include dependencies,exports,types --no-exit-code > "${AUDIT_DIR}/reports/knip-categories.txt"
 
-# Scan the repository for hard‑coded secrets
-echo "Scanning for secrets..."
-# Use grep-based secret detection (more reliable than secretlint with missing dependencies)
-echo "Checking for common secret patterns..."
-find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.json" -o -name "*.env*" 2>/dev/null | eval $GREP_EXCLUDE | xargs grep -l -i -E "(api_key|secret|password|token|private_key|access_key|client_secret|auth_token)" 2>/dev/null | head -10 || echo "No obvious secrets found"
+# LabInsight basic analysis for comparison
+labinsight analyze --type basic --format json --silent --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**,**/.DS_Store" > "${AUDIT_DIR}/reports/complexity-basic.json"
 
-# Additional manual checks that don't require external tools:
-# 1. Check for common naming convention violations (using grep-based exclusions)
-find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | grep -E "(PascalCase|camelCase)" | head -20 2>/dev/null || echo "No naming convention violations found"
+# JSCPD detailed report with console and HTML output
+jscpd . --reporters console,html --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**" > "${AUDIT_DIR}/reports/duplication-detailed.txt"
 
-# 2. Check for deep relative imports (../../..) (using grep-based exclusions)
-find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs grep -l "\.\./\.\./\.\./" 2>/dev/null | head -10 || echo "No deep relative imports found"
+# Dependency cruiser validation against rules
+pnpm run quality:deps:validate > "${AUDIT_DIR}/reports/dependency-validation.txt"
 
-# 3. Check for potential circular dependencies (simple heuristic) (using grep-based exclusions)
-find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs grep -l "import.*from.*\.\." 2>/dev/null | head -10 || echo "No potential circular dependencies found"
-
-# 4. Count total lines of code (excluding ignored files)
-echo "Counting lines of code (excluding ignored files)..."
-  # Build exclusion patterns for find commands
-  GREP_EXCLUDE="grep -v 'node_modules' | grep -v '.next' | grep -v 'dist' | grep -v 'build' | grep -v '.turbo' | grep -v 'coverage' | grep -v 'out' | grep -v '.vercel' | grep -v '.nyc_output' | grep -v '*.log' | grep -v '*.lock' | grep -v '.DS_Store' | grep -v 'Thumbs.db' | grep -v '*.pem'"
-
-  # Count total lines of code
-  TOTAL_LOC=$(find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" 2>/dev/null | eval $GREP_EXCLUDE | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
-echo "Total lines of code: $TOTAL_LOC"
+# Generate dependency graph
+pnpm run quality:deps:graph | dot -T svg > "${AUDIT_DIR}/reports/dependency-graph.svg"
 ```
 
-## Fallback Analysis (When Tools Are Not Available)
-
-If the above tools are not available or fail, perform manual analysis:
-
-1. **Dependency Analysis**: Manually trace import statements in key files to identify potential cycles
-2. **Duplication Detection**: Look for similar function names and patterns across files
-3. **Complexity Assessment**: Count function parameters, nesting levels, and conditional branches
-4. **Naming Convention Check**: Scan file and folder names for consistency
-5. **Import Pattern Analysis**: Check for deep relative imports and inconsistent path usage
-6. **Secret Detection**: Look for common patterns like API keys, passwords, tokens in source files
-
-## Repository Structure Detection
-
-Automatically detect the repository structure:
+#### Step 3: Generate Audit Report
 
 ```bash
-# Detect if this is a monorepo
-if [ -f "pnpm-workspace.yaml" ] || [ -f "lerna.json" ] || [ -f "turbo.json" ]; then
-  echo "Monorepo detected"
-  # List all packages/apps
-  find . -name "package.json" -type f 2>/dev/null | head -20
-fi
-
-# Detect framework
-if [ -f "next.config.js" ] || [ -f "next.config.ts" ]; then
-  echo "Next.js project detected"
-elif [ -f "vite.config.js" ] || [ -f "vite.config.ts" ]; then
-  echo "Vite project detected"
-elif [ -f "webpack.config.js" ]; then
-  echo "Webpack project detected"
-fi
-
-# Detect TypeScript usage
-if [ -f "tsconfig.json" ]; then
-  echo "TypeScript project detected"
-fi
+# The audit report will be generated as AUDIT.md in the audit directory
+# This will be created by the analysis script with all findings and recommendations
 ```
+
+#### Step 4: Review cursor rules
+
+When you're done with the audit review the cursor rules and see if they're all needed. If rules contradict each other only keep the one that suites the best. If rules are very similar you should combine them.
 
 ## Review Rubric
 
-- High: cycles, boundary violations, duplicate utilities, single-use wrappers, deep imports, inconsistent naming, high complexity functions or modules, hard-coded secrets.
+- **High**: cycles, boundary violations, duplicate utilities, single-use wrappers, deep imports, inconsistent naming, high complexity functions or modules, hard-coded secrets.
 
-- Medium: leaky folders, over-generic shared modules, missing base tsconfig, barrels hiding dependencies, moderately complex code that may need refactoring.
-- Low: minor naming nits, import order, low complexity issues.
+- **Medium**: leaky folders, over-generic shared modules, missing base tsconfig, barrels hiding dependencies, moderately complex code that may need refactoring.
+- **Low**: minor naming nits, import order, low complexity issues.

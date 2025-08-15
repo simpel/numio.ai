@@ -32,6 +32,36 @@ export const config = [
       ],
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          selector: "default",
+          format: ["camelCase"],
+        },
+        {
+          selector: "variable",
+          format: ["camelCase", "UPPER_CASE"],
+        },
+        {
+          selector: "parameter",
+          format: ["camelCase"],
+          leadingUnderscore: "allow",
+        },
+        {
+          selector: "memberLike",
+          modifiers: ["private"],
+          format: ["camelCase"],
+          leadingUnderscore: "require",
+        },
+        {
+          selector: "typeLike",
+          format: ["PascalCase"],
+        },
+        {
+          selector: "function",
+          format: ["camelCase", "PascalCase"],
+        },
+      ],
     },
   },
   {
