@@ -5,6 +5,9 @@ export default [
   ...config,
   {
     ignores: [
+      "eslint.config.js",
+      "tsup.config.ts",
+      "prisma.config.ts",
       "dist/**", 
       "node_modules/**",
       "coverage/**",

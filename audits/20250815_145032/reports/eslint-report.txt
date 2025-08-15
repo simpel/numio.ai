@@ -1,0 +1,75 @@
+
+> @numio/ai@ lint /Users/joel.sanden/Code/privat/numio
+> turbo run lint
+
+turbo 2.5.5
+
+• Packages in scope: @numio/ai-database, @numio/eslint-config, @numio/mail, @numio/tsup-config, @numio/typescript-config, @numio/web
+• Running lint in 6 packages
+• Remote caching disabled
+@numio/ai-database:lint: cache miss, executing 6f9088f0f93e246f
+@numio/mail:lint: cache hit, replaying logs c628a2f787b65b17
+@numio/mail:lint: 
+@numio/mail:lint: 
+@numio/mail:lint: > @numio/mail@1.0.0 lint /Users/joel.sanden/Code/privat/numio/apps/mail
+@numio/mail:lint: > eslint . --fix
+@numio/mail:lint: 
+@numio/mail:lint: [0m[0m
+@numio/mail:lint: [0m[4m/Users/joel.sanden/Code/privat/numio/apps/mail/src/handlers/send-mail.ts[24m[0m
+@numio/mail:lint: [0m   [2m5:27[22m  [33mwarning[39m  RESEND_API_KEY is not listed as a dependency in turbo.json      [2mturbo/no-undeclared-env-vars[22m[0m
+@numio/mail:lint: [0m  [2m26:29[22m  [33mwarning[39m  DEV_EMAIL_OVERRIDE is not listed as a dependency in turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
+@numio/mail:lint: [0m  [2m40:12[22m  [33mwarning[39m  RESEND_FROM is not listed as a dependency in turbo.json         [2mturbo/no-undeclared-env-vars[22m[0m
+@numio/mail:lint: [0m[0m
+@numio/mail:lint: [0m[4m/Users/joel.sanden/Code/privat/numio/apps/mail/src/index.ts[24m[0m
+@numio/mail:lint: [0m   [2m48:5[22m  [33mwarning[39m  Don't use process.exit(); throw an error instead                        [2mno-process-exit[22m[0m
+@numio/mail:lint: [0m   [2m80:8[22m  [33mwarning[39m  Unexpected any. Specify a different type                                [2m@typescript-eslint/no-explicit-any[22m[0m
+@numio/mail:lint: [0m   [2m83:3[22m  [33mwarning[39m  'next' is defined but never used. Allowed unused args must match /^_/u  [2munused-imports/no-unused-vars[22m[0m
+@numio/mail:lint: [0m  [2m124:8[22m  [33mwarning[39m  MAIL_API_HOST is not listed as a dependency in turbo.json               [2mturbo/no-undeclared-env-vars[22m[0m
+@numio/mail:lint: [0m[0m
+@numio/mail:lint: [0m[4m/Users/joel.sanden/Code/privat/numio/apps/mail/src/middleware/auth.ts[24m[0m
+@numio/mail:lint: [0m   [2m5:9[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+@numio/mail:lint: [0m  [2m34:11[22m  [33mwarning[39m  'err' is defined but never used           [2munused-imports/no-unused-vars[22m[0m
+@numio/mail:lint: [0m[0m
+@numio/mail:lint: [0m[33m[1m✖ 9 problems (0 errors, 9 warnings)[22m[39m[0m
+@numio/mail:lint: [0m[33m[1m[22m[39m[0m
+@numio/ai-database:lint: 
+@numio/ai-database:lint: > @numio/ai-database@1.0.0 lint /Users/joel.sanden/Code/privat/numio/apps/database
+@numio/ai-database:lint: > eslint . --fix
+@numio/ai-database:lint: 
+@numio/ai-database:lint: 
+@numio/ai-database:lint: /Users/joel.sanden/Code/privat/numio/apps/database/src/metrics.ts
+@numio/ai-database:lint:    5:2  error  Object Literal Property name `USER_PROFILE` must match one of the following formats: camelCase  @typescript-eslint/naming-convention
+@numio/ai-database:lint:    6:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:    7:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:    9:2  error  Object Literal Property name `ORGANIZATION` must match one of the following formats: camelCase  @typescript-eslint/naming-convention
+@numio/ai-database:lint:   10:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   11:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   13:2  error  Object Literal Property name `TEAM` must match one of the following formats: camelCase          @typescript-eslint/naming-convention
+@numio/ai-database:lint:   14:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   15:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   17:2  error  Object Literal Property name `INVITE` must match one of the following formats: camelCase        @typescript-eslint/naming-convention
+@numio/ai-database:lint:   18:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   19:3  error  Object Literal Property name `EXPIRED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   20:3  error  Object Literal Property name `ACCEPTED` must match one of the following formats: camelCase      @typescript-eslint/naming-convention
+@numio/ai-database:lint:   21:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   23:2  error  Object Literal Property name `CASE` must match one of the following formats: camelCase          @typescript-eslint/naming-convention
+@numio/ai-database:lint:   24:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   25:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint: 
+@numio/ai-database:lint: /Users/joel.sanden/Code/privat/numio/apps/database/src/seed.ts
+@numio/ai-database:lint:   385:14  error  Variable name `_org` must match one of the following formats: camelCase, UPPER_CASE               @typescript-eslint/naming-convention
+@numio/ai-database:lint:   499:8   error  Variable name `_createRecentDate` must match one of the following formats: camelCase, UPPER_CASE  @typescript-eslint/naming-convention
+@numio/ai-database:lint: 
+@numio/ai-database:lint: ✖ 19 problems (19 errors, 0 warnings)
+@numio/ai-database:lint: 
+@numio/ai-database:lint:  ELIFECYCLE  Command failed with exit code 1.
+@numio/ai-database:lint: ERROR: command finished with error: command (/Users/joel.sanden/Code/privat/numio/apps/database) /usr/local/bin/pnpm run lint exited (1)
+@numio/ai-database#lint: command (/Users/joel.sanden/Code/privat/numio/apps/database) /usr/local/bin/pnpm run lint exited (1)
+
+ Tasks:    1 successful, 2 total
+Cached:    1 cached, 2 total
+  Time:    1.466s 
+Failed:    @numio/ai-database#lint
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Command failed with exit code 1.

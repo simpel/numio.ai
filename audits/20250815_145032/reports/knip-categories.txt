@@ -1,0 +1,162 @@
+Unused dependencies (43)
+@ai-sdk/react                    apps/database/package.json:40:6
+@faker-js/faker                  apps/database/package.json:41:6
+@types/uuid                      apps/database/package.json:43:6
+ai                               apps/database/package.json:44:6
+bcrypt                           apps/database/package.json:45:6
+uuid                             apps/database/package.json:46:6
+@types/uuid                      apps/mail/package.json:18:6    
+nodemon                          apps/mail/package.json:24:6    
+pino-pretty                      apps/mail/package.json:27:6    
+uuid                             apps/mail/package.json:30:6    
+@ai-sdk/anthropic                apps/web/package.json:15:4     
+@ai-sdk/azure                    apps/web/package.json:16:4     
+@ai-sdk/deepseek                 apps/web/package.json:17:4     
+@ai-sdk/fireworks                apps/web/package.json:18:4     
+@ai-sdk/google                   apps/web/package.json:19:4     
+@ai-sdk/groq                     apps/web/package.json:20:4     
+@ai-sdk/openai                   apps/web/package.json:21:4     
+@ai-sdk/react                    apps/web/package.json:22:4     
+@ai-sdk/xai                      apps/web/package.json:23:4     
+@azure/storage-blob              apps/web/package.json:25:4     
+@radix-ui/react-collapsible      apps/web/package.json:31:4     
+@radix-ui/react-icons            apps/web/package.json:36:4     
+@radix-ui/react-navigation-menu  apps/web/package.json:38:4     
+@radix-ui/react-progress         apps/web/package.json:40:4     
+@radix-ui/react-scroll-area      apps/web/package.json:41:4     
+@radix-ui/react-select           apps/web/package.json:42:4     
+@radix-ui/react-separator        apps/web/package.json:43:4     
+@radix-ui/react-switch           apps/web/package.json:45:4     
+@radix-ui/react-toggle           apps/web/package.json:47:4     
+@radix-ui/react-visually-hidden  apps/web/package.json:49:4     
+@tavily/core                     apps/web/package.json:53:4     
+ai                               apps/web/package.json:57:4     
+classnames                       apps/web/package.json:60:4     
+embla-carousel-react             apps/web/package.json:64:4     
+react-katex                      apps/web/package.json:76:4     
+react-markdown                   apps/web/package.json:77:4     
+react-syntax-highlighter         apps/web/package.json:78:4     
+react-textarea-autosize          apps/web/package.json:79:4     
+rehype-external-links            apps/web/package.json:81:4     
+rehype-katex                     apps/web/package.json:82:4     
+remark-gfm                       apps/web/package.json:83:4     
+remark-math                      apps/web/package.json:84:4     
+swr                              apps/web/package.json:86:4     
+Unused devDependencies (11)
+@ai-sdk/react                    apps/database/package.json:25:6
+@types/bcrypt                    apps/database/package.json:30:6
+dotenv                           apps/database/package.json:31:6
+prisma-json-types-generator      apps/database/package.json:35:6
+tsx                              apps/database/package.json:37:6
+@comprend/azure                  apps/web/package.json:94:4     
+@types/node-fetch                apps/web/package.json:101:4    
+@types/react-syntax-highlighter  apps/web/package.json:104:4    
+autoprefixer                     apps/web/package.json:105:4    
+dotenv                           apps/web/package.json:106:4    
+dotenv-cli                       apps/web/package.json:107:4    
+Unused exports (91)
+AlertDialogPortal                           apps/web/shadcn/ui/alert-dialog.tsx:130:14                     
+AlertDialogOverlay                          apps/web/shadcn/ui/alert-dialog.tsx:131:20                     
+AlertTitle                                  apps/web/shadcn/ui/alert.tsx:66:16                             
+badgeVariants                               apps/web/shadcn/ui/badge.tsx:36:16                             
+CardFooter                                  apps/web/shadcn/ui/card.tsx:85:13                              
+CardAction                                  apps/web/shadcn/ui/card.tsx:87:12                              
+CommandDialog                               apps/web/shadcn/ui/command.tsx:175:10                          
+CommandShortcut                             apps/web/shadcn/ui/command.tsx:181:14                          
+CommandSeparator                            apps/web/shadcn/ui/command.tsx:182:18                          
+ContextMenuItem                             apps/web/shadcn/ui/context-menu.tsx:239:21                     
+ContextMenuCheckboxItem                     apps/web/shadcn/ui/context-menu.tsx:240:18                     
+ContextMenuRadioItem                        apps/web/shadcn/ui/context-menu.tsx:241:26                     
+ContextMenuLabel                            apps/web/shadcn/ui/context-menu.tsx:242:23                     
+ContextMenuSeparator                        apps/web/shadcn/ui/context-menu.tsx:243:19                     
+ContextMenuShortcut                         apps/web/shadcn/ui/context-menu.tsx:244:23                     
+ContextMenuGroup                            apps/web/shadcn/ui/context-menu.tsx:245:22                     
+ContextMenuPortal                           apps/web/shadcn/ui/context-menu.tsx:246:19                     
+ContextMenuSub                              apps/web/shadcn/ui/context-menu.tsx:247:20                     
+ContextMenuSubContent                       apps/web/shadcn/ui/context-menu.tsx:248:17                     
+ContextMenuSubTrigger                       apps/web/shadcn/ui/context-menu.tsx:249:24                     
+ContextMenuRadioGroup                       apps/web/shadcn/ui/context-menu.tsx:250:24                     
+DialogOverlay                               apps/web/shadcn/ui/dialog.tsx:138:15                           
+DialogPortal                                apps/web/shadcn/ui/dialog.tsx:139:16                           
+DropdownMenuCheckboxItem                    apps/web/shadcn/ui/dropdown-menu.tsx:188:19                    
+DropdownMenuShortcut                        apps/web/shadcn/ui/dropdown-menu.tsx:192:24                    
+DropdownMenuGroup                           apps/web/shadcn/ui/dropdown-menu.tsx:193:23                    
+DropdownMenuPortal                          apps/web/shadcn/ui/dropdown-menu.tsx:194:20                    
+useFormField                                apps/web/shadcn/ui/form.tsx:159:9                              
+FormDescription                             apps/web/shadcn/ui/form.tsx:164:14                             
+PopoverAnchor                               apps/web/shadcn/ui/popover.tsx:48:50                           
+TableFooter                                 apps/web/shadcn/ui/table.tsx:110:12                            
+TableCaption                                apps/web/shadcn/ui/table.tsx:114:12                            
+TooltipProvider                             apps/web/shadcn/ui/tooltip.tsx:61:50                           
+SortableColumnHeader              function  apps/web/src/components/data-table.tsx:304:17                  
+redirect                                    apps/web/src/i18n/navigation.ts:6:22                           
+getPathname                                 apps/web/src/i18n/navigation.ts:6:56                           
+signInWithMicrosoft               function  apps/web/src/lib/auth/auth.actions.ts:18:23                    
+signOutAction                     function  apps/web/src/lib/auth/auth.actions.ts:40:23                    
+createUserProfileAction           function  apps/web/src/lib/auth/auth.actions.ts:72:23                    
+authOptions                                 apps/web/src/lib/auth/auth.ts:12:14                            
+getUserProfileWithRole                      apps/web/src/lib/auth/auth.utils.ts:23:14                      
+requireAuth                                 apps/web/src/lib/auth/auth.utils.ts:39:14                      
+Role                                        apps/web/src/lib/auth/auth.utils.ts:50:9                       
+getCaseAction                     function  apps/web/src/lib/db/case/case.actions.ts:37:23                 
+updateCaseAction                  function  apps/web/src/lib/db/case/case.actions.ts:100:23                
+deleteCaseAction                  function  apps/web/src/lib/db/case/case.actions.ts:129:23                
+getCasesForUserByIdAction         function  apps/web/src/lib/db/case/case.actions.ts:282:23                
+createEventAction                 function  apps/web/src/lib/db/event/event.actions.ts:6:23                
+getEventAction                    function  apps/web/src/lib/db/event/event.actions.ts:18:23               
+updateEventAction                 function  apps/web/src/lib/db/event/event.actions.ts:30:23               
+deleteEventAction                 function  apps/web/src/lib/db/event/event.actions.ts:43:23               
+getInviteByTokenAction            function  apps/web/src/lib/db/membership/invite.actions.ts:50:23         
+expireOldInvitesAction            function  apps/web/src/lib/db/membership/invite.actions.ts:214:23        
+listInvitesForContextAction       function  apps/web/src/lib/db/membership/invite.actions.ts:231:23        
+listInvitesForEmailAction         function  apps/web/src/lib/db/membership/invite.actions.ts:244:23        
+getPendingInvitesForUserAction    function  apps/web/src/lib/db/membership/invite.actions.ts:361:23        
+getInviteByIdAction               function  apps/web/src/lib/db/membership/invite.actions.ts:502:23        
+getUserMembershipsAction          function  apps/web/src/lib/db/membership/membership.actions.ts:44:23     
+removeMembershipAction            function  apps/web/src/lib/db/membership/membership.actions.ts:141:23    
+deleteMembershipAction            function  apps/web/src/lib/db/membership/membership.actions.ts:163:23    
+getOrganisationMembershipsAction  function  apps/web/src/lib/db/membership/membership.actions.ts:170:23    
+getTeamMembershipsAction          function  apps/web/src/lib/db/membership/membership.actions.ts:205:23    
+getClientMembershipsAction        function  apps/web/src/lib/db/membership/membership.actions.ts:283:23    
+createMembershipAction            function  apps/web/src/lib/db/membership/membership.actions.ts:316:23    
+updateMembershipAction            function  apps/web/src/lib/db/membership/membership.actions.ts:339:23    
+getOrganisationMemberships        function  apps/web/src/lib/db/membership/membership.utils.ts:93:23       
+getTeamMemberships                function  apps/web/src/lib/db/membership/membership.utils.ts:102:23      
+getCaseMemberships                function  apps/web/src/lib/db/membership/membership.utils.ts:111:23      
+getClientMemberships              function  apps/web/src/lib/db/membership/membership.utils.ts:120:23      
+getOrganisationAction             function  apps/web/src/lib/db/organisation/organisation.actions.ts:142:23
+updateOrganisationAction          function  apps/web/src/lib/db/organisation/organisation.actions.ts:233:23
+deleteOrganisationAction          function  apps/web/src/lib/db/organisation/organisation.actions.ts:249:23
+getOrgsWithAdminRightsAction      function  apps/web/src/lib/db/organisation/organisation.actions.ts:283:23
+createTeamAction                  function  apps/web/src/lib/db/team/team.actions.ts:36:23                 
+checkTeamNameAction               function  apps/web/src/lib/db/team/team.actions.ts:104:23                
+getTeamsForUserByIdAction         function  apps/web/src/lib/db/team/team.actions.ts:201:23                
+getTeamsWhereUserIsOwnerAction    function  apps/web/src/lib/db/team/team.actions.ts:249:23                
+getTeamDetailsAction              function  apps/web/src/lib/db/team/team.actions.ts:307:23                
+leaveTeamAction                   function  apps/web/src/lib/db/team/team.actions.ts:405:23                
+getUserTeamMembershipsAction      function  apps/web/src/lib/db/team/team.actions.ts:424:23                
+updateTeamStateAction             function  apps/web/src/lib/db/team/team.actions.ts:517:23                
+updateTeamAction                  function  apps/web/src/lib/db/team/team.actions.ts:648:23                
+searchUserProfilesAction          function  apps/web/src/lib/db/user-profile/user-profile.actions.ts:9:23  
+getAllUserProfilesAction          function  apps/web/src/lib/db/user-profile/user-profile.actions.ts:49:23 
+UserProfileSearchSchema                     apps/web/src/lib/db/user-profile/user-profile.types.ts:3:14    
+createUserAction                  function  apps/web/src/lib/db/user/user.actions.ts:6:23                  
+CASE_STATE_TRANSITIONS                      apps/web/src/lib/state-machines/case-state-machine.ts:14:14    
+canTransitionTo                   function  apps/web/src/lib/state-machines/case-state-machine.ts:49:17    
+getStateColor                     function  apps/web/src/lib/state-machines/case-state-machine.ts:68:17    
+sendOrganisationOwnerEmail        function  apps/web/src/mails/organisation.ts:43:23                       
+normalize                                   apps/web/src/utils/index.ts:8:14                               
+Unused exported types (7)
+SendMailProps         type       apps/mail/src/handlers/send-mail.ts:7:13                     
+AuthenticatedRequest  interface  apps/mail/src/middleware/auth.ts:4:18                        
+BadgeProps            interface  apps/web/shadcn/ui/badge.tsx:26:18                           
+CaseData              interface  apps/web/src/lib/db/case/case.actions.ts:9:18                
+OrganisationData      interface  apps/web/src/lib/db/organisation/organisation.actions.ts:9:18
+TeamData              interface  apps/web/src/lib/db/team/team.actions.ts:128:18              
+CaseStateTransition   interface  apps/web/src/lib/state-machines/case-state-machine.ts:9:18   
+Configuration hints (5)
+Remove or move unused top-level entry to one of workspaces: [apps/*/src/**/*.{ts,tsx}, …]
+Remove or move unused top-level project to one of workspaces: [apps/*/src/**/*.{ts,tsx}, …]
+Refine entry in root "." workspace: [apps/*/src/**/*.{ts,tsx}, …] (no files found)
+Refine project in root "." workspace: [apps/*/src/**/*.{ts,tsx}, …] (no files found)
+Add to or refine in workspaces: apps/web (56 unused files)

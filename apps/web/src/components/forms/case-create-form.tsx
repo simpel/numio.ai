@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createCaseAction } from '@src/lib/db/case/case.actions';
 import { Prisma } from '@numio/ai-database';
-import { CaseFormSchema, CaseFormValues } from '@src/lib/db/case/case.types';
+import { caseFormSchema, CaseFormValues } from '@src/lib/db/case/case.types';
 import {
 	Form,
 	FormControl,
@@ -59,7 +59,7 @@ export default function CaseCreateForm({
 	const [error, setError] = useState<string | null>(null);
 
 	const form = useForm<CaseFormValues>({
-		resolver: zodResolver(CaseFormSchema),
+		resolver: zodResolver(caseFormSchema),
 		defaultValues: {
 			clientId: initialClientId ?? '',
 			teamId: initialTeamId ?? '',

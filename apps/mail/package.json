@@ -2,6 +2,7 @@
   "name": "@numio/mail",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "author": "Joel Sandén <me@joelsanden.se>",
   "keywords": [],
   "license": "ISC",
@@ -10,7 +11,8 @@
     "dev": "NODE_ENV=development tsx watch src/index.ts",
     "build": "tsup",
     "start": "NODE_ENV=production node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
@@ -28,11 +30,13 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@numio/eslint-config": "workspace:*",
     "@numio/tsup-config": "workspace:*",
     "@numio/typescript-config": "workspace:*",
     "@types/express": "^5.0.3",
     "@types/http-errors": "^2.0.5",
     "@types/jsonwebtoken": "^9.0.10",
+    "eslint": "^9.29.0",
     "tsx": "^4.20.3"
   }
 }

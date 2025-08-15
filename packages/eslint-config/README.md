@@ -23,3 +23,13 @@ import { config } from '@numio/eslint-config/react';
 
 export default [...config];
 ```
+
+### Node.js Configuration
+
+For Node.js/Express server applications:
+
+```js
+import { config } from '@numio/eslint-config/node';
+
+export default [...config];
+```

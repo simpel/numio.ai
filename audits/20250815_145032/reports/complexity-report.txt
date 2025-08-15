@@ -1,0 +1,6 @@
+
+> @numio/ai@ quality:complexity:text /Users/joel.sanden/Code/privat/numio
+> labinsight analyze --type deep --format text --silent --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**,**/.DS_Store" --output-dir ./temp
+
+error: unknown option '--ignore'
+ ELIFECYCLE  Command failed with exit code 1.

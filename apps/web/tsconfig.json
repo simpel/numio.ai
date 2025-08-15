@@ -31,10 +31,11 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "./next-auth.d.ts",
+    "global.d.ts",
     "next-env.d.ts",
     "next.config.js",
-    "./next-auth.d.ts",
-    "global.d.ts"
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

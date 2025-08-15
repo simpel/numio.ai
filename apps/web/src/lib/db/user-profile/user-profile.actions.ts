@@ -14,6 +14,7 @@ export async function searchUserProfilesAction(
 	try {
 		const results = await db.userProfile.findMany({
 			where: {
+				 
 				OR: [
 					{ firstName: { contains: query, mode: 'insensitive' } },
 					{ lastName: { contains: query, mode: 'insensitive' } },
@@ -269,6 +270,7 @@ export async function getUserProfileByIdAction(userProfileId: string): Promise<
 		const activeInvites = await db.invite.findMany({
 			where: {
 				email: profile.email || '',
+				 
 				OR: [
 					{
 						status: 'pending',

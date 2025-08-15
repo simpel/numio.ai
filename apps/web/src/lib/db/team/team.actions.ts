@@ -162,6 +162,7 @@ export async function getTeamsForUserAction(): Promise<
 			include: {
 				team: {
 					include: {
+						 
 						_count: {
 							select: { memberships: true, members: true },
 						},
@@ -210,6 +211,7 @@ export async function getTeamsForUserByIdAction(
 			include: {
 				team: {
 					include: {
+						 
 						_count: {
 							select: { memberships: true, members: true },
 						},
@@ -272,6 +274,7 @@ export async function getTeamsWhereUserIsOwnerAction(): Promise<
 			include: {
 				team: {
 					include: {
+						 
 						_count: {
 							select: { memberships: true, members: true },
 						},
@@ -467,6 +470,7 @@ export async function getAllTeamsAction(): Promise<
 		Prisma.TeamGetPayload<{
 			include: {
 				organisation: true;
+				 
 				_count: { select: { memberships: true; members: true } };
 				members: {
 					include: {
@@ -488,6 +492,7 @@ export async function getAllTeamsAction(): Promise<
 		const teams = await db.team.findMany({
 			include: {
 				organisation: true,
+				 
 				_count: { select: { memberships: true, members: true } },
 				members: {
 					include: {

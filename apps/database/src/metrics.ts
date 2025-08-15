@@ -2,27 +2,27 @@ import { PrismaClient } from '@prisma/client';
 
 // Event types as constants for type safety
 export const METRIC_EVENTS = {
-	USER_PROFILE: {
-		CREATED: 'user_profile_created',
-		DELETED: 'user_profile_deleted',
+	userProfile: {
+		created: 'user_profile_created',
+		deleted: 'user_profile_deleted',
 	},
-	ORGANIZATION: {
-		CREATED: 'organization_created',
-		DELETED: 'organization_deleted',
+	organization: {
+		created: 'organization_created',
+		deleted: 'organization_deleted',
 	},
-	TEAM: {
-		CREATED: 'team_created',
-		DELETED: 'team_deleted',
+	team: {
+		created: 'team_created',
+		deleted: 'team_deleted',
 	},
-	INVITE: {
-		CREATED: 'invite_created',
-		EXPIRED: 'invite_expired',
-		ACCEPTED: 'invite_accepted',
-		DELETED: 'invite_deleted',
+	invite: {
+		created: 'invite_created',
+		expired: 'invite_expired',
+		accepted: 'invite_accepted',
+		deleted: 'invite_deleted',
 	},
-	CASE: {
-		CREATED: 'case_created',
-		DELETED: 'case_deleted',
+	case: {
+		created: 'case_created',
+		deleted: 'case_deleted',
 	},
 } as const;
 
@@ -104,13 +104,13 @@ export function createPrismaClientWithMetrics(): PrismaClient {
 					if (params.action === 'create') {
 						const userProfile = result as { id: string };
 						await trackMetricEvent(
-							METRIC_EVENTS.USER_PROFILE.CREATED,
+							METRIC_EVENTS.userProfile.created,
 							userProfile.id
 						);
 					} else if (params.action === 'delete') {
 						const where = params.args.where as { id?: string };
 						await trackMetricEvent(
-							METRIC_EVENTS.USER_PROFILE.DELETED,
+							METRIC_EVENTS.userProfile.deleted,
 							where?.id
 						);
 					}
@@ -119,11 +119,11 @@ export function createPrismaClientWithMetrics(): PrismaClient {
 				case 'Organisation':
 					if (params.action === 'create') {
 						const org = result as { id: string };
-						await trackMetricEvent(METRIC_EVENTS.ORGANIZATION.CREATED, org.id);
+						await trackMetricEvent(METRIC_EVENTS.organization.created, org.id);
 					} else if (params.action === 'delete') {
 						const where = params.args.where as { id?: string };
 						await trackMetricEvent(
-							METRIC_EVENTS.ORGANIZATION.DELETED,
+							METRIC_EVENTS.organization.deleted,
 							where?.id
 						);
 					}
@@ -132,12 +132,12 @@ export function createPrismaClientWithMetrics(): PrismaClient {
 				case 'Team':
 					if (params.action === 'create') {
 						const team = result as { id: string; organisationId: string };
-						await trackMetricEvent(METRIC_EVENTS.TEAM.CREATED, team.id, {
+						await trackMetricEvent(METRIC_EVENTS.team.created, team.id, {
 							organisationId: team.organisationId,
 						});
 					} else if (params.action === 'delete') {
 						const where = params.args.where as { id?: string };
-						await trackMetricEvent(METRIC_EVENTS.TEAM.DELETED, where?.id);
+						await trackMetricEvent(METRIC_EVENTS.team.deleted, where?.id);
 					}
 					break;
 
@@ -148,7 +148,7 @@ export function createPrismaClientWithMetrics(): PrismaClient {
 							organisationId?: string;
 							teamId?: string;
 						};
-						await trackMetricEvent(METRIC_EVENTS.INVITE.CREATED, invite.id, {
+						await trackMetricEvent(METRIC_EVENTS.invite.created, invite.id, {
 							organisationId: invite.organisationId,
 							teamId: invite.teamId,
 						});
@@ -164,7 +164,7 @@ export function createPrismaClientWithMetrics(): PrismaClient {
 						if (data?.status) {
 							if (data.status === 'expired') {
 								await trackMetricEvent(
-									METRIC_EVENTS.INVITE.EXPIRED,
+									METRIC_EVENTS.invite.expired,
 									invite.id,
 									{
 										organisationId: invite.organisationId,
@@ -173,7 +173,7 @@ export function createPrismaClientWithMetrics(): PrismaClient {
 								);
 							} else if (data.status === 'accepted') {
 								await trackMetricEvent(
-									METRIC_EVENTS.INVITE.ACCEPTED,
+									METRIC_EVENTS.invite.accepted,
 									invite.id,
 									{
 										organisationId: invite.organisationId,
@@ -182,7 +182,7 @@ export function createPrismaClientWithMetrics(): PrismaClient {
 								);
 							} else if (data.status === 'cancelled') {
 								await trackMetricEvent(
-									METRIC_EVENTS.INVITE.DELETED,
+									METRIC_EVENTS.invite.deleted,
 									invite.id,
 									{
 										organisationId: invite.organisationId,
@@ -201,13 +201,13 @@ export function createPrismaClientWithMetrics(): PrismaClient {
 							teamId: string;
 							clientId: string;
 						};
-						await trackMetricEvent(METRIC_EVENTS.CASE.CREATED, caseItem.id, {
+						await trackMetricEvent(METRIC_EVENTS.case.created, caseItem.id, {
 							teamId: caseItem.teamId,
 							clientId: caseItem.clientId,
 						});
 					} else if (params.action === 'delete') {
 						const where = params.args.where as { id?: string };
-						await trackMetricEvent(METRIC_EVENTS.CASE.DELETED, where?.id);
+						await trackMetricEvent(METRIC_EVENTS.case.deleted, where?.id);
 					}
 					break;
 			}

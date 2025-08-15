@@ -1,0 +1,8 @@
+
+> @numio/ai@ quality:deps /Users/joel.sanden/Code/privat/numio
+> depcruise apps/web/src --include-only "^apps/web/src" --output-type text
+
+
+  ERROR: error TS18003: No inputs were found in config file 'apps/web/tsconfig.json'. Specified 'include' paths were '["**/*.ts","**/*.tsx","./next-auth.d.ts","global.d.ts","next-env.d.ts","next.config.js",".next/types/**/*.ts"]' and 'exclude' paths were '["node_modules",".next"]'.
+
+ ELIFECYCLE  Command failed with exit code 1.

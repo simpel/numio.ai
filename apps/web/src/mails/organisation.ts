@@ -26,7 +26,10 @@ export async function sendOrganisationRoleEmail(
 	const res = await fetch(`${MAIL_API_URL}:${MAIL_API_PORT}/send`, {
 		method: 'POST',
 		headers: {
+			 
 			Authorization: `Bearer ${token}`,
+
+			 
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify({ to, subject, html }),

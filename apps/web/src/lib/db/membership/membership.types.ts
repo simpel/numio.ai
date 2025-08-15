@@ -1,7 +1,7 @@
 import { Role } from '@numio/ai-database';
 import { z } from 'zod';
 
-export const MembershipFormSchema = z.object({
+export const membershipFormSchema = z.object({
 	userId: z.string().optional(),
 	teamId: z.string().optional(),
 	organisationId: z.string().optional(),
@@ -10,4 +10,4 @@ export const MembershipFormSchema = z.object({
 	role: z.nativeEnum(Role),
 });
 
-export type MembershipFormValues = z.infer<typeof MembershipFormSchema>;
+export type MembershipFormValues = z.infer<typeof membershipFormSchema>;

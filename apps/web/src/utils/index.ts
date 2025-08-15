@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/naming-convention */
+
 import clsx, { ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

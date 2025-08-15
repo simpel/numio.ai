@@ -5,6 +5,10 @@ export default [
   ...config,
   {
     ignores: [
+      "eslint.config.js",
+      "next.config.ts",
+      "tailwind.config.ts",
+      "postcss.config.mjs",
       ".next/**",
       "dist/**",
       "node_modules/**",

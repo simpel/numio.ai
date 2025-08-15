@@ -1,7 +1,7 @@
 'use strict';
 import type { Application } from 'express';
 import { authenticateJWT } from './middleware/auth';
-import { sendMail, SendMailProps } from './handlers/send-mail';
+import { sendMail } from './handlers/send-mail';
 import { ServerOptions } from '.';
 
 export default function routes(app: Application, options: ServerOptions) {

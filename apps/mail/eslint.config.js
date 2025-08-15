@@ -1,13 +1,14 @@
-import { config } from "@numio/eslint-config/base";
+import { config } from "@numio/eslint-config/node";
 
 /** @type {import("eslint").Linter.Config} */
 export default [
   ...config,
   {
     ignores: [
-      "dist/**", 
+      "eslint.config.js",
+      "tsup.config.ts",
+      "dist/**",
       "node_modules/**",
-      "coverage/**",
     ],
   },
 ];

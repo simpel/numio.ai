@@ -7,7 +7,7 @@ import { ActionState } from '@src/types/global';
 import { redirect } from 'next/navigation';
 
 // Create a schema for validating form inputs
-const SignInSchema = z.object({
+const signInSchema = z.object({
 	provider: z.string().min(1),
 	callbackUrl: z.string().default('/'),
 });
@@ -21,7 +21,7 @@ export async function signInWithMicrosoft(formData: FormData) {
 	const redirectTo = formData.get('redirectTo') as string;
 
 	// Validate the input
-	const result = SignInSchema.safeParse({ provider, redirectTo });
+	const result = signInSchema.safeParse({ provider, redirectTo });
 
 	if (!result.success) {
 		// Handle validation errors in a real app

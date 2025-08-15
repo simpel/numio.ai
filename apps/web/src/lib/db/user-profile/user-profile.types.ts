@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const UserProfileSearchSchema = z.object({
+export const userProfileSearchSchema = z.object({
 	id: z.string(),
 	firstName: z.string().optional(),
 	lastName: z.string().optional(),
@@ -9,4 +9,4 @@ export const UserProfileSearchSchema = z.object({
 	createdAt: z.string().optional(),
 });
 
-export type UserProfileSearchData = z.infer<typeof UserProfileSearchSchema>;
+export type UserProfileSearchData = z.infer<typeof userProfileSearchSchema>;

@@ -27,7 +27,6 @@ export default function main(
 	const logger = pino();
 
 	// Server state
-	let server: Server;
 	let serverStarted = false;
 	let serverClosing = false;
 
@@ -43,7 +42,7 @@ export default function main(
 		serverClosing = true;
 
 		// If server has started, close it down
-		if (serverStarted) {
+		if (serverStarted && server) {
 			server.close(function () {
 				process.exit(1);
 			});
@@ -96,7 +95,7 @@ export default function main(
 	});
 
 	// Start server
-	server = app.listen(options.port, options.host, function (err?: Error) {
+	const server = app.listen(options.port, options.host, function (err?: Error) {
 		if (err) {
 			return ready(err, app, server);
 		}

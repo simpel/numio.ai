@@ -3,6 +3,11 @@ import { db, Role } from './index.js';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
+/**
+ * @public
+ * Database seed function used by Prisma
+ * This function is referenced in prisma.config.ts and should not be removed
+ */
 async function main() {
 	console.log('🧹 Cleaning database...');
 
@@ -488,14 +493,6 @@ async function main() {
 				72 * 60 * 60 * 1000 -
 				faker.number.int({ min: 1, max: 168 }) * 60 * 60 * 1000
 		); // 72+ hours ago
-	};
-
-	// Helper function to create recent date (less than 72 hours ago)
-	const _createRecentDate = () => {
-		const now = new Date();
-		return new Date(
-			now.getTime() - faker.number.int({ min: 1, max: 71 }) * 60 * 60 * 1000
-		); // 1-71 hours ago
 	};
 
 	// Create specific test users with multiple invites

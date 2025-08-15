@@ -14,6 +14,13 @@ export const config = [
   eslintConfigPrettier,
   ...tseslint.configs.recommended,
   {
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: process.cwd(),
+      },
+    },
     plugins: {
       turbo: turboPlugin,
       "unused-imports": unusedImports,
@@ -31,37 +38,53 @@ export const config = [
         },
       ],
       "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/naming-convention": [
-        "error",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
         {
-          selector: "default",
-          format: ["camelCase"],
-        },
-        {
-          selector: "variable",
-          format: ["camelCase", "UPPER_CASE"],
-        },
-        {
-          selector: "parameter",
-          format: ["camelCase"],
-          leadingUnderscore: "allow",
-        },
-        {
-          selector: "memberLike",
-          modifiers: ["private"],
-          format: ["camelCase"],
-          leadingUnderscore: "require",
-        },
-        {
-          selector: "typeLike",
-          format: ["PascalCase"],
-        },
-        {
-          selector: "function",
-          format: ["camelCase", "PascalCase"],
+          vars: "all",
+          varsIgnorePattern: "^_",
+          args: "after-used",
+          argsIgnorePattern: "^_",
         },
       ],
+"@typescript-eslint/naming-convention": [
+  "error",
+  {
+    selector: "default",
+    format: ["camelCase"],
+  },
+  {
+    selector: "variable",
+    format: ["camelCase", "UPPER_CASE"],
+    leadingUnderscore: "allow",
+  },
+  {
+    selector: "parameter",
+    format: ["camelCase"],
+    leadingUnderscore: "allow",
+  },
+  {
+    selector: "memberLike",
+    modifiers: ["private"],
+    format: ["camelCase"],
+    leadingUnderscore: "require",
+  },
+  {
+    selector: "typeLike",
+    format: ["PascalCase"],
+  },
+  // Regular functions → camelCase
+  {
+    selector: "function",
+    format: ["camelCase"],
+  },
+  // Arrow functions that are components → allow PascalCase
+  {
+    selector: "variable",
+    types: ["function"],
+    format: ["camelCase", "PascalCase"],
+  }
+]
     },
   },
   {

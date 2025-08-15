@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UserFormSchema, UserFormValues } from '@src/lib/db/user/user.types';
+import { userFormSchema, UserFormValues } from '@src/lib/db/user/user.types';
 import { createUserAction } from '@src/lib/db/user/user.actions';
 import {
 	Form,
@@ -22,7 +22,7 @@ export default function UserCreateForm() {
 	const [error, setError] = useState<string | null>(null);
 
 	const form = useForm<UserFormValues>({
-		resolver: zodResolver(UserFormSchema),
+		resolver: zodResolver(userFormSchema),
 		defaultValues: {
 			email: '',
 			name: '',

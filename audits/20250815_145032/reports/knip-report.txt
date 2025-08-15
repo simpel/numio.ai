@@ -1,0 +1,114 @@
+
+> @numio/ai@ quality:unused:text /Users/joel.sanden/Code/privat/numio
+> knip --reporter compact --no-exit-code
+
+Unused files (56)
+apps/web/shadcn/hooks/cn.ts
+apps/web/shadcn/hooks/use-mobile.tsx
+apps/web/shadcn/ui/breadcrumb.tsx
+apps/web/shadcn/ui/carousel.tsx
+apps/web/shadcn/ui/chart.tsx
+apps/web/shadcn/ui/collapsible.tsx
+apps/web/shadcn/ui/navigation-menu.tsx
+apps/web/shadcn/ui/progress.tsx
+apps/web/shadcn/ui/scroll-area.tsx
+apps/web/shadcn/ui/select.tsx
+apps/web/shadcn/ui/separator.tsx
+apps/web/shadcn/ui/sheet.tsx
+apps/web/shadcn/ui/sidebar.tsx
+apps/web/shadcn/ui/skeleton.tsx
+apps/web/shadcn/ui/switch.tsx
+apps/web/shadcn/ui/toggle.tsx
+apps/web/src/components/admin/admin-content.tsx
+apps/web/src/components/admin/admin-skeleton.tsx
+apps/web/src/components/admin/user-detail-skeleton.tsx
+apps/web/src/components/admin/user-search.tsx
+apps/web/src/components/app-layout.tsx
+apps/web/src/components/app-sidebar.tsx
+apps/web/src/components/context-menus/cases-context-menu.tsx
+apps/web/src/components/context-menus/index.ts
+apps/web/src/components/context-menus/organization-members-context-menu.tsx
+apps/web/src/components/context-menus/state-context-menu.tsx
+apps/web/src/components/context-menus/team-members-context-menu.tsx
+apps/web/src/components/dialogs/delete-team-dialog.tsx
+apps/web/src/components/forms/user-create-form.tsx
+apps/web/src/components/memberships-list.tsx
+apps/web/src/components/memberships-list/case-memberships.tsx
+apps/web/src/components/memberships-list/client-memberships.tsx
+apps/web/src/components/memberships-list/organization-memberships.tsx
+apps/web/src/components/memberships-list/team-memberships.tsx
+apps/web/src/components/multi-step-form.tsx
+apps/web/src/components/pick-user-profile.tsx
+apps/web/src/components/profile-skeleton.tsx
+apps/web/src/components/tables/events-table.tsx
+apps/web/src/components/tabs.tsx
+apps/web/src/components/team-state-manager.tsx
+apps/web/src/hooks/use-copy-to-clipboard.ts
+apps/web/src/hooks/use-mobile.ts
+apps/web/src/i18n/request.ts
+apps/web/src/lib/db/client/client.actions.ts
+apps/web/src/lib/db/client/client.types.ts
+apps/web/src/lib/db/event/event.types.ts
+apps/web/src/lib/db/membership/membership.hooks.ts
+apps/web/src/lib/db/membership/membership.types.ts
+apps/web/src/lib/db/organisation/organisation.types.ts
+apps/web/src/lib/db/team/team.types.ts
+apps/web/src/lib/db/user/user.types.ts
+apps/web/src/lib/i18n/types.ts
+apps/web/src/lib/state-machines/organization-state-machine.ts
+apps/web/src/lib/state-machines/team-member-state-machine.ts
+apps/web/src/lib/state-machines/team-state-machine.ts
+apps/web/src/lib/state-machines/user-state-machine.ts
+Unused dependencies (3)
+apps/database/package.json: @ai-sdk/react, @faker-js/faker, @types/uuid, ai, bcrypt, uuid
+apps/mail/package.json: @types/uuid, nodemon, pino-pretty, uuid
+apps/web/package.json: @ai-sdk/anthropic, @ai-sdk/azure, @ai-sdk/deepseek, @ai-sdk/fireworks, @ai-sdk/google, @ai-sdk/groq, @ai-sdk/openai, @ai-sdk/react, @ai-sdk/xai, @azure/storage-blob, @radix-ui/react-collapsible, @radix-ui/react-icons, @radix-ui/react-navigation-menu, @radix-ui/react-progress, @radix-ui/react-scroll-area, @radix-ui/react-select, @radix-ui/react-separator, @radix-ui/react-switch, @radix-ui/react-toggle, @radix-ui/react-visually-hidden, @tavily/core, ai, classnames, embla-carousel-react, react-katex, react-markdown, react-syntax-highlighter, react-textarea-autosize, rehype-external-links, rehype-katex, remark-gfm, remark-math, swr
+Unused devDependencies (2)
+apps/database/package.json: @ai-sdk/react, @types/bcrypt, dotenv, prisma-json-types-generator, tsx
+apps/web/package.json: @comprend/azure, @types/node-fetch, @types/react-syntax-highlighter, autoprefixer, dotenv, dotenv-cli
+Unlisted dependencies (3)
+apps/web/app/[locale]/welcome/page.tsx: @src/components
+apps/web/postcss.config.mjs: postcss-load-config
+apps/web/src/lib/auth/auth.utils.ts: server-only
+Unresolved imports (2)
+packages/typescript-config/nextjs.json: next
+tsconfig.json: next
+Unused exports (30)
+apps/web/shadcn/ui/alert-dialog.tsx: AlertDialogPortal, AlertDialogOverlay
+apps/web/shadcn/ui/alert.tsx: AlertTitle
+apps/web/shadcn/ui/badge.tsx: badgeVariants
+apps/web/shadcn/ui/card.tsx: CardFooter, CardAction
+apps/web/shadcn/ui/command.tsx: CommandDialog, CommandShortcut, CommandSeparator
+apps/web/shadcn/ui/context-menu.tsx: ContextMenuItem, ContextMenuCheckboxItem, ContextMenuRadioItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuShortcut, ContextMenuGroup, ContextMenuPortal, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuRadioGroup
+apps/web/shadcn/ui/dialog.tsx: DialogOverlay, DialogPortal
+apps/web/shadcn/ui/dropdown-menu.tsx: DropdownMenuCheckboxItem, DropdownMenuShortcut, DropdownMenuGroup, DropdownMenuPortal
+apps/web/shadcn/ui/form.tsx: useFormField, FormDescription
+apps/web/shadcn/ui/popover.tsx: PopoverAnchor
+apps/web/shadcn/ui/table.tsx: TableFooter, TableCaption
+apps/web/shadcn/ui/tooltip.tsx: TooltipProvider
+apps/web/src/components/data-table.tsx: SortableColumnHeader
+apps/web/src/i18n/navigation.ts: redirect, getPathname
+apps/web/src/lib/auth/auth.actions.ts: signInWithMicrosoft, signOutAction, createUserProfileAction
+apps/web/src/lib/auth/auth.ts: authOptions
+apps/web/src/lib/auth/auth.utils.ts: getUserProfileWithRole, requireAuth, Role
+apps/web/src/lib/db/case/case.actions.ts: getCaseAction, updateCaseAction, deleteCaseAction, getCasesForUserByIdAction
+apps/web/src/lib/db/event/event.actions.ts: createEventAction, getEventAction, updateEventAction, deleteEventAction
+apps/web/src/lib/db/membership/invite.actions.ts: getInviteByTokenAction, expireOldInvitesAction, listInvitesForContextAction, listInvitesForEmailAction, getPendingInvitesForUserAction, getInviteByIdAction
+apps/web/src/lib/db/membership/membership.actions.ts: getUserMembershipsAction, removeMembershipAction, deleteMembershipAction, getOrganisationMembershipsAction, getTeamMembershipsAction, getClientMembershipsAction, createMembershipAction, updateMembershipAction
+apps/web/src/lib/db/membership/membership.utils.ts: getOrganisationMemberships, getTeamMemberships, getCaseMemberships, getClientMemberships
+apps/web/src/lib/db/organisation/organisation.actions.ts: getOrganisationAction, updateOrganisationAction, deleteOrganisationAction, getOrgsWithAdminRightsAction
+apps/web/src/lib/db/team/team.actions.ts: createTeamAction, checkTeamNameAction, getTeamsForUserByIdAction, getTeamsWhereUserIsOwnerAction, getTeamDetailsAction, leaveTeamAction, getUserTeamMembershipsAction, updateTeamStateAction, updateTeamAction
+apps/web/src/lib/db/user-profile/user-profile.actions.ts: searchUserProfilesAction, getAllUserProfilesAction
+apps/web/src/lib/db/user-profile/user-profile.types.ts: UserProfileSearchSchema
+apps/web/src/lib/db/user/user.actions.ts: createUserAction
+apps/web/src/lib/state-machines/case-state-machine.ts: CASE_STATE_TRANSITIONS, canTransitionTo, getStateColor
+apps/web/src/mails/organisation.ts: sendOrganisationOwnerEmail
+apps/web/src/utils/index.ts: normalize
+Unused exported types (7)
+apps/mail/src/handlers/send-mail.ts: SendMailProps
+apps/mail/src/middleware/auth.ts: AuthenticatedRequest
+apps/web/shadcn/ui/badge.tsx: BadgeProps
+apps/web/src/lib/db/case/case.actions.ts: CaseData
+apps/web/src/lib/db/organisation/organisation.actions.ts: OrganisationData
+apps/web/src/lib/db/team/team.actions.ts: TeamData
+apps/web/src/lib/state-machines/case-state-machine.ts: CaseStateTransition

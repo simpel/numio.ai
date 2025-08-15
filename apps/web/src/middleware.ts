@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Map of country codes to supported locales
 const countryToLocale: Record<string, 'en' | 'sv'> = {
+	 
 	SE: 'sv',
 };
 

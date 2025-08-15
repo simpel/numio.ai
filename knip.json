@@ -3,7 +3,11 @@
   "entry": [
     "apps/*/src/**/*.{ts,tsx}",
     "packages/*/src/**/*.{ts,tsx}",
-    "src/**/*.{ts,tsx}"
+    "src/**/*.{ts,tsx}",
+    "apps/database/src/seed.ts",
+    "apps/database/src/index.ts",
+    "apps/mail/src/index.ts",
+    "apps/web/src/**/*.{ts,tsx}"
   ],
   "project": [
     "apps/*/src/**/*.{ts,tsx}",
@@ -14,8 +18,14 @@
     "**/node_modules/**",
     "**/dist/**",
     "**/.next/**",
+    "**/.turbo/**",
     "**/build/**",
     "**/*.test.{ts,tsx}",
-    "**/*.spec.{ts,tsx}"
+    "**/*.spec.{ts,tsx}",
+    "**/.DS_Store",
+    "**/audits/**",
+    "**/temp/**",
+    "**/reports/**",
+    "apps/database/src/seed.ts"
   ]
 }

@@ -1,10 +1,13 @@
 // src/lib/auth/auth.ts
+ 
 import NextAuth from 'next-auth';
 import type { NextAuthConfig, NextAuthResult } from 'next-auth';
+ 
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { redirect } from 'next/navigation';
 import { db, Role } from '@numio/ai-database';
+ 
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcrypt';
 import { sendWelcomeEmail } from '@src/mails/welcome';
