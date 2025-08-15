@@ -1,0 +1,472 @@
+# Table Components
+
+## Table Component Standards
+
+- Use base table component for common functionality
+- Implement consistent sorting and filtering
+- Follow accessibility best practices
+- Use proper TypeScript generics
+- Maintain responsive design patterns
+
+## Base Table Component
+
+### Component Structure
+
+```typescript
+interface BaseTableProps<T> {
+  data: T[];
+  columns: ColumnDef<T>[];
+  loading?: boolean;
+  onRowClick?: (row: T) => void;
+  actions?: React.ReactNode;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  sortable?: boolean;
+  filterable?: boolean;
+  pagination?: {
+    pageSize: number;
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  };
+}
+
+export function BaseTable<T>({
+  data,
+  columns,
+  loading,
+  onRowClick,
+  actions,
+  searchPlaceholder,
+  emptyMessage,
+  sortable = true,
+  filterable = true,
+  pagination,
+}: BaseTableProps<T>) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [rowSelection, setRowSelection] = useState({});
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: {
+      sorting,
+      globalFilter,
+      rowSelection,
+    },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  if (loading) {
+    return <TableSkeleton />;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Search and Actions */}
+      <div className="flex items-center justify-between">
+        {filterable && (
+          <input
+            placeholder={searchPlaceholder || 'Search...'}
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          />
+        )}
+        {actions && <div>{actions}</div>}
+      </div>
+
+      {/* Table */}
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : (
+                      <div
+                        className={cn(
+                          'flex items-center',
+                          header.column.getCanSort() && 'cursor-pointer select-none'
+                        )}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && (
+                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                        )}
+                      </div>
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  onClick={() => onRowClick?.(row.original)}
+                  className={cn(onRowClick && 'cursor-pointer hover:bg-muted/50')}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  {emptyMessage || 'No results.'}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      {pagination && (
+        <TablePagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={pagination.onPageChange}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+## Column Definitions
+
+### Consistent Column Patterns
+
+```typescript
+// Common column types
+export const createTextColumn = <T>(
+  accessorKey: keyof T,
+  header: string,
+  options?: Partial<ColumnDef<T>>
+): ColumnDef<T> => ({
+  accessorKey: accessorKey as string,
+  header,
+  cell: ({ getValue }) => <span>{getValue() as string}</span>,
+  ...options,
+});
+
+export const createDateColumn = <T>(
+  accessorKey: keyof T,
+  header: string,
+  options?: Partial<ColumnDef<T>>
+): ColumnDef<T> => ({
+  accessorKey: accessorKey as string,
+  header,
+  cell: ({ getValue }) => {
+    const date = getValue() as Date;
+    return <span>{formatDate(date)}</span>;
+  },
+  ...options,
+});
+
+export const createStatusColumn = <T>(
+  accessorKey: keyof T,
+  header: string,
+  statusMap: Record<string, { label: string; color: string }>,
+  options?: Partial<ColumnDef<T>>
+): ColumnDef<T> => ({
+  accessorKey: accessorKey as string,
+  header,
+  cell: ({ getValue }) => {
+    const status = getValue() as string;
+    const config = statusMap[status] || { label: status, color: 'gray' };
+    return (
+      <Badge variant={config.color as any}>
+        {config.label}
+      </Badge>
+    );
+  },
+  ...options,
+});
+
+export const createActionColumn = <T>(
+  header: string,
+  actions: (row: T) => React.ReactNode,
+  options?: Partial<ColumnDef<T>>
+): ColumnDef<T> => ({
+  id: 'actions',
+  header,
+  cell: ({ row }) => actions(row.original),
+  ...options,
+});
+```
+
+## Table Implementation Examples
+
+### Teams Table
+
+```typescript
+const teamsColumns: ColumnDef<Team>[] = [
+  createTextColumn('name', 'Team Name'),
+  createTextColumn('description', 'Description'),
+  createStatusColumn('status', 'Status', {
+    ACTIVE: { label: 'Active', color: 'green' },
+    INACTIVE: { label: 'Inactive', color: 'red' },
+    PENDING: { label: 'Pending', color: 'yellow' },
+  }),
+  createDateColumn('createdAt', 'Created'),
+  createActionColumn('Actions', (team) => (
+    <TeamActions team={team} />
+  )),
+];
+
+export function TeamsTable({ teams, loading }: TeamsTableProps) {
+  return (
+    <BaseTable
+      data={teams}
+      columns={teamsColumns}
+      loading={loading}
+      searchPlaceholder="Search teams..."
+      emptyMessage="No teams found."
+      onRowClick={(team) => router.push(`/teams/${team.id}`)}
+      actions={<CreateTeamButton />}
+    />
+  );
+}
+```
+
+### Users Table
+
+```typescript
+const usersColumns: ColumnDef<User>[] = [
+  createTextColumn('name', 'Name'),
+  createTextColumn('email', 'Email'),
+  createStatusColumn('role', 'Role', {
+    ADMIN: { label: 'Admin', color: 'red' },
+    MEMBER: { label: 'Member', color: 'blue' },
+    GUEST: { label: 'Guest', color: 'gray' },
+  }),
+  createDateColumn('lastActiveAt', 'Last Active'),
+  createActionColumn('Actions', (user) => (
+    <UserActions user={user} />
+  )),
+];
+
+export function UsersTable({ users, loading }: UsersTableProps) {
+  return (
+    <BaseTable
+      data={users}
+      columns={usersColumns}
+      loading={loading}
+      searchPlaceholder="Search users..."
+      emptyMessage="No users found."
+      onRowClick={(user) => router.push(`/users/${user.id}`)}
+      actions={<InviteUserButton />}
+    />
+  );
+}
+```
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// Using base table component
+export function CasesTable({ cases, loading }: CasesTableProps) {
+  const columns: ColumnDef<Case>[] = [
+    createTextColumn('title', 'Title'),
+    createStatusColumn('status', 'Status', caseStatusMap),
+    createDateColumn('createdAt', 'Created'),
+    createActionColumn('Actions', (caseItem) => (
+      <CaseActions case={caseItem} />
+    )),
+  ];
+
+  return (
+    <BaseTable
+      data={cases}
+      columns={columns}
+      loading={loading}
+      searchPlaceholder="Search cases..."
+      emptyMessage="No cases found."
+      onRowClick={(caseItem) => router.push(`/cases/${caseItem.id}`)}
+      actions={<CreateCaseButton />}
+    />
+  );
+}
+
+// Consistent column definitions
+export function MembersTable({ members, loading }: MembersTableProps) {
+  const columns: ColumnDef<Member>[] = [
+    createTextColumn('name', 'Name'),
+    createTextColumn('email', 'Email'),
+    createStatusColumn('role', 'Role', memberRoleMap),
+    createDateColumn('joinedAt', 'Joined'),
+    createActionColumn('Actions', (member) => (
+      <MemberActions member={member} />
+    )),
+  ];
+
+  return (
+    <BaseTable
+      data={members}
+      columns={columns}
+      loading={loading}
+      searchPlaceholder="Search members..."
+      emptyMessage="No members found."
+    />
+  );
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Duplicated table logic
+export function TeamsTable({ teams, loading }: TeamsTableProps) {
+  const [sorting, setSorting] = useState([]);
+  const [filtering, setFiltering] = useState('');
+
+  // Duplicated sorting and filtering logic
+  const sortedTeams = useMemo(() => {
+    return teams.sort((a, b) => {
+      // Complex sorting logic duplicated from other tables
+    });
+  }, [teams, sorting]);
+
+  const filteredTeams = useMemo(() => {
+    return sortedTeams.filter(team => {
+      // Complex filtering logic duplicated from other tables
+    });
+  }, [sortedTeams, filtering]);
+
+  return (
+    <div>
+      <input
+        value={filtering}
+        onChange={(e) => setFiltering(e.target.value)}
+        placeholder="Search teams..."
+      />
+      <table>
+        {/* Duplicated table structure */}
+      </table>
+    </div>
+  );
+}
+```
+
+## Accessibility Features
+
+### Keyboard Navigation
+
+```typescript
+export function AccessibleTable<T>({ data, columns, onRowClick }: BaseTableProps<T>) {
+  const handleKeyDown = (event: React.KeyboardEvent, row: T) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onRowClick?.(row);
+    }
+  };
+
+  return (
+    <div role="table" aria-label="Data table">
+      {/* Table implementation with proper ARIA attributes */}
+    </div>
+  );
+}
+```
+
+## Performance Optimization
+
+### Virtual Scrolling
+
+```typescript
+export function VirtualTable<T>({ data, columns }: BaseTableProps<T>) {
+  const rowVirtualizer = useVirtualizer({
+    count: data.length,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize: () => 50,
+  });
+
+  return (
+    <div ref={scrollElementRef} className="h-96 overflow-auto">
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualRow) => (
+          <div
+            key={virtualRow.index}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: `${virtualRow.size}px`,
+              transform: `translateY(${virtualRow.start}px)`,
+            }}
+          >
+            {/* Row content */}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Testing
+
+### Table Testing
+
+```typescript
+describe('BaseTable', () => {
+  it('should render data correctly', () => {
+    const data = [{ id: '1', name: 'Test' }];
+    const columns = [createTextColumn('name', 'Name')];
+
+    render(<BaseTable data={data} columns={columns} />);
+
+    expect(screen.getByText('Test')).toBeInTheDocument();
+  });
+
+  it('should handle row clicks', () => {
+    const onRowClick = jest.fn();
+    const data = [{ id: '1', name: 'Test' }];
+    const columns = [createTextColumn('name', 'Name')];
+
+    render(
+      <BaseTable
+        data={data}
+        columns={columns}
+        onRowClick={onRowClick}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Test'));
+    expect(onRowClick).toHaveBeenCalledWith(data[0]);
+  });
+});
+```
+
+description: Use consistent table component patterns
+globs:
+
+- src/components/tables/\*_/_.{ts,tsx}
+  alwaysApply: true

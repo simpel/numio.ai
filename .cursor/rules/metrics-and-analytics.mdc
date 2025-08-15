@@ -1,0 +1,397 @@
+# Metrics and Analytics
+
+## Metrics Calculation Standards
+
+- Use shared utilities for common calculations
+- Implement consistent date handling
+- Follow established aggregation patterns
+- Use proper TypeScript interfaces
+- Document calculation methods
+
+## Shared Metrics Utilities
+
+### Metrics Configuration Interface
+
+```typescript
+export interface MetricsConfig {
+	entityType: 'team' | 'user' | 'organisation';
+	dateField: string;
+	filters?: Record<string, any>;
+	timeRange?: {
+		start: Date;
+		end: Date;
+	};
+}
+
+export interface MetricsResult {
+	growth: number;
+	activity: number;
+	engagement: number;
+	period: string;
+	data: Record<string, any>;
+}
+```
+
+### Shared Metrics Class
+
+```typescript
+export class MetricsUtils {
+	static async calculateGrowthMetrics(
+		config: MetricsConfig,
+		period: string
+	): Promise<number> {
+		const { start, end } = this.getDateRange(period);
+
+		const currentPeriod = await this.getEntityCount(config, start, end);
+		const previousPeriod = await this.getEntityCount(
+			config,
+			this.subtractPeriod(start, period),
+			this.subtractPeriod(end, period)
+		);
+
+		if (previousPeriod === 0) {
+			return currentPeriod > 0 ? 100 : 0;
+		}
+
+		return ((currentPeriod - previousPeriod) / previousPeriod) * 100;
+	}
+
+	static async calculateActivityMetrics(
+		config: MetricsConfig,
+		period: string
+	): Promise<number> {
+		const { start, end } = this.getDateRange(period);
+
+		const activities = await this.getActivityCount(config, start, end);
+		const totalEntities = await this.getEntityCount(config);
+
+		return totalEntities > 0 ? activities / totalEntities : 0;
+	}
+
+	static async calculateEngagementMetrics(
+		config: MetricsConfig,
+		period: string
+	): Promise<number> {
+		const { start, end } = this.getDateRange(period);
+
+		const activeUsers = await this.getActiveUserCount(config, start, end);
+		const totalUsers = await this.getTotalUserCount(config);
+
+		return totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0;
+	}
+
+	private static getDateRange(period: string): { start: Date; end: Date } {
+		const end = new Date();
+		const start = new Date();
+
+		switch (period) {
+			case '7d':
+				start.setDate(end.getDate() - 7);
+				break;
+			case '30d':
+				start.setDate(end.getDate() - 30);
+				break;
+			case '90d':
+				start.setDate(end.getDate() - 90);
+				break;
+			default:
+				start.setDate(end.getDate() - 30);
+		}
+
+		return { start, end };
+	}
+
+	private static subtractPeriod(date: Date, period: string): Date {
+		const newDate = new Date(date);
+
+		switch (period) {
+			case '7d':
+				newDate.setDate(newDate.getDate() - 7);
+				break;
+			case '30d':
+				newDate.setDate(newDate.getDate() - 30);
+				break;
+			case '90d':
+				newDate.setDate(newDate.getDate() - 90);
+				break;
+		}
+
+		return newDate;
+	}
+}
+```
+
+## Action Implementation
+
+### Team Metrics Action
+
+```typescript
+export async function getTeamMetricsAction(
+	teamId: string,
+	period: string = '30d'
+): Promise<ActionState<TeamMetrics>> {
+	try {
+		const config: MetricsConfig = {
+			entityType: 'team',
+			dateField: 'createdAt',
+			filters: { teamId },
+			timeRange: MetricsUtils.getDateRange(period),
+		};
+
+		const [growth, activity, engagement] = await Promise.all([
+			MetricsUtils.calculateGrowthMetrics(config, period),
+			MetricsUtils.calculateActivityMetrics(config, period),
+			MetricsUtils.calculateEngagementMetrics(config, period),
+		]);
+
+		const metrics: TeamMetrics = {
+			growth,
+			activity,
+			engagement,
+			period,
+			teamId,
+			calculatedAt: new Date(),
+		};
+
+		return { isSuccess: true, data: metrics };
+	} catch (error) {
+		console.error('Error calculating team metrics:', error);
+		return { isSuccess: false, message: 'Failed to calculate metrics' };
+	}
+}
+```
+
+## Date Handling
+
+### Consistent Date Patterns
+
+```typescript
+export class DateUtils {
+	static formatDate(date: Date): string {
+		return date.toISOString().split('T')[0];
+	}
+
+	static getStartOfDay(date: Date): Date {
+		const start = new Date(date);
+		start.setHours(0, 0, 0, 0);
+		return start;
+	}
+
+	static getEndOfDay(date: Date): Date {
+		const end = new Date(date);
+		end.setHours(23, 59, 59, 999);
+		return end;
+	}
+
+	static getWeekRange(date: Date): { start: Date; end: Date } {
+		const start = new Date(date);
+		const day = start.getDay();
+		const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+		start.setDate(diff);
+		start.setHours(0, 0, 0, 0);
+
+		const end = new Date(start);
+		end.setDate(start.getDate() + 6);
+		end.setHours(23, 59, 59, 999);
+
+		return { start, end };
+	}
+
+	static getMonthRange(date: Date): { start: Date; end: Date } {
+		const start = new Date(date.getFullYear(), date.getMonth(), 1);
+		const end = new Date(
+			date.getFullYear(),
+			date.getMonth() + 1,
+			0,
+			23,
+			59,
+			59,
+			999
+		);
+
+		return { start, end };
+	}
+}
+```
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// Using shared metrics utilities
+export async function getUserMetricsAction(
+	userId: string,
+	period: string
+): Promise<ActionState<UserMetrics>> {
+	try {
+		const config: MetricsConfig = {
+			entityType: 'user',
+			dateField: 'lastActiveAt',
+			filters: { userId },
+		};
+
+		const metrics = await MetricsUtils.calculateAllMetrics(config, period);
+
+		return { isSuccess: true, data: metrics };
+	} catch (error) {
+		console.error('Error calculating user metrics:', error);
+		return { isSuccess: false, message: 'Failed to calculate metrics' };
+	}
+}
+
+// Consistent date handling
+export async function getOrganisationMetricsAction(
+	orgId: string,
+	period: string
+): Promise<ActionState<OrganisationMetrics>> {
+	try {
+		const { start, end } = DateUtils.getDateRange(period);
+
+		const config: MetricsConfig = {
+			entityType: 'organisation',
+			dateField: 'createdAt',
+			filters: { organisationId: orgId },
+			timeRange: { start, end },
+		};
+
+		const metrics = await MetricsUtils.calculateAllMetrics(config, period);
+
+		return { isSuccess: true, data: metrics };
+	} catch (error) {
+		console.error('Error calculating organisation metrics:', error);
+		return { isSuccess: false, message: 'Failed to calculate metrics' };
+	}
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Duplicated metrics calculation logic
+export async function getTeamMetricsAction(
+	teamId: string
+): Promise<ActionState<TeamMetrics>> {
+	try {
+		const end = new Date();
+		const start = new Date();
+		start.setDate(end.getDate() - 30);
+
+		const currentPeriod = await db.team.count({
+			where: { id: teamId, createdAt: { gte: start, lte: end } },
+		});
+
+		const previousStart = new Date(start);
+		previousStart.setDate(previousStart.getDate() - 30);
+		const previousEnd = new Date(start);
+
+		const previousPeriod = await db.team.count({
+			where: {
+				id: teamId,
+				createdAt: { gte: previousStart, lte: previousEnd },
+			},
+		});
+
+		const growth =
+			previousPeriod === 0
+				? 0
+				: ((currentPeriod - previousPeriod) / previousPeriod) * 100;
+
+		// More duplicated calculation logic...
+
+		return { isSuccess: true, data: { growth, activity: 0, engagement: 0 } };
+	} catch (error) {
+		return { isSuccess: false, message: 'Failed to calculate metrics' };
+	}
+}
+```
+
+## Performance Optimization
+
+### Efficient Queries
+
+```typescript
+export async function getMetricsWithAggregation(
+	config: MetricsConfig,
+	period: string
+): Promise<MetricsResult> {
+	const { start, end } = DateUtils.getDateRange(period);
+
+	// Use database aggregation for better performance
+	const result = await db.$queryRaw`
+    SELECT 
+      COUNT(*) as total,
+      COUNT(CASE WHEN ${config.dateField} >= ${start} AND ${config.dateField} <= ${end} THEN 1 END) as current_period,
+      COUNT(CASE WHEN ${config.dateField} >= ${start} - INTERVAL '30 days' AND ${config.dateField} < ${start} THEN 1 END) as previous_period
+    FROM ${config.entityType}
+    WHERE ${config.filters}
+  `;
+
+	return this.calculateMetricsFromAggregation(result, period);
+}
+```
+
+## Caching
+
+### Metrics Caching
+
+```typescript
+export async function getCachedMetrics(
+	key: string,
+	config: MetricsConfig,
+	period: string
+): Promise<MetricsResult> {
+	const cacheKey = `metrics:${key}:${period}`;
+
+	// Check cache first
+	const cached = await cache.get(cacheKey);
+	if (cached) {
+		return cached;
+	}
+
+	// Calculate metrics
+	const metrics = await MetricsUtils.calculateAllMetrics(config, period);
+
+	// Cache for 1 hour
+	await cache.set(cacheKey, metrics, 3600);
+
+	return metrics;
+}
+```
+
+## Testing
+
+### Metrics Testing
+
+```typescript
+describe('MetricsUtils', () => {
+	it('should calculate growth metrics correctly', async () => {
+		const config: MetricsConfig = {
+			entityType: 'team',
+			dateField: 'createdAt',
+		};
+
+		const growth = await MetricsUtils.calculateGrowthMetrics(config, '30d');
+
+		expect(typeof growth).toBe('number');
+		expect(growth).toBeGreaterThanOrEqual(0);
+	});
+
+	it('should handle zero previous period', async () => {
+		const config: MetricsConfig = {
+			entityType: 'team',
+			dateField: 'createdAt',
+		};
+
+		const growth = await MetricsUtils.calculateGrowthMetrics(config, '30d');
+
+		expect(growth).toBeGreaterThanOrEqual(0);
+	});
+});
+```
+
+description: Maintain consistent metrics calculation patterns
+globs:
+
+- src/lib/db/\**/*metrics\*.ts
+  alwaysApply: true

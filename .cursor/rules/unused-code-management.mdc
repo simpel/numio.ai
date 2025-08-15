@@ -1,0 +1,194 @@
+# Unused Code Management
+
+## Detection Guidelines
+
+- Remove unused files and exports promptly
+- Clean up unused dependencies regularly
+- Delete dead code during refactoring
+- Monitor bundle size impact
+
+## Unused Code Types Found
+
+### Unused Files (58 files identified)
+
+- Components that are never imported
+- Utility functions that are not used
+- Type definitions that are not referenced
+- Test files for removed functionality
+- Unused Shadcn UI components
+
+### Unused Exports (30+ exports identified)
+
+- Exported functions that are never imported
+- Exported components that are not used
+- Exported types that are not referenced
+- Exported constants that are not used
+
+### Unused Dependencies
+
+- Package dependencies that are not imported
+- Development dependencies that are not used
+- AI SDK packages not being used
+- UI libraries and utilities not referenced
+
+## Cleanup Strategies
+
+### Remove Unused Files
+
+```bash
+# Use Knip to identify unused files
+pnpm run quality:unused
+
+# Remove identified unused files
+rm apps/web/src/components/unused-component.tsx
+rm apps/web/src/lib/unused-utility.ts
+rm apps/web/shadcn/ui/unused-component.tsx
+```
+
+### Remove Unused Exports
+
+```typescript
+// Before: Unused exports
+export function unusedFunction() {
+	/* ... */
+}
+export const unusedConstant = 'value';
+export interface UnusedType {
+	/* ... */
+}
+
+// After: Remove unused exports
+// Only export what is actually used
+export function usedFunction() {
+	/* ... */
+}
+```
+
+### Remove Unused Dependencies
+
+```json
+// Before: Unused dependencies in package.json
+{
+  "dependencies": {
+    "@ai-sdk/react": "^1.0.0",
+    "@azure/storage-blob": "^1.0.0",
+    "unused-package": "^1.0.0"
+  }
+}
+
+// After: Clean dependencies
+{
+  "dependencies": {
+    "used-package": "^1.0.0"
+  }
+}
+```
+
+## When to Clean Up
+
+- After feature removal or refactoring
+- During code reviews
+- Before major releases
+- When bundle size increases unexpectedly
+- When adding new dependencies
+- After running quality analysis tools
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// Only export what is used
+export function createUser(input: CreateUserInput) {
+	// Implementation
+}
+
+// Internal utility (not exported)
+function validateUserInput(input: CreateUserInput) {
+	// Validation logic
+}
+
+// Used type (exported)
+export interface CreateUserInput {
+	name: string;
+	email: string;
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Unused exports
+export function unusedFunction() {
+	// Never called
+}
+
+export const unusedConstant = 'never used';
+
+export interface UnusedType {
+	// Never referenced
+}
+
+// Unused file: unused-component.tsx
+export default function UnusedComponent() {
+	// Never imported
+}
+```
+
+## Tools for Detection
+
+- **Knip**: Comprehensive unused code detection
+- **ESLint**: Unused variable and import detection
+- **TypeScript**: Unused type and interface detection
+- **Bundle Analyzer**: Unused dependency detection
+
+## Regular Maintenance
+
+### Weekly
+
+- Run Knip to identify new unused code
+- Review and remove unused files
+- Clean up unused exports
+
+### Monthly
+
+- Audit dependencies for unused packages
+- Review bundle size for bloat
+- Update quality analysis scripts
+
+### Quarterly
+
+- Comprehensive unused code audit
+- Dependency health check
+- Performance impact assessment
+
+## Impact Assessment
+
+### Benefits
+
+- Reduced bundle size
+- Faster build times
+- Cleaner codebase
+- Easier maintenance
+- Better developer experience
+
+### Risks
+
+- Accidental removal of used code
+- Breaking changes from dependency removal
+- Loss of potentially useful utilities
+
+## Prevention
+
+- Use TypeScript strict mode
+- Enable ESLint unused code rules
+- Regular code reviews
+- Automated quality checks
+- Documentation of public APIs
+
+description: Manage and remove unused code to maintain clean codebase
+globs:
+
+- src/\*_/_.{ts,tsx}
+- package.json
+  alwaysApply: true

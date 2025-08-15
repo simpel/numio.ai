@@ -1,0 +1,231 @@
+# Component Architecture
+
+## Component Organization
+
+- Create base components for common patterns
+- Use composition over inheritance
+- Keep components focused and single-purpose
+- Extract reusable logic into custom hooks
+- Use TypeScript for type safety
+
+## Component Structure
+
+### File Organization
+
+- Use kebab-case for file names
+- Place components in appropriate directories
+- Group related components together
+- Use consistent folder structure
+
+### Component Patterns
+
+- Create shared layout components for similar page structures
+- Use consistent prop interfaces across similar components
+- Implement proper error boundaries and loading states
+- Follow established patterns for form components
+
+## Shared Component Patterns
+
+### Entity Layout Component
+
+```typescript
+interface EntityLayoutProps {
+  entityId: string;
+  entityType: 'team' | 'user' | 'organisation';
+  children: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
+}
+
+export function EntityLayout({
+  entityId,
+  entityType,
+  children,
+  title,
+  subtitle,
+  actions,
+}: EntityLayoutProps) {
+  return (
+    <div className="container mx-auto px-6 py-8">
+      <EntityHeader title={title} subtitle={subtitle} />
+      <EntityNavigation entityType={entityType} entityId={entityId} />
+      {actions && <div className="mb-4">{actions}</div>}
+      {children}
+    </div>
+  );
+}
+```
+
+### Base Table Component
+
+```typescript
+interface BaseTableProps<T> {
+	data: T[];
+	columns: ColumnDef<T>[];
+	loading?: boolean;
+	onRowClick?: (row: T) => void;
+	actions?: React.ReactNode;
+	searchPlaceholder?: string;
+	emptyMessage?: string;
+}
+
+export function BaseTable<T>({
+	data,
+	columns,
+	loading,
+	onRowClick,
+	actions,
+	searchPlaceholder,
+	emptyMessage,
+}: BaseTableProps<T>) {
+	// Common table logic with sorting, filtering, pagination
+}
+```
+
+## Custom Hooks
+
+### Data Fetching Hooks
+
+```typescript
+export function useEntityData<T>(entityId: string, entityType: string) {
+	const [data, setData] = useState<T | null>(null);
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		const fetchData = async () => {
+			setIsLoading(true);
+			try {
+				const result = await fetchEntityData(entityId, entityType);
+				setData(result);
+			} catch (err) {
+				setError(err.message);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchData();
+	}, [entityId, entityType]);
+
+	return { data, isLoading, error };
+}
+```
+
+## Component Examples
+
+### ✅ Good Examples
+
+```typescript
+// Focused, single-purpose component
+export default function UserProfileCard({ user }: UserProfileCardProps) {
+  const { data: profile, isLoading } = useUserProfile(user.id);
+
+  if (isLoading) {
+    return <UserProfileSkeleton />;
+  }
+
+  return (
+    <Card className="p-6">
+      <CardHeader>
+        <CardTitle>{profile.name}</CardTitle>
+        <CardDescription>{profile.email}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <UserProfileDetails profile={profile} />
+      </CardContent>
+    </Card>
+  );
+}
+
+// Shared layout component
+export function TeamPageLayout({ children, title, actions }: TeamPageLayoutProps) {
+  return (
+    <EntityLayout
+      entityType="team"
+      title={title}
+      actions={actions}
+    >
+      {children}
+    </EntityLayout>
+  );
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Component doing too many things
+export default function UserPage({ user }: UserPageProps) {
+  const [profile, setProfile] = useState(null);
+  const [memberships, setMemberships] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetching data, handling state, rendering UI all in one component
+  useEffect(() => {
+    // Complex data fetching logic
+  }, []);
+
+  // Complex rendering logic
+  return (
+    <div>
+      {/* Too much JSX and logic */}
+    </div>
+  );
+}
+```
+
+## Styling Patterns
+
+- Use consistent styling patterns and design tokens
+- Follow Tailwind CSS conventions
+- Use CSS modules or styled-components when needed
+- Maintain responsive design patterns
+
+## Error Handling
+
+```typescript
+export function ErrorBoundary({ children }: { children: React.ReactNode }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Something went wrong</h2>
+          <button
+            onClick={() => setHasError(false)}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+}
+```
+
+## Performance Optimization
+
+- Use React.memo for expensive components
+- Implement proper dependency arrays in useEffect
+- Use useCallback and useMemo when appropriate
+- Lazy load components when needed
+
+## Testing
+
+- Write unit tests for component logic
+- Test component interactions
+- Mock external dependencies
+- Test error states and loading states
+
+description: Follow consistent component architecture patterns
+globs:
+
+- src/\*_/_.{ts,tsx}
+  alwaysApply: true

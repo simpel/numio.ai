@@ -1,0 +1,202 @@
+# Code Formatting
+
+## Prettier Configuration
+
+- Use Prettier for consistent code formatting
+- Configure editors to format on save
+- Include Prettier in CI/CD pipelines
+- Use consistent indentation and spacing
+
+## Formatting Standards
+
+### Indentation and Spacing
+
+- Use 2 spaces for indentation
+- Use consistent line breaks
+- Maintain proper spacing around operators
+- Use consistent quote usage (single vs double)
+
+### File Organization
+
+- Use consistent trailing commas
+- Format JSON files consistently
+- Ensure proper line breaks and spacing
+- Keep line lengths reasonable and readable
+
+### Import Organization
+
+- Group imports logically
+- Use consistent import ordering
+- Remove unused imports
+- Use absolute imports with path aliases
+
+## Prettier Commands
+
+```bash
+# Check formatting
+pnpm run quality:format
+
+# Fix formatting issues
+pnpm prettier --write "**/*.{ts,tsx,js,jsx,json,css,scss,md}"
+
+# Format specific files
+pnpm prettier --write "apps/web/src/**/*.{ts,tsx}"
+```
+
+## Common Formatting Issues
+
+### Files with Formatting Issues (39 files identified)
+
+- Configuration files (.json, .js)
+- TypeScript files (.ts, .tsx)
+- Package.json files
+- ESLint configuration files
+- Translation files
+
+### Examples
+
+#### ✅ Good Formatting
+
+```typescript
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { createUserAction } from '@/lib/db/user/user.actions';
+
+interface UserFormProps {
+  onSubmit: (data: CreateUserInput) => void;
+  loading?: boolean;
+}
+
+export default function UserForm({ onSubmit, loading }: UserFormProps) {
+  const [formData, setFormData] = useState<CreateUserInput>({
+    name: '',
+    email: '',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input
+        type="text"
+        value={formData.name}
+        onChange={(e) =>
+          setFormData({ ...formData, name: e.target.value })
+        }
+        className="w-full p-2 border rounded"
+      />
+      <Button type="submit" disabled={loading}>
+        {loading ? 'Creating...' : 'Create User'}
+      </Button>
+    </form>
+  );
+}
+```
+
+#### ❌ Bad Formatting
+
+```typescript
+import {useState,useEffect} from 'react'
+import {Button} from '@/components/ui/button'
+import {createUserAction} from '@/lib/db/user/user.actions'
+
+interface UserFormProps{
+onSubmit:(data:CreateUserInput)=>void
+loading?:boolean
+}
+
+export default function UserForm({onSubmit,loading}:UserFormProps){
+const [formData,setFormData]=useState<CreateUserInput>({
+name:'',
+email:''
+})
+
+const handleSubmit=async(e:React.FormEvent)=>{
+e.preventDefault()
+await onSubmit(formData)
+}
+
+return(
+<form onSubmit={handleSubmit} className="space-y-4">
+<input type="text" value={formData.name} onChange={(e)=>setFormData({...formData,name:e.target.value})} className="w-full p-2 border rounded"/>
+<Button type="submit" disabled={loading}>{loading?'Creating...':'Create User'}</Button>
+</form>
+)
+}
+```
+
+## Editor Configuration
+
+### VS Code Settings
+
+```json
+{
+	"editor.formatOnSave": true,
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"prettier.requireConfig": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": true
+	}
+}
+```
+
+### Prettier Configuration
+
+```json
+{
+	"semi": true,
+	"trailingComma": "es5",
+	"singleQuote": true,
+	"printWidth": 80,
+	"tabWidth": 2,
+	"useTabs": false
+}
+```
+
+## CI/CD Integration
+
+### Pre-commit Hooks
+
+```json
+{
+	"husky": {
+		"hooks": {
+			"pre-commit": "lint-staged"
+		}
+	},
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx,json,css,scss,md}": ["prettier --write"]
+	}
+}
+```
+
+## Regular Maintenance
+
+### Weekly
+
+- Run Prettier on changed files
+- Check for formatting inconsistencies
+- Update editor configurations
+
+### Monthly
+
+- Review Prettier configuration
+- Update formatting rules if needed
+- Audit formatting across the codebase
+
+## Benefits
+
+- Consistent code style across the project
+- Improved code readability
+- Easier code reviews
+- Reduced merge conflicts
+- Better developer experience
+
+description: Maintain consistent code formatting using Prettier
+globs:
+
+- \*_/_.{ts,tsx,js,jsx,json,css,scss,md}
+  alwaysApply: true

@@ -1,0 +1,339 @@
+# Action Patterns
+
+## Server Action Standards
+
+- Use base classes for common CRUD operations
+- Implement consistent error handling
+- Return ActionState<T> for all actions
+- Use proper TypeScript typing
+- Follow naming conventions (Action suffix)
+
+## Action Structure
+
+### Base Action Class
+
+```typescript
+export abstract class BaseActions<T, CreateInput, UpdateInput> {
+	protected abstract model: any; // Prisma model
+
+	async create(data: CreateInput): Promise<ActionState<T>> {
+		try {
+			const result = await this.model.create({ data });
+			return { isSuccess: true, message: 'Created successfully', data: result };
+		} catch (error) {
+			return { isSuccess: false, message: 'Failed to create' };
+		}
+	}
+
+	async update(id: string, data: UpdateInput): Promise<ActionState<T>> {
+		try {
+			const result = await this.model.update({
+				where: { id },
+				data,
+			});
+			return { isSuccess: true, message: 'Updated successfully', data: result };
+		} catch (error) {
+			return { isSuccess: false, message: 'Failed to update' };
+		}
+	}
+
+	async delete(id: string): Promise<ActionState<void>> {
+		try {
+			await this.model.delete({ where: { id } });
+			return { isSuccess: true, message: 'Deleted successfully' };
+		} catch (error) {
+			return { isSuccess: false, message: 'Failed to delete' };
+		}
+	}
+
+	async getById(id: string): Promise<ActionState<T>> {
+		try {
+			const result = await this.model.findUnique({ where: { id } });
+			if (!result) {
+				return { isSuccess: false, message: 'Not found' };
+			}
+			return { isSuccess: true, data: result };
+		} catch (error) {
+			return { isSuccess: false, message: 'Failed to fetch' };
+		}
+	}
+}
+```
+
+### Action Implementation
+
+```typescript
+export class TeamActions extends BaseActions<
+	Team,
+	CreateTeamInput,
+	UpdateTeamInput
+> {
+	protected model = db.team;
+
+	async createTeamAction(input: CreateTeamInput): Promise<ActionState<Team>> {
+		// Custom validation logic
+		const validation = this.validateTeamInput(input);
+		if (!validation.isValid) {
+			return { isSuccess: false, message: validation.error };
+		}
+
+		return this.create(input);
+	}
+
+	private validateTeamInput(input: CreateTeamInput): {
+		isValid: boolean;
+		error?: string;
+	} {
+		if (!input.name || input.name.trim().length === 0) {
+			return { isValid: false, error: 'Team name is required' };
+		}
+
+		if (input.name.length > 100) {
+			return { isValid: false, error: 'Team name too long' };
+		}
+
+		return { isValid: true };
+	}
+}
+```
+
+## Error Handling
+
+### Consistent Error Patterns
+
+```typescript
+export async function createUserAction(
+	input: CreateUserInput
+): Promise<ActionState<User>> {
+	try {
+		// Validate input
+		const validation = validateUserInput(input);
+		if (!validation.isValid) {
+			return { isSuccess: false, message: validation.error };
+		}
+
+		// Check for existing user
+		const existingUser = await db.user.findUnique({
+			where: { email: input.email },
+		});
+
+		if (existingUser) {
+			return { isSuccess: false, message: 'User already exists' };
+		}
+
+		// Create user
+		const user = await db.user.create({ data: input });
+
+		return {
+			isSuccess: true,
+			message: 'User created successfully',
+			data: user,
+		};
+	} catch (error) {
+		console.error('Error creating user:', error);
+		return { isSuccess: false, message: 'Failed to create user' };
+	}
+}
+```
+
+## Validation Patterns
+
+### Input Validation
+
+```typescript
+export function validateUserInput(input: CreateUserInput): {
+	isValid: boolean;
+	error?: string;
+} {
+	if (!input.name || input.name.trim().length === 0) {
+		return { isValid: false, error: 'Name is required' };
+	}
+
+	if (!input.email || !isValidEmail(input.email)) {
+		return { isValid: false, error: 'Valid email is required' };
+	}
+
+	if (input.name.length > 100) {
+		return { isValid: false, error: 'Name too long' };
+	}
+
+	return { isValid: true };
+}
+
+function isValidEmail(email: string): boolean {
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return emailRegex.test(email);
+}
+```
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// Consistent action pattern
+export async function createTeamAction(
+	input: CreateTeamInput
+): Promise<ActionState<Team>> {
+	try {
+		const validation = validateTeamInput(input);
+		if (!validation.isValid) {
+			return { isSuccess: false, message: validation.error };
+		}
+
+		const team = await db.team.create({ data: input });
+		return {
+			isSuccess: true,
+			message: 'Team created successfully',
+			data: team,
+		};
+	} catch (error) {
+		console.error('Error creating team:', error);
+		return { isSuccess: false, message: 'Failed to create team' };
+	}
+}
+
+// Metrics action with shared utilities
+export async function getTeamMetricsAction(
+	teamId: string
+): Promise<ActionState<TeamMetrics>> {
+	try {
+		const metrics = await MetricsUtils.calculateTeamMetrics(teamId);
+		return { isSuccess: true, data: metrics };
+	} catch (error) {
+		console.error('Error fetching team metrics:', error);
+		return { isSuccess: false, message: 'Failed to fetch metrics' };
+	}
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Inconsistent error handling
+export async function createUser(input: CreateUserInput) {
+	const user = await db.user.create({ data: input });
+	return user; // No error handling, no consistent return type
+}
+
+// Missing validation
+export async function updateTeamAction(id: string, data: any) {
+	const team = await db.team.update({ where: { id }, data });
+	return { success: true, team }; // Inconsistent return format
+}
+
+// No error handling
+export async function deleteUserAction(id: string) {
+	await db.user.delete({ where: { id } });
+	return { success: true }; // No error handling
+}
+```
+
+## Database Transactions
+
+### Transaction Patterns
+
+```typescript
+export async function createTeamWithMembersAction(
+	teamData: CreateTeamInput,
+	memberIds: string[]
+): Promise<ActionState<Team>> {
+	try {
+		const result = await db.$transaction(async (tx) => {
+			// Create team
+			const team = await tx.team.create({ data: teamData });
+
+			// Create memberships
+			const memberships = await Promise.all(
+				memberIds.map((userId) =>
+					tx.membership.create({
+						data: {
+							userId,
+							teamId: team.id,
+							role: 'MEMBER',
+						},
+					})
+				)
+			);
+
+			return { team, memberships };
+		});
+
+		return {
+			isSuccess: true,
+			message: 'Team created with members',
+			data: result.team,
+		};
+	} catch (error) {
+		console.error('Error creating team with members:', error);
+		return { isSuccess: false, message: 'Failed to create team with members' };
+	}
+}
+```
+
+## Logging and Monitoring
+
+### Action Logging
+
+```typescript
+export async function createUserAction(
+	input: CreateUserInput
+): Promise<ActionState<User>> {
+	const startTime = Date.now();
+
+	try {
+		console.log('Creating user:', { email: input.email, name: input.name });
+
+		const user = await db.user.create({ data: input });
+
+		console.log('User created successfully:', {
+			userId: user.id,
+			duration: Date.now() - startTime,
+		});
+
+		return {
+			isSuccess: true,
+			message: 'User created successfully',
+			data: user,
+		};
+	} catch (error) {
+		console.error('Error creating user:', {
+			error,
+			duration: Date.now() - startTime,
+		});
+		return { isSuccess: false, message: 'Failed to create user' };
+	}
+}
+```
+
+## Testing
+
+### Action Testing
+
+```typescript
+describe('createUserAction', () => {
+	it('should create user successfully', async () => {
+		const input = { name: 'Test User', email: 'test@example.com' };
+
+		const result = await createUserAction(input);
+
+		expect(result.isSuccess).toBe(true);
+		expect(result.data).toMatchObject(input);
+	});
+
+	it('should return error for invalid input', async () => {
+		const input = { name: '', email: 'invalid-email' };
+
+		const result = await createUserAction(input);
+
+		expect(result.isSuccess).toBe(false);
+		expect(result.message).toContain('required');
+	});
+});
+```
+
+description: Follow consistent patterns for server actions
+globs:
+
+- src/lib/db/\*_/_.actions.ts
+  alwaysApply: true

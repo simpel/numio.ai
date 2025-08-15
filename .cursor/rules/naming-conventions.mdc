@@ -1,0 +1,103 @@
+# Naming Conventions
+
+## File and Folder Naming
+
+- Use kebab-case for all files and folders
+- Examples: `user-profile-card.tsx`, `case-actions.ts`, `membership-utils.ts`
+
+## Component Naming
+
+- Use PascalCase for component names
+- Use kebab-case for file names
+- Examples: `UserProfileCard` in `user-profile-card.tsx`
+
+## Function and Variable Naming
+
+- Use camelCase for functions and variables
+- Use PascalCase for types and interfaces
+- Use UPPER_CASE only for true constants (not object properties)
+- Object properties should use camelCase even if they represent constants
+
+## Import and Export Naming
+
+- Use consistent absolute imports with path aliases (@/components, @/lib)
+- Avoid deep relative imports (../../..)
+- Prefer named exports over default exports for utilities
+
+## Action Function Naming
+
+- Use "Action" suffix for server actions: `createUserAction`, `updateTeamAction`
+- Use consistent patterns for CRUD operations
+- Follow established naming for metrics functions
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// File: user-profile-card.tsx
+export default function UserProfileCard({ user }: UserProfileCardProps) {
+	const [isLoading, setIsLoading] = useState(false);
+	const MAX_RETRY_ATTEMPTS = 3;
+}
+
+// Import: use absolute paths
+import { UserProfileCard } from '@/components/user-profile-card';
+
+// Object properties using camelCase
+const metrics = {
+	userProfile: {
+		created: 'user_profile_created',
+		deleted: 'user_profile_deleted',
+	},
+	organization: {
+		created: 'organization_created',
+		deleted: 'organization_deleted',
+	},
+};
+
+// Action functions with consistent naming
+export async function createUserAction(input: CreateUserInput) {
+	// Implementation
+}
+
+export async function getUserMetricsAction(userId: string) {
+	// Implementation
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+// File: UserProfileCard.tsx (PascalCase file name)
+export default function userProfileCard({ user }: userProfileCardProps) {
+	const [loading, setLoading] = useState(false);
+	const maxRetryAttempts = 3;
+}
+
+// Import: deep relative imports
+import { UserProfileCard } from '../../../components/UserProfileCard';
+
+// Object properties using UPPER_CASE (should be camelCase)
+const metrics = {
+	USER_PROFILE: {
+		CREATED: 'user_profile_created',
+		DELETED: 'user_profile_deleted',
+	},
+	ORGANIZATION: {
+		CREATED: 'organization_created',
+		DELETED: 'organization_deleted',
+	},
+};
+
+// Inconsistent action naming
+export async function createUser(input: CreateUserInput) {
+	// Missing Action suffix
+}
+```
+
+description: File, component, and function naming standards
+globs:
+
+- src/\*_/_.{ts,tsx}
+  alwaysApply: true

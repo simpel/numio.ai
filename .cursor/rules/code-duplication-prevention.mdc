@@ -1,0 +1,191 @@
+# Code Duplication Prevention
+
+## Duplication Detection
+
+- Maximum 10 lines of duplicated code between files
+- Maximum 5 lines of duplicated code within same file
+- Extract common patterns into shared utilities
+- Create reusable components for similar UI patterns
+
+## Common Duplication Patterns Found
+
+### Page Layout Duplication
+
+- Extract common page layouts into shared components
+- Create reusable navigation and breadcrumb patterns
+- Standardize data fetching patterns across pages
+- Use shared EntityLayout component for team/user pages
+
+### Action Logic Duplication
+
+- Extract common validation logic into utility functions
+- Create shared error handling patterns
+- Standardize response formatting
+- Use base classes for CRUD operations
+
+### Component Logic Duplication
+
+- Extract common component logic into custom hooks
+- Create shared UI components for similar patterns
+- Standardize prop interfaces
+- Use base table component for consistent data display
+
+### Metrics Calculation Duplication
+
+- Create shared metrics utilities for common calculations
+- Standardize date handling and aggregation patterns
+- Use consistent interfaces for metrics configuration
+
+## Refactoring Strategies
+
+### Extract Shared Components
+
+```typescript
+// Before: Duplicated layout code
+// team/[id]/info/page.tsx and team/[id]/members/page.tsx
+
+// After: Shared layout component
+export function EntityLayout({
+  entityId,
+  entityType,
+  children,
+  title,
+  subtitle,
+  actions
+}: EntityLayoutProps) {
+  return (
+    <div className="container mx-auto px-6 py-8">
+      <EntityHeader title={title} subtitle={subtitle} />
+      <EntityNavigation entityType={entityType} entityId={entityId} />
+      {actions && <div className="mb-4">{actions}</div>}
+      {children}
+    </div>
+  );
+}
+```
+
+### Extract Base Action Classes
+
+```typescript
+// Before: Duplicated CRUD patterns
+// team.actions.ts, user-profile.actions.ts, membership.actions.ts
+
+// After: Base action class
+export abstract class BaseActions<T, CreateInput, UpdateInput> {
+	protected abstract model: any; // Prisma model
+
+	async create(data: CreateInput): Promise<ActionState<T>> {
+		try {
+			const result = await this.model.create({ data });
+			return { isSuccess: true, message: 'Created successfully', data: result };
+		} catch (error) {
+			return { isSuccess: false, message: 'Failed to create' };
+		}
+	}
+
+	async update(id: string, data: UpdateInput): Promise<ActionState<T>> {
+		// Common update logic
+	}
+
+	async delete(id: string): Promise<ActionState<void>> {
+		// Common delete logic
+	}
+}
+```
+
+### Extract Shared Utilities
+
+```typescript
+// Before: Duplicated metrics calculations
+// team-metrics.actions.ts, user-metrics.actions.ts, organisation-metrics.actions.ts
+
+// After: Shared metrics utilities
+export class MetricsUtils {
+	static async calculateGrowthMetrics(config: MetricsConfig, period: string) {
+		// Common growth calculation logic
+	}
+
+	static async calculateActivityMetrics(config: MetricsConfig, period: string) {
+		// Common activity calculation logic
+	}
+}
+```
+
+## When to Extract
+
+- Code block appears in 2+ files
+- Similar logic with different data types
+- Repeated UI patterns
+- Common validation or error handling
+- Similar state management patterns
+- Identical metrics calculation logic
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// Shared utility for common operations
+export function createEntityAction<T>(
+	entityType: string,
+	data: T
+): Promise<ActionState<T>> {
+	try {
+		const result = await db[entityType].create({ data });
+		return { isSuccess: true, message: `${entityType} created`, data: result };
+	} catch (error) {
+		return { isSuccess: false, message: `Failed to create ${entityType}` };
+	}
+}
+
+// Shared component for common UI patterns
+export function BaseTable<T>({
+	data,
+	columns,
+	loading,
+	onRowClick,
+	actions,
+	searchPlaceholder,
+	emptyMessage,
+}: BaseTableProps<T>) {
+	// Common table logic
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Duplicated code across multiple files
+// team.actions.ts
+export async function createTeamAction(input: CreateTeamInput) {
+	try {
+		const team = await db.team.create({ data: input });
+		return { isSuccess: true, message: 'Team created', data: team };
+	} catch (error) {
+		return { isSuccess: false, message: 'Failed to create team' };
+	}
+}
+
+// user.actions.ts - Same pattern repeated
+export async function createUserAction(input: CreateUserInput) {
+	try {
+		const user = await db.user.create({ data: input });
+		return { isSuccess: true, message: 'User created', data: user };
+	} catch (error) {
+		return { isSuccess: false, message: 'Failed to create user' };
+	}
+}
+```
+
+## Tools for Detection
+
+- Use jscpd for automated duplication detection
+- Regular code reviews to identify patterns
+- Static analysis tools to flag similar code
+- Monitor bundle size for duplicated dependencies
+
+description: Prevent code duplication through extraction and reuse
+globs:
+
+- src/\*_/_.{ts,tsx}
+  alwaysApply: true

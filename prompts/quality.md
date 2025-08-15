@@ -31,20 +31,38 @@ In addition to structural concerns, incorporate static analysis for **complexity
 2. **Structure**  
    Clear `apps/` vs `packages/` separation; no cross-layer leaks. Co-locate module code (`index.ts`, `types.ts`, `utils.ts`) and avoid barrel sprawl.
 
-3. **Architecture**  
+3. **File Organization**  
+   Components should be in individual folders with supporting files. Use consistent file structure: types/interfaces at top, arrow functions, object parameters, and organized function order.
+
+4. **TypeScript/TSX Standards**
+   - Types and interfaces at the top of files
+   - Always use arrow functions
+   - Prefer object parameters for functions
+   - Organized function order: variables → states → internal functions → useEffect → output
+   - Component folders with supporting files (e.g., `card/card.tsx`, `card/card.styles.ts`)
+
+5. **Architecture**  
    Enforce boundaries (UI ↔ application ↔ domain ↔ infrastructure). No imports "up the stack"; no feature code inside `shared/` that depends on app code.
 
-4. **Dependencies**  
+6. **Dependencies**  
    Detect import cycles, deep imports, and path alias misuse. Ensure stable modules depend only on more stable modules.
 
-5. **Duplication & Over-abstraction**  
+7. **Duplication & Over-abstraction**  
    Identify functions/components that are near-duplicates, single-use wrappers, or premature abstractions. Recommend merge/simplify or inline.
 
-6. **Configs**  
+8. **Configs**  
    Single `tsconfig.base.json` with project references. ESLint with naming, import and boundary rules. `turbo.json` pipelines consistent across packages.
 
-7. **Complexity**  
+9. **Complexity**  
    Highlight functions or modules with high cyclomatic or cognitive complexity and flag them for refactoring. Focus on functions with complexity scores above 10 and files with multiple high-complexity functions.
+
+10. **TypeScript/TSX File Structure**  
+    Enforce consistent file organization and coding patterns:
+    - **Types/Interfaces**: Always at the top of files
+    - **Function Style**: Always use arrow functions
+    - **Parameters**: Prefer object parameters for functions
+    - **Component Organization**: Individual folders with supporting files
+    - **Function Order**: Variables → States → Internal Functions → useEffect → Output
 
 ## Method
 
@@ -343,7 +361,9 @@ Process and analyze the results from all tools:
    - Format each prompt in a markdown code block for easy copying
    - Start each prompt by explaining that your a senior typescript developer and architect
 
-5. **Rules**: For each pattern or convention identified (naming conventions, structure, architecture, dependencies, abstraction, config hygiene) generate, delete or update a rule file under `.cursor/rules` following MDC format with a description, appropriate globs and bullet-point guidelines. Make sure to not duplicate rules or add contradictionary instructions. Be sure to check for existing rules before adding new ones. Editing/improving on existing rules is preferred. Read more about cursor rules here: https://docs.cursor.com/en/context/rules
+5. **Rules**: For each pattern or convention identified (naming conventions, structure, architecture, dependencies, abstraction, config hygiene) generate, delete or update a rule file under `.cursor/rules` following MDC format with a description, appropriate globs and bullet-point guidelines. Make sure to not duplicate rules or add contradictionary instructions. Be sure to check for existing rules before adding new ones. Editing/improving on existing rules is preferred.
+
+   **IMPORTANT**: Before generating any cursor rules, read the complete documentation at https://docs.cursor.com/en/context/rules to understand the proper MDC format, rule types, and best practices. The default for cursor rules should be to always apply them (`alwaysApply: true`). Follow the MDC format with proper description, globs, and alwaysApply properties. Keep rules focused, actionable, and under 500 lines.
 
 6. **GEMINI.md Structure**: Create or update the GEMINI.md file at the root of the project using the gated execution pattern described in the [Medium article about structured Gemini CLI approaches](https://medium.com/google-cloud/practical-gemini-cli-structured-approach-to-bloated-gemini-md-360d8a5c7487). The GEMINI.md should include:
    - **Default State**: Basic instructions for general assistance
@@ -795,6 +815,14 @@ echo "Creating AUDIT.md with findings and agent prompts..."
 
 When you're done with the audit review the cursor rules and see if they're all needed. If rules contradict each other only keep the one that suites the best. If rules are very similar you should combine them.
 
+**Cursor Rules Requirements:**
+
+- **Documentation**: Before generating any cursor rules, read the complete documentation at https://docs.cursor.com/en/context/rules to understand the proper MDC format, rule types, and best practices.
+- **Default Setting**: All cursor rules should default to `alwaysApply: true` unless there's a specific reason to scope them differently.
+- **MDC Format**: Use proper MDC format with description, globs, and alwaysApply properties.
+- **Rule Types**: Understand the difference between Always, Auto Attached, Agent Requested, and Manual rule types.
+- **Best Practices**: Keep rules focused, actionable, and under 500 lines. Split large rules into multiple, composable rules.
+
 ## Agent Prompt Generation from Reports
 
 After generating all reports, use the structured data to create specific, actionable agent prompts:
@@ -832,6 +860,415 @@ Each agent prompt should include:
 3. **Required changes** with clear instructions
 4. **Expected outcome** with measurable results
 5. **Testing instructions** to verify improvements
+
+## TypeScript/TSX File Structure Standards
+
+### File Organization
+
+#### Component Folder Structure
+
+```
+components/
+├── user-card/
+│   ├── user-card.tsx          # Main component
+│   ├── user-card.styles.ts    # Styling utilities
+│   ├── user-card.types.ts     # Type definitions
+│   ├── user-card.utils.ts     # Helper functions
+│   └── index.ts               # Barrel export
+├── data-table/
+│   ├── data-table.tsx
+│   ├── data-table.styles.ts
+│   ├── data-table.types.ts
+│   └── index.ts
+```
+
+#### File Structure Order
+
+1. **Imports** (external libraries first, then internal)
+2. **Types/Interfaces** (always at the top)
+3. **Constants** (UPPER_CASE)
+4. **Variables** (camelCase)
+5. **State declarations** (useState, useReducer)
+6. **Internal functions** (helpers, utilities)
+7. **useEffect hooks**
+8. **Event handlers**
+9. **Component output** (return statement)
+
+### Coding Standards
+
+#### Types and Interfaces
+
+```typescript
+// ✅ Good: Types at the top
+interface UserCardProps {
+	user: User;
+	onEdit?: (user: User) => void;
+	onDelete?: (userId: string) => void;
+	variant?: 'default' | 'compact';
+}
+
+type UserCardVariant = 'default' | 'compact';
+
+interface UserCardState {
+	isEditing: boolean;
+	isLoading: boolean;
+}
+
+// Component implementation below...
+```
+
+#### Arrow Functions
+
+```typescript
+// ✅ Good: Always use arrow functions
+const UserCard = ({
+	user,
+	onEdit,
+	onDelete,
+	variant = 'default',
+}: UserCardProps) => {
+	// Component logic
+};
+
+// ✅ Good: Arrow functions for handlers
+const handleEdit = () => {
+	setIsEditing(true);
+};
+
+const handleSave = async (userData: Partial<User>) => {
+	// Save logic
+};
+
+// ❌ Bad: Function declarations
+function UserCard(props: UserCardProps) {
+	// Component logic
+}
+```
+
+#### Object Parameters
+
+```typescript
+// ✅ Good: Object parameters for multiple arguments
+const createUser = async ({ name, email, role }: CreateUserParams) => {
+	// Implementation
+};
+
+const updateUser = async ({ id, data }: UpdateUserParams) => {
+	// Implementation
+};
+
+// ✅ Good: Object parameters for complex configurations
+const fetchUsers = async ({
+	page = 1,
+	limit = 10,
+	filters = {},
+	sortBy = 'name',
+}: FetchUsersParams) => {
+	// Implementation
+};
+
+// ❌ Bad: Multiple individual parameters
+const createUser = async (name: string, email: string, role: string) => {
+	// Implementation
+};
+```
+
+#### Function Order Example
+
+```typescript
+const UserCard = ({ user, onEdit, onDelete, variant = 'default' }: UserCardProps) => {
+  // 1. Types (already at top of file)
+
+  // 2. Constants
+  const MAX_NAME_LENGTH = 50;
+  const DEFAULT_AVATAR = '/images/default-avatar.png';
+
+  // 3. Variables
+  const isAdmin = user.role === 'ADMIN';
+  const displayName = user.name.length > MAX_NAME_LENGTH
+    ? `${user.name.slice(0, MAX_NAME_LENGTH)}...`
+    : user.name;
+
+  // 4. State declarations
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState(user);
+
+  // 5. Internal functions
+  const validateForm = (data: Partial<User>): boolean => {
+    return !!(data.name && data.email);
+  };
+
+  const formatDate = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US').format(date);
+  };
+
+  // 6. useEffect hooks
+  useEffect(() => {
+    if (isEditing) {
+      setFormData(user);
+    }
+  }, [isEditing, user]);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isEditing) {
+        setIsEditing(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isEditing]);
+
+  // 7. Event handlers
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!validateForm(formData)) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await updateUser({ id: user.id, data: formData });
+      setIsEditing(false);
+      onEdit?.(formData as User);
+    } catch (error) {
+      console.error('Failed to update user:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await deleteUser({ id: user.id });
+      onDelete?.(user.id);
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 8. Component output
+  return (
+    <div className={cn('user-card', `user-card--${variant}`)}>
+      {/* JSX content */}
+    </div>
+  );
+};
+```
+
+### Supporting Files
+
+#### Styles File (`component.styles.ts`)
+
+```typescript
+import { cn } from '@/lib/utils';
+
+export const userCardStyles = {
+	container: (variant: UserCardVariant) =>
+		cn('rounded-lg border p-4', variant === 'compact' && 'p-2'),
+	header: 'flex items-center justify-between mb-3',
+	avatar: 'w-10 h-10 rounded-full',
+	name: 'font-semibold text-gray-900',
+	email: 'text-sm text-gray-500',
+	actions: 'flex gap-2 mt-3',
+	button: (variant: 'primary' | 'secondary') =>
+		cn(
+			'px-3 py-1 rounded text-sm',
+			variant === 'primary' && 'bg-blue-500 text-white',
+			variant === 'secondary' && 'bg-gray-200 text-gray-700'
+		),
+};
+```
+
+#### Types File (`component.types.ts`)
+
+```typescript
+export interface User {
+	id: string;
+	name: string;
+	email: string;
+	role: 'ADMIN' | 'USER' | 'GUEST';
+	avatar?: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface UserCardProps {
+	user: User;
+	onEdit?: (user: User) => void;
+	onDelete?: (userId: string) => void;
+	variant?: 'default' | 'compact';
+}
+
+export type UserCardVariant = 'default' | 'compact';
+
+export interface CreateUserParams {
+	name: string;
+	email: string;
+	role: User['role'];
+	avatar?: string;
+}
+
+export interface UpdateUserParams {
+	id: string;
+	data: Partial<User>;
+}
+```
+
+#### Utils File (`component.utils.ts`)
+
+```typescript
+import { User } from './user-card.types';
+
+export const formatUserName = (name: string, maxLength = 50): string => {
+	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
+};
+
+export const validateUserEmail = (email: string): boolean => {
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return emailRegex.test(email);
+};
+
+export const getUserInitials = (user: User): string => {
+	return user.name
+		.split(' ')
+		.map((word) => word[0])
+		.join('')
+		.toUpperCase()
+		.slice(0, 2);
+};
+```
+
+#### Index File (`index.ts`)
+
+```typescript
+export { UserCard } from './user-card';
+export type {
+	UserCardProps,
+	User,
+	CreateUserParams,
+	UpdateUserParams,
+} from './user-card.types';
+export { userCardStyles } from './user-card.styles';
+export {
+	formatUserName,
+	validateUserEmail,
+	getUserInitials,
+} from './user-card.utils';
+```
+
+### Import/Export Standards
+
+#### Import Order
+
+```typescript
+// 1. React and Next.js
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+
+// 2. External libraries
+import { cn } from 'clsx';
+import { format } from 'date-fns';
+
+// 3. Internal utilities and types
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+
+// 4. Local imports (same folder)
+import { userCardStyles } from './user-card.styles';
+import { formatUserName } from './user-card.utils';
+import type { UserCardProps, User } from './user-card.types';
+```
+
+#### Export Standards
+
+```typescript
+// ✅ Good: Named exports for components
+export const UserCard = ({ user, onEdit, onDelete }: UserCardProps) => {
+	// Component implementation
+};
+
+// ✅ Good: Named exports for utilities
+export const formatUserName = (name: string): string => {
+	// Implementation
+};
+
+// ✅ Good: Type exports
+export type { UserCardProps, User };
+
+// ❌ Bad: Default exports (except for main component files)
+export default UserCard;
+```
+
+### Common Patterns
+
+#### Action Functions
+
+```typescript
+// ✅ Good: Consistent action pattern
+export const createUserAction = async ({
+	name,
+	email,
+	role,
+}: CreateUserParams): Promise<ActionState<User>> => {
+	try {
+		const user = await db.user.create({ data: { name, email, role } });
+		return {
+			isSuccess: true,
+			message: 'User created successfully',
+			data: user,
+		};
+	} catch (error) {
+		console.error('Error creating user:', error);
+		return { isSuccess: false, message: 'Failed to create user' };
+	}
+};
+```
+
+#### Custom Hooks
+
+```typescript
+// ✅ Good: Custom hook with object parameters
+export const useUser = ({ userId, includeProfile = false }: UseUserParams) => {
+	const [user, setUser] = useState<User | null>(null);
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		const fetchUser = async () => {
+			setIsLoading(true);
+			try {
+				const result = await getUserAction({ id: userId, includeProfile });
+				if (result.isSuccess) {
+					setUser(result.data);
+				} else {
+					setError(result.message);
+				}
+			} catch (err) {
+				setError('Failed to fetch user');
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchUser();
+	}, [userId, includeProfile]);
+
+	return { user, isLoading, error };
+};
+```
 
 ## Review Rubric
 
