@@ -1,0 +1,51 @@
+
+> @numio/ai@ lint /Users/joel.sanden/Code/privat/numio
+> turbo run lint
+
+turbo 2.5.5
+
+• Packages in scope: @numio/ai-database, @numio/eslint-config, @numio/mail, @numio/tsup-config, @numio/typescript-config, @numio/web
+• Running lint in 6 packages
+• Remote caching disabled
+@numio/ai-database:lint: cache miss, executing 0f11c75312190ad0
+@numio/ai-database:lint: 
+@numio/ai-database:lint: > @numio/ai-database@1.0.0 lint /Users/joel.sanden/Code/privat/numio/apps/database
+@numio/ai-database:lint: > eslint . --fix
+@numio/ai-database:lint: 
+@numio/ai-database:lint: 
+@numio/ai-database:lint: /Users/joel.sanden/Code/privat/numio/apps/database/src/metrics.ts
+@numio/ai-database:lint:    5:2  error  Object Literal Property name `USER_PROFILE` must match one of the following formats: camelCase  @typescript-eslint/naming-convention
+@numio/ai-database:lint:    6:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:    7:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:    9:2  error  Object Literal Property name `ORGANIZATION` must match one of the following formats: camelCase  @typescript-eslint/naming-convention
+@numio/ai-database:lint:   10:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   11:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   13:2  error  Object Literal Property name `TEAM` must match one of the following formats: camelCase          @typescript-eslint/naming-convention
+@numio/ai-database:lint:   14:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   15:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   17:2  error  Object Literal Property name `INVITE` must match one of the following formats: camelCase        @typescript-eslint/naming-convention
+@numio/ai-database:lint:   18:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   19:3  error  Object Literal Property name `EXPIRED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   20:3  error  Object Literal Property name `ACCEPTED` must match one of the following formats: camelCase      @typescript-eslint/naming-convention
+@numio/ai-database:lint:   21:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   23:2  error  Object Literal Property name `CASE` must match one of the following formats: camelCase          @typescript-eslint/naming-convention
+@numio/ai-database:lint:   24:3  error  Object Literal Property name `CREATED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint:   25:3  error  Object Literal Property name `DELETED` must match one of the following formats: camelCase       @typescript-eslint/naming-convention
+@numio/ai-database:lint: 
+@numio/ai-database:lint: /Users/joel.sanden/Code/privat/numio/apps/database/src/seed.ts
+@numio/ai-database:lint:   380:14  error  Variable name `_org` must match one of the following formats: camelCase, UPPER_CASE               @typescript-eslint/naming-convention
+@numio/ai-database:lint:   494:8   error  Variable name `_createRecentDate` must match one of the following formats: camelCase, UPPER_CASE  @typescript-eslint/naming-convention
+@numio/ai-database:lint: 
+@numio/ai-database:lint: ✖ 19 problems (19 errors, 0 warnings)
+@numio/ai-database:lint: 
+@numio/ai-database:lint:  ELIFECYCLE  Command failed with exit code 1.
+@numio/ai-database:lint: ERROR: command finished with error: command (/Users/joel.sanden/Code/privat/numio/apps/database) /usr/local/bin/pnpm run lint exited (1)
+@numio/ai-database#lint: command (/Users/joel.sanden/Code/privat/numio/apps/database) /usr/local/bin/pnpm run lint exited (1)
+
+ Tasks:    0 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    1.399s 
+Failed:    @numio/ai-database#lint
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Command failed with exit code 1.

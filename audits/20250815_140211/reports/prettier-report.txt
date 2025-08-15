@@ -1,0 +1,46 @@
+
+> @numio/ai@ quality:format /Users/joel.sanden/Code/privat/numio
+> prettier --check "**/*.{ts,tsx,js,jsx,json,css,scss,md}"
+
+Checking formatting...
+[warn] .dependency-cruiser.js
+[warn] .secretlintrc.json
+[warn] .vscode/settings.json
+[warn] apps/database/eslint.config.js
+[warn] apps/database/package.json
+[warn] apps/database/tsconfig.json
+[warn] apps/mail/eslint.config.js
+[warn] apps/mail/package.json
+[warn] apps/mail/tsconfig.json
+[warn] apps/web/app/[locale]/(authenticated)/admin/page.tsx
+[warn] apps/web/app/[locale]/(authenticated)/team/[id]/info/page.tsx
+[warn] apps/web/app/not-found.tsx
+[warn] apps/web/components.json
+[warn] apps/web/eslint.config.js
+[warn] apps/web/messages/en.json
+[warn] apps/web/messages/sv.json
+[warn] apps/web/package.json
+[warn] apps/web/src/components/admin/user-search.tsx
+[warn] apps/web/src/components/charts/metrics-chart.tsx
+[warn] apps/web/src/components/dialogs/edit-team-dialog.tsx
+[warn] apps/web/src/components/tables/cases-table.tsx
+[warn] apps/web/src/components/team-state-manager.tsx
+[warn] apps/web/src/lib/db/organisation/organisation-metrics.actions.ts
+[warn] apps/web/src/lib/db/team/team-metrics.actions.ts
+[warn] apps/web/src/lib/db/user/user-metrics.actions.ts
+[warn] apps/web/tsconfig.json
+[warn] knip.json
+[warn] package.json
+[warn] packages/eslint-config/base.js
+[warn] packages/eslint-config/package.json
+[warn] packages/eslint-config/react.js
+[warn] packages/tsup-config/index.js
+[warn] packages/tsup-config/package.json
+[warn] packages/typescript-config/base.json
+[warn] packages/typescript-config/nextjs.json
+[warn] packages/typescript-config/package.json
+[warn] packages/typescript-config/react-library.json
+[warn] tsconfig.json
+[warn] turbo.json
+[warn] Code style issues found in 39 files. Run Prettier with --write to fix.
+ ELIFECYCLE  Command failed with exit code 1.
