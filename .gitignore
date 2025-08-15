@@ -37,3 +37,11 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Quality Analysis Tool Outputs
+reports/
+temp/
+report/
+
+# Quality Analysis Scripts (optional - can be committed if needed)
+# cleanup-quality-artifacts.sh

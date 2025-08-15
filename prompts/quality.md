@@ -13,7 +13,7 @@ Focus exclusively on:
 
 Ignore runtime performance, Lighthouse, SEO, accessibility, testing or design/UX.
 
-In addition to structural concerns, incorporate static analysis for **complexity** and **secrets** as part of code quality. Complex modules can impede maintainability, and accidentally committed credentials are a serious security risk.
+In addition to structural concerns, incorporate static analysis for **complexity** as part of code quality. Complex modules can impede maintainability and should be flagged for refactoring.
 
 **Important**: This prompt should perform analysis and generate recommendations only. Do not make any actual code changes to the repository. All changes should be documented in the AUDIT file and rules for later implementation.
 
@@ -43,8 +43,8 @@ In addition to structural concerns, incorporate static analysis for **complexity
 6. **Configs**  
    Single `tsconfig.base.json` with project references. ESLint with naming, import and boundary rules. `turbo.json` pipelines consistent across packages.
 
-7. **Complexity & Secrets**  
-   Highlight functions or modules with high cyclomatic or Halstead complexity and flag them for refactoring. Also detect any hard-coded secrets (API keys, tokens, passwords) or credentials committed to the repository and recommend removing them. Secrets should be stored in environment variables or secure stores rather than source files.
+7. **Complexity**  
+   Highlight functions or modules with high cyclomatic or cognitive complexity and flag them for refactoring. Focus on functions with complexity scores above 10 and files with multiple high-complexity functions.
 
 ## Method
 
@@ -70,9 +70,9 @@ if [ ${#MISSING_SCRIPTS[@]} -gt 0 ]; then
   # Add the missing scripts to package.json
   # This should be done manually or via a script that modifies package.json
   echo "Please add the following scripts to package.json:"
-  echo "  \"quality:deps\": \"depcruise src --include-only \\\"^src\\\" --output-type text\""
-  echo "  \"quality:deps:graph\": \"depcruise src --include-only \\\"^src\\\" --output-type dot\""
-  echo "  \"quality:deps:validate\": \"depcruise src --config .dependency-cruiser.js\""
+  echo "  \"quality:deps\": \"depcruise apps/web/src --include-only \\\"^apps/web/src\\\" --output-type text\""
+  echo "  \"quality:deps:graph\": \"depcruise apps/web/src --include-only \\\"^apps/web/src\\\" --output-type dot\""
+  echo "  \"quality:deps:validate\": \"depcruise apps/web/src --config .dependency-cruiser.js\""
   echo "  \"quality:unused\": \"knip --reporter json --no-exit-code\""
   echo "  \"quality:unused:text\": \"knip --reporter compact --no-exit-code\""
   echo "  \"quality:complexity\": \"labinsight analyze --type deep --format json --silent\""
@@ -223,11 +223,11 @@ Add the following scripts to the root package.json:
 ```json
 {
 	"scripts": {
-		"quality:deps": "depcruise src --include-only \"^src\" --output-type text",
+		"quality:deps": "depcruise apps/web/src --include-only \"^apps/web/src\" --output-type text",
 		"quality:unused": "knip --reporter --files json",
-		"quality:complexity": "labinsight analyze --type deep --format json --silent --ignore \"**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**,**/.DS_Store\"",
+		"quality:complexity": "labinsight analyze --type deep --format json --silent",
 		"quality:duplication": "jscpd . --reporters json --ignore \"**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**\"",
-		"quality:format": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\" --ignore \"audits/**\""
+		"quality:format": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\" --ignore \"audits/**,**/node_modules/**,**/.next/**,**/dist/**,**/build/**\""
 	}
 }
 ```
@@ -316,7 +316,7 @@ Process and analyze the results from all tools:
    | **Repository Size**          | 15,420 LOC | 🟢 Good   |
    ```
 
-2. **Findings**: List by category (naming, structure, architecture, dependencies, duplication, complexity, secrets, configs) including file paths, a short reason and a severity rating (high/medium/low).
+2. **Findings**: List by category (naming, structure, architecture, dependencies, duplication, complexity, configs) including file paths, a short reason and a severity rating (high/medium/low).
 
 3. **Actions**: For every finding produce a clear agent instruction describing how to apply the recommended change (rename, move, delete, simplify). These instructions should be actionable tasks that can be followed to refactor the codebase.
 
@@ -405,14 +405,19 @@ Process and analyze the results from all tools:
 7. **AUDIT File**: Generate a markdown file named `AUDIT.md` in the timestamped audit directory (`audits/<timestamp>/AUDIT.md`) containing all findings, analysis, proposed agent prompts, and the comprehensive refactoring plan. This file should serve as a complete record of the code quality assessment and actionable roadmap for improvements. It should also include a list of cursor rules that are either added, removed or edited
 
 8. **TOOL REPORTS**: Store all tool outputs in the `audits/<timestamp>/reports/` directory with descriptive filenames:
+   - `terminal.txt` - Complete terminal log of the entire analysis process
    - `dependency-analysis.txt` and `dependency-graph.svg` (dependency-cruiser)
    - `eslint-report.json` and `eslint-report.txt` (ESLint)
    - `knip-report.json` and `knip-report.txt` (knip)
    - `complexity-report.json` and `complexity-report.txt` (LabInsight)
    - `prettier-report.txt` (Prettier)
    - `duplication-report.json` and `duplication-report.txt` (jscpd)
+   - `duplication-patterns.txt` - Extracted duplication patterns for agent prompts
+   - `unused-cleanup-targets.txt` - Identified unused code for removal
+   - `complexity-refactoring-targets.txt` - High complexity functions for refactoring
+   - `eslint-issues.txt` - Code quality issues for fixing
 
-   This allows the end user to do deeper analysis of the raw tool outputs.
+   This allows the end user to do deeper analysis of the raw tool outputs and provides structured data for generating specific agent prompts.
 
 ## Tool-Specific Analysis Scripts
 
@@ -515,14 +520,28 @@ if ! grep -q "quality:complexity" package.json; then
   # Add the scripts to package.json (this should be done manually or via script)
 fi
 
-# Run complexity analysis using pnpm run
-pnpm run quality:complexity > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-report.json
+# Run complexity analysis using pnpm run with output redirection
+# Create temporary directory for labinsight output
+TEMP_DIR="audits/$(date +"%Y%m%d_%H%M%S")/temp"
+mkdir -p "$TEMP_DIR"
+
+# Set environment variable to redirect labinsight output
+export LABINSIGHT_OUTPUT_DIR="$TEMP_DIR"
+
+# Run complexity analysis and capture output
+pnpm run quality:complexity > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-report.json 2>&1
 
 # Run text version for readability
-pnpm run quality:complexity:text > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-report.txt
+pnpm run quality:complexity:text > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-report.txt 2>&1
 
 # Run basic analysis for comparison
-labinsight analyze --type basic --format json --silent --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**,**/.DS_Store" > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-basic.json
+labinsight analyze --type basic --format json --silent --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**,**/.DS_Store" > audits/$(date +"%Y%m%d_%H%M%S")/reports/complexity-basic.json 2>&1
+
+# Move any generated files from temp to reports
+if [ -d "$TEMP_DIR" ]; then
+  mv "$TEMP_DIR"/* audits/$(date +"%Y%m%d_%H%M%S")/reports/ 2>/dev/null || true
+  rmdir "$TEMP_DIR" 2>/dev/null || true
+fi
 ```
 
 ### Prettier Analysis
@@ -562,14 +581,31 @@ if ! grep -q "quality:duplication" package.json; then
   # Add the scripts to package.json (this should be done manually or via script)
 fi
 
-# Run duplication analysis using pnpm run
-pnpm run quality:duplication > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-report.json
+# Run duplication analysis using pnpm run with output redirection
+# Create temporary directory for jscpd output
+TEMP_DIR="audits/$(date +"%Y%m%d_%H%M%S")/temp"
+mkdir -p "$TEMP_DIR"
+
+# Set environment variable to redirect jscpd output
+export JSCPD_OUTPUT_DIR="$TEMP_DIR"
+
+# Run duplication analysis and capture output
+pnpm run quality:duplication > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-report.json 2>&1
 
 # Run text version for readability
-pnpm run quality:duplication:text > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-report.txt
+pnpm run quality:duplication:text > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-report.txt 2>&1
 
 # Generate detailed report with console and HTML output
-jscpd . --reporters console,html --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**" > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-detailed.txt
+jscpd . --reporters console,html --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**" > audits/$(date +"%Y%m%d_%H%M%S")/reports/duplication-detailed.txt 2>&1
+
+# Move any generated files from temp to reports
+if [ -d "$TEMP_DIR" ]; then
+  mv "$TEMP_DIR"/* audits/$(date +"%Y%m%d_%H%M%S")/reports/ 2>/dev/null || true
+  rmdir "$TEMP_DIR" 2>/dev/null || true
+fi
+
+# Note: jscpd statistics are included in the JSON output and can be parsed programmatically
+# The detailed report provides comprehensive duplication analysis with file locations
 ```
 
 ## Comprehensive Analysis Execution
@@ -588,9 +624,18 @@ mkdir -p "${AUDIT_DIR}/reports"
 echo "Audit directory created: ${AUDIT_DIR}"
 ```
 
-#### Step 2: Run All Analysis Tools
+#### Step 2: Run All Analysis Tools with Terminal Log Capture
 
 ```bash
+# Start capturing all terminal output
+exec 1> >(tee -a "${AUDIT_DIR}/reports/terminal.txt")
+exec 2> >(tee -a "${AUDIT_DIR}/reports/terminal.txt" >&2)
+
+echo "=== CODE QUALITY ANALYSIS STARTED ==="
+echo "Timestamp: $(date)"
+echo "Audit Directory: ${AUDIT_DIR}"
+echo ""
+
 # Check if all required scripts exist in package.json
 echo "Checking for required quality analysis scripts..."
 REQUIRED_SCRIPTS=("quality:deps" "quality:unused" "quality:complexity" "quality:duplication" "quality:format")
@@ -609,57 +654,188 @@ if [ ${#MISSING_SCRIPTS[@]} -gt 0 ]; then
 fi
 
 echo "All required scripts found in package.json"
+echo ""
 
 # Primary analysis using pnpm run scripts
-pnpm run quality:deps > "${AUDIT_DIR}/reports/dependency-analysis.txt"
-pnpm run quality:unused > "${AUDIT_DIR}/reports/knip-report.json"
-pnpm run quality:complexity > "${AUDIT_DIR}/reports/complexity-report.json"
-pnpm run quality:duplication > "${AUDIT_DIR}/reports/duplication-report.json"
+echo "=== RUNNING PRIMARY ANALYSIS ==="
+
+# Create temporary directory for tool outputs
+TEMP_DIR="${AUDIT_DIR}/temp"
+mkdir -p "$TEMP_DIR"
+
+echo "Running dependency analysis..."
+pnpm run quality:deps > "${AUDIT_DIR}/reports/dependency-analysis.txt" 2>&1
+
+echo "Running unused code analysis..."
+pnpm run quality:unused > "${AUDIT_DIR}/reports/knip-report.json" 2>&1
+
+echo "Running complexity analysis..."
+# Set environment variable to redirect labinsight output
+export LABINSIGHT_OUTPUT_DIR="$TEMP_DIR"
+pnpm run quality:complexity > "${AUDIT_DIR}/reports/complexity-report.json" 2>&1
+
+echo "Running duplication analysis..."
+# Set environment variable to redirect jscpd output
+export JSCPD_OUTPUT_DIR="$TEMP_DIR"
+pnpm run quality:duplication > "${AUDIT_DIR}/reports/duplication-report.json" 2>&1
 
 # Code quality checks
-pnpm lint > "${AUDIT_DIR}/reports/eslint-report.txt"
+echo "Running ESLint analysis..."
+pnpm lint > "${AUDIT_DIR}/reports/eslint-report.txt" 2>&1
+echo "Running Prettier analysis..."
 pnpm run quality:format > "${AUDIT_DIR}/reports/prettier-report.txt" 2>&1
 
 # Additional formats and analysis using pnpm run
-# Compact versions of JSON reports for readability
-pnpm run quality:unused:text > "${AUDIT_DIR}/reports/knip-report.txt"
-pnpm run quality:complexity:text > "${AUDIT_DIR}/reports/complexity-report.txt"
-pnpm run quality:duplication:text > "${AUDIT_DIR}/reports/duplication-report.txt"
+echo "=== GENERATING ADDITIONAL REPORTS ==="
+echo "Generating compact text reports..."
+pnpm run quality:unused:text > "${AUDIT_DIR}/reports/knip-report.txt" 2>&1
+pnpm run quality:complexity:text > "${AUDIT_DIR}/reports/complexity-report.txt" 2>&1
+pnpm run quality:duplication:text > "${AUDIT_DIR}/reports/duplication-report.txt" 2>&1
 
 # Additional analysis for comprehensive coverage
-# ESLint JSON format for programmatic analysis
-pnpm lint --format json > "${AUDIT_DIR}/reports/eslint-report.json"
+echo "Generating ESLint JSON report..."
+pnpm lint --format json > "${AUDIT_DIR}/reports/eslint-report.json" 2>&1
 
-# Knip specific categories analysis
-pnpm dlx knip --include dependencies,exports,types --no-exit-code > "${AUDIT_DIR}/reports/knip-categories.txt"
+echo "Running Knip categories analysis..."
+pnpm dlx knip --include dependencies,exports,types --no-exit-code > "${AUDIT_DIR}/reports/knip-categories.txt" 2>&1
 
-# LabInsight basic analysis for comparison
-labinsight analyze --type basic --format json --silent --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**,**/.DS_Store" > "${AUDIT_DIR}/reports/complexity-basic.json"
+echo "Running LabInsight basic analysis..."
+labinsight analyze --type basic --format json --silent > "${AUDIT_DIR}/reports/complexity-basic.json" 2>&1
 
-# JSCPD detailed report with console and HTML output
-jscpd . --reporters console,html --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**" > "${AUDIT_DIR}/reports/duplication-detailed.txt"
+echo "Generating JSCPD detailed report..."
+jscpd . --reporters console,html --ignore "**/node_modules/**,**/dist/**,**/.next/**,**/.turbo/**,**/build/**" > "${AUDIT_DIR}/reports/duplication-detailed.txt" 2>&1
 
-# Dependency cruiser validation against rules
-pnpm run quality:deps:validate > "${AUDIT_DIR}/reports/dependency-validation.txt"
+echo "Running dependency cruiser validation..."
+pnpm run quality:deps:validate > "${AUDIT_DIR}/reports/dependency-validation.txt" 2>&1
 
-# Generate dependency graph
-pnpm run quality:deps:graph | dot -T svg > "${AUDIT_DIR}/reports/dependency-graph.svg"
+echo "Generating dependency graph..."
+pnpm run quality:deps:graph | dot -T svg > "${AUDIT_DIR}/reports/dependency-graph.svg" 2>&1
+
+# Clean up temporary files and move generated outputs
+echo "=== CLEANING UP TEMPORARY FILES ==="
+if [ -d "$TEMP_DIR" ]; then
+  echo "Moving generated files from temp to reports..."
+  mv "$TEMP_DIR"/* "${AUDIT_DIR}/reports/" 2>/dev/null || true
+  rmdir "$TEMP_DIR" 2>/dev/null || true
+fi
+
+# Clean up any files that might have been created in the root
+echo "Cleaning up root directory artifacts..."
+rm -rf reports/deep/ 2>/dev/null || true
+rm -rf temp/ 2>/dev/null || true
+rm -rf report/ 2>/dev/null || true
+
+# Run cleanup script if it exists
+if [ -f "cleanup-quality-artifacts.sh" ]; then
+  echo "Running cleanup script..."
+  ./cleanup-quality-artifacts.sh
+fi
+
+echo "=== ANALYSIS COMPLETED ==="
+echo "All reports generated in: ${AUDIT_DIR}/reports/"
+echo "Terminal log saved to: ${AUDIT_DIR}/reports/terminal.txt"
+echo ""
 ```
 
-#### Step 3: Generate Audit Report
+#### Step 3: Analyze Generated Reports and Create Agent Prompts
 
 ```bash
-# The audit report will be generated as AUDIT.md in the audit directory
-# This will be created by the analysis script with all findings and recommendations
+echo "=== ANALYZING REPORTS FOR AGENT PROMPTS ==="
+echo "Reading and analyzing generated reports..."
+
+# Read and parse the generated reports to extract actionable insights
+echo "Parsing duplication report..."
+DUPLICATION_REPORT="${AUDIT_DIR}/reports/duplication-report.json"
+if [ -f "$DUPLICATION_REPORT" ]; then
+  echo "Found duplication report, analyzing patterns..."
+  # Extract high-value duplication patterns for agent prompts
+  grep -A 5 -B 5 "Clone found" "$DUPLICATION_REPORT" | head -50 > "${AUDIT_DIR}/reports/duplication-patterns.txt"
+fi
+
+echo "Parsing unused code report..."
+UNUSED_REPORT="${AUDIT_DIR}/reports/knip-report.txt"
+if [ -f "$UNUSED_REPORT" ]; then
+  echo "Found unused code report, identifying cleanup targets..."
+  # Extract unused files and exports for removal prompts
+  grep "Unused files\|Unused exports\|Unused dependencies" "$UNUSED_REPORT" > "${AUDIT_DIR}/reports/unused-cleanup-targets.txt"
+fi
+
+echo "Parsing complexity report..."
+COMPLEXITY_REPORT="${AUDIT_DIR}/reports/complexity-report-fixed.json"
+if [ -f "$COMPLEXITY_REPORT" ]; then
+  echo "Found complexity report, identifying refactoring targets..."
+  # Extract high complexity functions for refactoring prompts
+  grep -B 2 "Cyclomatic Complexity: [2-9][0-9]\|Cognitive Complexity: [2-9][0-9]" "$COMPLEXITY_REPORT" | head -30 > "${AUDIT_DIR}/reports/complexity-refactoring-targets.txt"
+fi
+
+echo "Parsing ESLint report..."
+ESLINT_REPORT="${AUDIT_DIR}/reports/eslint-report.txt"
+if [ -f "$ESLINT_REPORT" ]; then
+  echo "Found ESLint report, identifying code quality issues..."
+  # Extract naming convention violations and other issues
+  grep -E "(error|warning)" "$ESLINT_REPORT" > "${AUDIT_DIR}/reports/eslint-issues.txt"
+fi
+
+echo "Report analysis completed. Agent prompts will be generated based on these findings."
+echo ""
 ```
 
-#### Step 4: Review cursor rules
+#### Step 4: Generate Audit Report with Agent Prompts
+
+```bash
+echo "=== GENERATING COMPREHENSIVE AUDIT REPORT ==="
+echo "Creating AUDIT.md with findings and agent prompts..."
+
+# The audit report will be generated as AUDIT.md in the audit directory
+# This will be created by the analysis script with all findings and recommendations
+# The script should now use the parsed report data to generate specific agent prompts
+```
+
+#### Step 5: Review cursor rules
 
 When you're done with the audit review the cursor rules and see if they're all needed. If rules contradict each other only keep the one that suites the best. If rules are very similar you should combine them.
 
+## Agent Prompt Generation from Reports
+
+After generating all reports, use the structured data to create specific, actionable agent prompts:
+
+### Duplication-Based Prompts
+
+- **Source**: `duplication-patterns.txt`
+- **Focus**: Extract common patterns and create shared components
+- **Example**: "Create a shared layout component for team/[id]/info/page.tsx and team/[id]/members/page.tsx"
+
+### Unused Code Cleanup Prompts
+
+- **Source**: `unused-cleanup-targets.txt`
+- **Focus**: Remove dead code and unused dependencies
+- **Example**: "Remove 58 unused files and 30+ unused exports identified by Knip"
+
+### Complexity Refactoring Prompts
+
+- **Source**: `complexity-refactoring-targets.txt`
+- **Focus**: Split high-complexity functions into smaller, focused functions
+- **Example**: "Refactor seed.ts function with cyclomatic complexity 50 into smaller functions"
+
+### Code Quality Fix Prompts
+
+- **Source**: `eslint-issues.txt`
+- **Focus**: Fix naming conventions and other code quality issues
+- **Example**: "Fix 19 naming convention violations in metrics.ts"
+
+### Prompt Structure
+
+Each agent prompt should include:
+
+1. **Specific file references** with exact paths
+2. **Current issue description** with metrics/evidence
+3. **Required changes** with clear instructions
+4. **Expected outcome** with measurable results
+5. **Testing instructions** to verify improvements
+
 ## Review Rubric
 
-- **High**: cycles, boundary violations, duplicate utilities, single-use wrappers, deep imports, inconsistent naming, high complexity functions or modules, hard-coded secrets.
+- **High**: cycles, boundary violations, duplicate utilities, single-use wrappers, deep imports, inconsistent naming, high complexity functions or modules.
 
 - **Medium**: leaky folders, over-generic shared modules, missing base tsconfig, barrels hiding dependencies, moderately complex code that may need refactoring.
 - **Low**: minor naming nits, import order, low complexity issues.
