@@ -12,26 +12,6 @@ interface CaseUsersPageProps {
 	params: Promise<{ id: string }>;
 }
 
-interface MemberData {
-	id: string;
-	membershipId: string;
-	name: string;
-	email: string;
-	role: string;
-}
-
-// Type for membership with user profile
-interface MembershipWithUser {
-	id: string;
-	role: string;
-	userProfile?: {
-		id: string;
-		firstName?: string;
-		lastName?: string;
-		email?: string;
-	};
-}
-
 export default async function CaseUsersPage({ params }: CaseUsersPageProps) {
 	const user = await getCurrentUser();
 	if (!user?.id) {
@@ -53,21 +33,11 @@ export default async function CaseUsersPage({ params }: CaseUsersPageProps) {
 	// Get memberships for this case
 	const { data: membershipsData } = await getCaseMembershipsAction(caseId);
 
-	const membersData: MemberData[] = (membershipsData || []).map(
-		(membership: MembershipWithUser) => ({
-			id: membership.userProfile?.id || '',
-			membershipId: membership.id || '',
-			name: `${membership.userProfile?.firstName || ''} ${membership.userProfile?.lastName || ''}`.trim(),
-			email: membership.userProfile?.email || '',
-			role: membership.role,
-		})
-	);
-
 	return (
 		<div className="space-y-4">
-			{membersData.length > 0 ? (
+			{membershipsData && membershipsData.length > 0 ? (
 				<MembersTable
-					data={membersData}
+					data={membershipsData}
 					title="Case Members"
 					description="Users assigned to this case"
 					roleVariant="admin"

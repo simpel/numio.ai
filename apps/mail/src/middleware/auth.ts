@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthenticatedRequest extends Request {
-	user?: any;
+	user?: unknown;
 }
 
 export function authenticateJWT(
@@ -31,7 +31,7 @@ export function authenticateJWT(
 		const decoded = jwt.verify(token, secret);
 		req.user = decoded;
 		next();
-	} catch (err) {
+	} catch {
 		return res.status(401).json({ error: 'Invalid or expired token' });
 	}
 }

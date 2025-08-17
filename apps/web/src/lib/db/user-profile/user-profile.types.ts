@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Prisma } from '@numio/ai-database';
 
 export const userProfileSearchSchema = z.object({
 	id: z.string(),
@@ -10,3 +11,72 @@ export const userProfileSearchSchema = z.object({
 });
 
 export type UserProfileSearchData = z.infer<typeof userProfileSearchSchema>;
+
+export type UserProfileWithRelations = Prisma.UserProfileGetPayload<{
+	include: {
+		user: {
+			select: {
+				id: true;
+				email: true;
+				createdAt: true;
+			};
+		};
+		memberships: {
+			include: {
+				organisation: {
+					select: {
+						id: true;
+						name: true;
+					};
+				};
+				team: {
+					select: {
+						id: true;
+						name: true;
+						organisation: {
+							select: {
+								id: true;
+								name: true;
+							};
+						};
+					};
+				};
+				case: {
+					select: {
+						id: true;
+						title: true;
+						team: {
+							select: {
+								id: true;
+								name: true;
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+}> & {
+	activeInvites: Prisma.InviteGetPayload<{
+		include: {
+			organisation: {
+				select: {
+					id: true;
+					name: true;
+				};
+			};
+			team: {
+				select: {
+					id: true;
+					name: true;
+					organisation: {
+						select: {
+							id: true;
+							name: true;
+						};
+					};
+				};
+			};
+		};
+	}>[];
+};

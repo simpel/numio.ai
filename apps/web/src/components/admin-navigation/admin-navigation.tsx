@@ -6,7 +6,6 @@ import { cn } from '@src/utils';
 export default function AdminNavigation() {
 	const pathname = usePathname();
 
-	const isAdminActive = pathname === '/admin';
 	const isTeamsActive = pathname === '/admin/teams';
 	const isOrganisationsActive = pathname === '/admin/organisations';
 	const isUsersActive = pathname === '/admin/users';
@@ -15,17 +14,6 @@ export default function AdminNavigation() {
 	return (
 		<div className="border-b">
 			<nav className="-mb-px flex space-x-8">
-				<Link
-					href="/admin"
-					className={cn(
-						'border-b-2 py-2 text-sm font-medium transition-colors',
-						isAdminActive
-							? 'border-primary text-primary'
-							: 'text-muted-foreground hover:text-foreground border-transparent'
-					)}
-				>
-					Admin Dashboard
-				</Link>
 				<Link
 					href="/admin/teams"
 					className={cn(

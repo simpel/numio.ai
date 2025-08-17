@@ -2,98 +2,229 @@
 
 ## Server Action Standards
 
-- Use base classes for common CRUD operations
-- Implement consistent error handling
-- Return ActionState<T> for all actions
+- **NO CLASSES** - Use functions for all CRUD operations
+- Implement consistent error handling with ActionState<T>
+- Follow CRUD naming pattern: create, read, update, delete
 - Use proper TypeScript typing
 - Follow naming conventions (Action suffix)
+- Group related actions in single files
 
-## Action Structure
+## CRUD Function Pattern
 
-### Base Action Class
-
-```typescript
-export abstract class BaseActions<T, CreateInput, UpdateInput> {
-	protected abstract model: any; // Prisma model
-
-	async create(data: CreateInput): Promise<ActionState<T>> {
-		try {
-			const result = await this.model.create({ data });
-			return { isSuccess: true, message: 'Created successfully', data: result };
-		} catch (error) {
-			return { isSuccess: false, message: 'Failed to create' };
-		}
-	}
-
-	async update(id: string, data: UpdateInput): Promise<ActionState<T>> {
-		try {
-			const result = await this.model.update({
-				where: { id },
-				data,
-			});
-			return { isSuccess: true, message: 'Updated successfully', data: result };
-		} catch (error) {
-			return { isSuccess: false, message: 'Failed to update' };
-		}
-	}
-
-	async delete(id: string): Promise<ActionState<void>> {
-		try {
-			await this.model.delete({ where: { id } });
-			return { isSuccess: true, message: 'Deleted successfully' };
-		} catch (error) {
-			return { isSuccess: false, message: 'Failed to delete' };
-		}
-	}
-
-	async getById(id: string): Promise<ActionState<T>> {
-		try {
-			const result = await this.model.findUnique({ where: { id } });
-			if (!result) {
-				return { isSuccess: false, message: 'Not found' };
-			}
-			return { isSuccess: true, data: result };
-		} catch (error) {
-			return { isSuccess: false, message: 'Failed to fetch' };
-		}
-	}
-}
-```
-
-### Action Implementation
+### Standard CRUD Functions
 
 ```typescript
-export class TeamActions extends BaseActions<
-	Team,
-	CreateTeamInput,
-	UpdateTeamInput
-> {
-	protected model = db.team;
-
-	async createTeamAction(input: CreateTeamInput): Promise<ActionState<Team>> {
-		// Custom validation logic
-		const validation = this.validateTeamInput(input);
+// Create
+export async function createEntityAction(
+	input: CreateEntityInput
+): Promise<ActionState<Entity>> {
+	try {
+		// Validation
+		const validation = validateEntityInput(input);
 		if (!validation.isValid) {
 			return { isSuccess: false, message: validation.error };
 		}
 
-		return this.create(input);
-	}
+		// Business logic
+		const entity = await db.entity.create({ data: input });
 
-	private validateTeamInput(input: CreateTeamInput): {
-		isValid: boolean;
-		error?: string;
-	} {
-		if (!input.name || input.name.trim().length === 0) {
-			return { isValid: false, error: 'Team name is required' };
+		return {
+			isSuccess: true,
+			message: 'Entity created successfully',
+			data: entity,
+		};
+	} catch (error) {
+		console.error('Error creating entity:', error);
+		return { isSuccess: false, message: 'Failed to create entity' };
+	}
+}
+
+// Read (Single)
+export async function getEntityByIdAction(
+	id: string
+): Promise<ActionState<Entity>> {
+	try {
+		const entity = await db.entity.findUnique({ where: { id } });
+
+		if (!entity) {
+			return { isSuccess: false, message: 'Entity not found' };
 		}
 
-		if (input.name.length > 100) {
-			return { isValid: false, error: 'Team name too long' };
+		return { isSuccess: true, data: entity };
+	} catch (error) {
+		console.error('Error fetching entity:', error);
+		return { isSuccess: false, message: 'Failed to fetch entity' };
+	}
+}
+
+// Read (Multiple)
+export async function getEntitiesAction(
+	params: GetEntitiesParams
+): Promise<ActionState<Entity[]>> {
+	try {
+		const entities = await db.entity.findMany({
+			where: params.where,
+			include: params.include,
+			orderBy: params.orderBy,
+			take: params.take,
+			skip: params.skip,
+		});
+
+		return { isSuccess: true, data: entities };
+	} catch (error) {
+		console.error('Error fetching entities:', error);
+		return { isSuccess: false, message: 'Failed to fetch entities' };
+	}
+}
+
+// Update
+export async function updateEntityAction(
+	id: string,
+	input: UpdateEntityInput
+): Promise<ActionState<Entity>> {
+	try {
+		// Validation
+		const validation = validateUpdateEntityInput(input);
+		if (!validation.isValid) {
+			return { isSuccess: false, message: validation.error };
 		}
 
-		return { isValid: true };
+		// Check if entity exists
+		const existing = await db.entity.findUnique({ where: { id } });
+		if (!existing) {
+			return { isSuccess: false, message: 'Entity not found' };
+		}
+
+		// Update
+		const entity = await db.entity.update({
+			where: { id },
+			data: input,
+		});
+
+		return {
+			isSuccess: true,
+			message: 'Entity updated successfully',
+			data: entity,
+		};
+	} catch (error) {
+		console.error('Error updating entity:', error);
+		return { isSuccess: false, message: 'Failed to update entity' };
 	}
+}
+
+// Delete
+export async function deleteEntityAction(
+	id: string
+): Promise<ActionState<void>> {
+	try {
+		// Check if entity exists
+		const existing = await db.entity.findUnique({ where: { id } });
+		if (!existing) {
+			return { isSuccess: false, message: 'Entity not found' };
+		}
+
+		// Delete
+		await db.entity.delete({ where: { id } });
+
+		return {
+			isSuccess: true,
+			message: 'Entity deleted successfully',
+		};
+	} catch (error) {
+		console.error('Error deleting entity:', error);
+		return { isSuccess: false, message: 'Failed to delete entity' };
+	}
+}
+```
+
+## File Organization
+
+### Single Entity Actions File
+
+```typescript
+// src/lib/db/entity/entity.actions.ts
+import { db } from '@numio/ai-database';
+import { ActionState } from '@/types';
+import {
+	CreateEntityInput,
+	UpdateEntityInput,
+	GetEntitiesParams,
+} from './entity.types';
+
+// CRUD Functions
+export async function createEntityAction(
+	input: CreateEntityInput
+): Promise<ActionState<Entity>> {
+	/* ... */
+}
+export async function getEntityByIdAction(
+	id: string
+): Promise<ActionState<Entity>> {
+	/* ... */
+}
+export async function getEntitiesAction(
+	params: GetEntitiesParams
+): Promise<ActionState<Entity[]>> {
+	/* ... */
+}
+export async function updateEntityAction(
+	id: string,
+	input: UpdateEntityInput
+): Promise<ActionState<Entity>> {
+	/* ... */
+}
+export async function deleteEntityAction(
+	id: string
+): Promise<ActionState<void>> {
+	/* ... */
+}
+
+// Specialized Functions
+export async function getEntityWithRelationsAction(
+	id: string
+): Promise<ActionState<EntityWithRelations>> {
+	/* ... */
+}
+export async function searchEntitiesAction(
+	query: string
+): Promise<ActionState<Entity[]>> {
+	/* ... */
+}
+```
+
+## Validation Patterns
+
+### Input Validation Functions
+
+```typescript
+export function validateEntityInput(input: CreateEntityInput): {
+	isValid: boolean;
+	error?: string;
+} {
+	if (!input.name || input.name.trim().length === 0) {
+		return { isValid: false, error: 'Name is required' };
+	}
+
+	if (input.name.length > 100) {
+		return { isValid: false, error: 'Name too long' };
+	}
+
+	return { isValid: true };
+}
+
+export function validateUpdateEntityInput(input: UpdateEntityInput): {
+	isValid: boolean;
+	error?: string;
+} {
+	if (input.name !== undefined && input.name.trim().length === 0) {
+		return { isValid: false, error: 'Name cannot be empty' };
+	}
+
+	if (input.name && input.name.length > 100) {
+		return { isValid: false, error: 'Name too long' };
+	}
+
+	return { isValid: true };
 }
 ```
 
@@ -136,42 +267,12 @@ export async function createUserAction(
 }
 ```
 
-## Validation Patterns
-
-### Input Validation
-
-```typescript
-export function validateUserInput(input: CreateUserInput): {
-	isValid: boolean;
-	error?: string;
-} {
-	if (!input.name || input.name.trim().length === 0) {
-		return { isValid: false, error: 'Name is required' };
-	}
-
-	if (!input.email || !isValidEmail(input.email)) {
-		return { isValid: false, error: 'Valid email is required' };
-	}
-
-	if (input.name.length > 100) {
-		return { isValid: false, error: 'Name too long' };
-	}
-
-	return { isValid: true };
-}
-
-function isValidEmail(email: string): boolean {
-	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-	return emailRegex.test(email);
-}
-```
-
 ## Examples
 
 ### ✅ Good Examples
 
 ```typescript
-// Consistent action pattern
+// Consistent CRUD pattern
 export async function createTeamAction(
 	input: CreateTeamInput
 ): Promise<ActionState<Team>> {
@@ -193,16 +294,28 @@ export async function createTeamAction(
 	}
 }
 
-// Metrics action with shared utilities
-export async function getTeamMetricsAction(
+// Specialized function
+export async function getTeamWithMembersAction(
 	teamId: string
-): Promise<ActionState<TeamMetrics>> {
+): Promise<ActionState<TeamWithMembers>> {
 	try {
-		const metrics = await MetricsUtils.calculateTeamMetrics(teamId);
-		return { isSuccess: true, data: metrics };
+		const team = await db.team.findUnique({
+			where: { id: teamId },
+			include: {
+				memberships: {
+					include: { user: true },
+				},
+			},
+		});
+
+		if (!team) {
+			return { isSuccess: false, message: 'Team not found' };
+		}
+
+		return { isSuccess: true, data: team };
 	} catch (error) {
-		console.error('Error fetching team metrics:', error);
-		return { isSuccess: false, message: 'Failed to fetch metrics' };
+		console.error('Error fetching team with members:', error);
+		return { isSuccess: false, message: 'Failed to fetch team' };
 	}
 }
 ```
@@ -210,6 +323,13 @@ export async function getTeamMetricsAction(
 ### ❌ Bad Examples
 
 ```typescript
+// Class-based approach - DON'T DO THIS
+export class TeamActions {
+	async create(input: CreateTeamInput) {
+		/* ... */
+	}
+}
+
 // Inconsistent error handling
 export async function createUser(input: CreateUserInput) {
 	const user = await db.user.create({ data: input });
@@ -332,8 +452,19 @@ describe('createUserAction', () => {
 });
 ```
 
-description: Follow consistent patterns for server actions
+## Key Rules
+
+1. **NO CLASSES** - Use functions only
+2. **CRUD Pattern** - create, read, update, delete functions
+3. **Consistent Return** - Always return ActionState<T>
+4. **Validation** - Validate inputs before database operations
+5. **Error Handling** - Try-catch with proper error logging
+6. **Naming** - Use Action suffix for all functions
+7. **Grouping** - Keep related actions in single files
+8. **Types** - Use proper TypeScript types for inputs and outputs
+
+description: Follow consistent CRUD patterns for server actions using functions only
 globs:
 
-- src/lib/db/\*_/_.actions.ts
+- src/lib/db/_/_.actions.ts
   alwaysApply: true

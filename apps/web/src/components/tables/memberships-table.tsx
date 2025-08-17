@@ -1,24 +1,50 @@
 'use client';
 
-import React from 'react';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import { Badge } from '@shadcn/ui/badge';
 import { DataTable } from '@src/components/data-table';
 import { ClickableCell } from './clickable-cell';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/ui/tooltip';
+import { Prisma } from '@numio/ai-database';
 
-interface MembershipData {
-	id: string;
-	name: string;
-	type: 'organization' | 'team' | 'case';
-	role: string;
-	createdAt: string;
-	href: string;
-}
+type MembershipWithRelations = Prisma.MembershipGetPayload<{
+	include: {
+		organisation: {
+			select: {
+				id: true;
+				name: true;
+			};
+		};
+		team: {
+			select: {
+				id: true;
+				name: true;
+				organisation: {
+					select: {
+						id: true;
+						name: true;
+					};
+				};
+			};
+		};
+		case: {
+			select: {
+				id: true;
+				title: true;
+				team: {
+					select: {
+						id: true;
+						name: true;
+					};
+				};
+			};
+		};
+	};
+}>;
 
 interface MembershipsTableProps {
-	data: MembershipData[];
+	data: MembershipWithRelations[];
 	title: string;
 	description?: string;
 }
@@ -28,30 +54,49 @@ export default function MembershipsTable({
 	title,
 	description,
 }: MembershipsTableProps) {
-	const columns: ColumnDef<MembershipData>[] = [
+	const columns: ColumnDef<MembershipWithRelations>[] = [
 		{
 			accessorKey: 'name',
 			header: 'Name',
 			enableSorting: true,
-			cell: ({ row }: { row: Row<MembershipData> }) => (
-				<ClickableCell href={row.original.href}>
-					{row.original.name}
-				</ClickableCell>
-			),
+			cell: ({ row }: { row: Row<MembershipWithRelations> }) => {
+				const membership = row.original;
+				const name =
+					membership.organisation?.name ||
+					membership.team?.name ||
+					membership.case?.title ||
+					'Unknown';
+				const href = membership.organisation
+					? `/organisation/${membership.organisation.id}`
+					: membership.team
+						? `/team/${membership.team.id}`
+						: membership.case
+							? `/case/${membership.case.id}`
+							: '#';
+
+				return <ClickableCell href={href}>{name}</ClickableCell>;
+			},
 		},
 		{
 			accessorKey: 'type',
 			header: 'Type',
 			enableSorting: true,
-			cell: ({ row }: { row: Row<MembershipData> }) => (
-				<Badge variant={'outline'}>{row.original.type}</Badge>
-			),
+			cell: ({ row }: { row: Row<MembershipWithRelations> }) => {
+				const membership = row.original;
+				const type = membership.organisation
+					? 'organization'
+					: membership.team
+						? 'team'
+						: 'case';
+
+				return <Badge variant={'outline'}>{type}</Badge>;
+			},
 		},
 		{
 			accessorKey: 'role',
 			header: 'Role',
 			enableSorting: true,
-			cell: ({ row }: { row: Row<MembershipData> }) => (
+			cell: ({ row }: { row: Row<MembershipWithRelations> }) => (
 				<Badge variant="outline">{row.original.role}</Badge>
 			),
 		},
@@ -59,7 +104,7 @@ export default function MembershipsTable({
 			accessorKey: 'createdAt',
 			header: 'Created',
 			enableSorting: true,
-			cell: ({ row }: { row: Row<MembershipData> }) => {
+			cell: ({ row }: { row: Row<MembershipWithRelations> }) => {
 				const date = new Date(row.original.createdAt);
 				const relative = formatDistanceToNow(date, { addSuffix: true });
 				const exact = format(date, 'PPpp');

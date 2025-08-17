@@ -27,18 +27,16 @@ import { MoreHorizontal } from 'lucide-react';
 import RemoveMemberDialog from '@src/components/dialogs/remove-member-dialog';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/ui/tooltip';
+import { Prisma } from '@numio/ai-database';
 
-interface MemberData {
-	id: string;
-	membershipId: string;
-	name: string;
-	email: string;
-	role: string;
-	memberSince?: string;
-}
+type MembershipWithUserProfile = Prisma.MembershipGetPayload<{
+	include: {
+		memberUserProfile: true;
+	};
+}>;
 
 interface MembersTableProps {
-	data: MemberData[];
+	data: MembershipWithUserProfile[];
 	title: string;
 	description?: string;
 	showMemberSince?: boolean;
@@ -108,43 +106,61 @@ export default function MembersTable({
 		}
 	};
 
-	const columns: ColumnDef<MemberData>[] = [
+	const columns: ColumnDef<MembershipWithUserProfile>[] = [
 		{
 			accessorKey: 'name',
 			header: 'Name',
 			enableSorting: true,
-			cell: ({ row }: { row: { original: MemberData } }) => (
-				<ClickableCell href={`/user/${row.original.id}`}>
-					{row.original.name}
-				</ClickableCell>
-			),
+			cell: ({ row }: { row: { original: MembershipWithUserProfile } }) => {
+				const membership = row.original;
+				const userProfile = membership.memberUserProfile;
+				const name =
+					`${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim();
+				const userId = userProfile?.id;
+
+				return (
+					<ClickableCell href={`/user/${userId}`}>
+						{name || userProfile?.email || 'Unknown'}
+					</ClickableCell>
+				);
+			},
 		},
 		{
 			accessorKey: 'email',
 			header: 'Email',
 			enableSorting: true,
-			cell: ({ row }: { row: { original: MemberData } }) => (
-				<ClickableCell href={`/user/${row.original.id}`}>
-					{row.original.email}
-				</ClickableCell>
-			),
+			cell: ({ row }: { row: { original: MembershipWithUserProfile } }) => {
+				const membership = row.original;
+				const userProfile = membership.memberUserProfile;
+				const userId = userProfile?.id;
+
+				return (
+					<ClickableCell href={`/user/${userId}`}>
+						{userProfile?.email || '—'}
+					</ClickableCell>
+				);
+			},
 		},
 		{
 			accessorKey: 'role',
 			header: 'Role',
 			enableSorting: true,
-			cell: ({ row }: { row: { original: MemberData } }) => (
+			cell: ({ row }: { row: { original: MembershipWithUserProfile } }) => (
 				<Badge variant={getRoleVariant(roleVariant)}>{row.original.role}</Badge>
 			),
 		},
 		...(showMemberSince
 			? [
 					{
-						accessorKey: 'memberSince',
+						accessorKey: 'createdAt',
 						header: 'Member Since',
 						enableSorting: true,
-						cell: ({ row }: { row: { original: MemberData } }) => {
-							const v = row.original.memberSince;
+						cell: ({
+							row,
+						}: {
+							row: { original: MembershipWithUserProfile };
+						}) => {
+							const v = row.original.createdAt;
 							if (!v) return <div className="text-muted-foreground">—</div>;
 							const d = new Date(v);
 							const rel = formatDistanceToNow(d, { addSuffix: true });
@@ -165,13 +181,11 @@ export default function MembersTable({
 			id: 'actions',
 			header: '',
 			enableSorting: false,
-			cell: ({ row }: { row: { original: MemberData } }) => (
+			cell: ({ row }: { row: { original: MembershipWithUserProfile } }) => (
 				<MembersActionsCell
-					member={row.original}
-					onChangeRole={(role) =>
-						handleChangeRole(row.original.membershipId, role)
-					}
-					onRemove={() => handleRemoveMember(row.original.membershipId)}
+					membership={row.original}
+					onChangeRole={(role) => handleChangeRole(row.original.id, role)}
+					onRemove={() => handleRemoveMember(row.original.id)}
 				/>
 			),
 		},
@@ -190,16 +204,21 @@ export default function MembersTable({
 }
 
 function MembersActionsCell({
-	member,
+	membership,
 	onChangeRole,
 	onRemove,
 }: {
-	member: MemberData;
+	membership: MembershipWithUserProfile;
 	onChangeRole: (role: 'owner' | 'member') => void;
 	onRemove: () => void;
 }) {
 	const [open, setOpen] = React.useState(false);
-	const isOwner = member.role === 'owner';
+	const isOwner = membership.role === 'owner';
+	const userProfile = membership.memberUserProfile;
+	const memberName =
+		`${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() ||
+		userProfile?.email ||
+		'Unknown';
 
 	return (
 		<div className="flex justify-end">
@@ -214,7 +233,7 @@ function MembersActionsCell({
 						<DropdownMenuSubTrigger>Change role</DropdownMenuSubTrigger>
 						<DropdownMenuSubContent>
 							<DropdownMenuRadioGroup
-								value={member.role}
+								value={membership.role}
 								onValueChange={(value) =>
 									onChangeRole(value as 'owner' | 'member')
 								}
@@ -243,7 +262,7 @@ function MembersActionsCell({
 			<RemoveMemberDialog
 				open={open}
 				onOpenChange={setOpen}
-				memberName={member.name}
+				memberName={memberName}
 				onConfirm={onRemove}
 			/>
 		</div>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Prisma } from '@numio/ai-database';
 
 export const caseFormSchema = z.object({
 	clientId: z.string(),
@@ -8,3 +9,14 @@ export const caseFormSchema = z.object({
 });
 
 export type CaseFormValues = z.infer<typeof caseFormSchema>;
+
+export type CaseWithRelations = Prisma.CaseGetPayload<{
+	include: {
+		client: {
+			select: {
+				id: true;
+				name: true;
+			};
+		};
+	};
+}>;

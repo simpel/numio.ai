@@ -30,7 +30,8 @@ export async function sendInviteEmail(
 		headers: {
 			 
 			Authorization: `Bearer ${token}`,
-			 
+
+			// eslint-disable-next-line @typescript-eslint/naming-convention
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify({ to, subject, html }),

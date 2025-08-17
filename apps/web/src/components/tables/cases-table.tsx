@@ -29,21 +29,10 @@ import { MoreHorizontal } from 'lucide-react';
 import RenameCaseDialog from '@src/components/dialogs/rename-case-dialog';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/ui/tooltip';
-
-interface CaseData {
-	id: string;
-	title: string;
-	description?: string;
-	client?: string;
-	clientId?: string;
-	status?: string;
-	state?: string;
-	createdAt: string;
-	updatedAt?: string;
-}
+import { CaseWithRelations } from '@/lib/db/case/case.types';
 
 interface CasesTableProps {
-	data: CaseData[];
+	data: CaseWithRelations[];
 	title: string;
 	description?: string;
 	showClient?: boolean;
@@ -57,7 +46,10 @@ export default function CasesTable({
 }: CasesTableProps) {
 	const router = useRouter();
 	const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-	const [selectedCase, setSelectedCase] = useState<{ id: string; title: string } | null>(null);
+	const [selectedCase, setSelectedCase] = useState<{
+		id: string;
+		title: string;
+	} | null>(null);
 	const handleStateChange = async (caseId: string, newState: string) => {
 		try {
 			const result = await updateCaseStateAction(
@@ -136,12 +128,12 @@ export default function CasesTable({
 		return data;
 	}, [data]);
 
-	const columns: ColumnDef<CaseData>[] = [
+	const columns: ColumnDef<CaseWithRelations>[] = [
 		{
 			accessorKey: 'updatedAt',
 			header: 'Last Changed',
 			enableSorting: true,
-			cell: ({ row }: { row: Row<CaseData> }) => {
+			cell: ({ row }: { row: Row<CaseWithRelations> }) => {
 				const v = row.original.updatedAt;
 				if (!v) return <div className="text-muted-foreground">—</div>;
 				const d = new Date(v);
@@ -161,7 +153,7 @@ export default function CasesTable({
 			accessorKey: 'status',
 			header: 'Status',
 			enableSorting: true,
-			cell: ({ row }: { row: Row<CaseData> }) => {
+			cell: ({ row }: { row: Row<CaseWithRelations> }) => {
 				const currentState = row.original.state || 'created';
 				return (
 					<Badge
@@ -177,7 +169,7 @@ export default function CasesTable({
 			accessorKey: 'title',
 			header: 'Case',
 			enableSorting: true,
-			cell: ({ row }: { row: Row<CaseData> }) => (
+			cell: ({ row }: { row: Row<CaseWithRelations> }) => (
 				<div className="space-y-1">
 					<ClickableCell href={`/case/${row.original.id}`}>
 						{row.original.title}
@@ -195,15 +187,15 @@ export default function CasesTable({
 						accessorKey: 'client',
 						header: 'Client',
 						enableSorting: true,
-						cell: ({ row }: { row: Row<CaseData> }) => {
-							if (row.original.client && row.original.clientId) {
+						cell: ({ row }: { row: Row<CaseWithRelations> }) => {
+							if (row.original.client?.name && row.original.client?.id) {
 								return (
-									<ClickableCell href={`/client/${row.original.clientId}`}>
-										{row.original.client}
+									<ClickableCell href={`/client/${row.original.client.id}`}>
+										{row.original.client.name}
 									</ClickableCell>
 								);
 							}
-							return <div>{row.original.client || '-'}</div>;
+							return <div>{row.original.client?.name || '-'}</div>;
 						},
 					},
 				]
@@ -212,7 +204,7 @@ export default function CasesTable({
 			id: 'actions',
 			header: '',
 			enableSorting: false,
-			cell: ({ row }: { row: Row<CaseData> }) => {
+			cell: ({ row }: { row: Row<CaseWithRelations> }) => {
 				const currentState = row.original.state || 'created';
 				const stateOptions = getStateOptions(currentState);
 				return (
@@ -245,10 +237,15 @@ export default function CasesTable({
 									</DropdownMenuSubContent>
 								</DropdownMenuSub>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={() => {
-									setSelectedCase({ id: row.original.id, title: row.original.title });
-									setRenameDialogOpen(true);
-								}}>
+								<DropdownMenuItem
+									onClick={() => {
+										setSelectedCase({
+											id: row.original.id,
+											title: row.original.title,
+										});
+										setRenameDialogOpen(true);
+									}}
+								>
 									Rename…
 								</DropdownMenuItem>
 							</DropdownMenuContent>

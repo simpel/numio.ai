@@ -15,14 +15,10 @@ export async function createUserAction(
 	}
 }
 
+import { UserWithRelations } from './user.types';
+
 export async function getAllUsersAction(): Promise<
-	ActionState<
-		Prisma.UserGetPayload<{
-			include: {
-				profile: true;
-			};
-		}>[]
-	>
+	ActionState<UserWithRelations[]>
 > {
 	try {
 		const users = await db.user.findMany({

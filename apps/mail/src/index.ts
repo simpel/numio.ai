@@ -44,7 +44,7 @@ export default function main(
 		// If server has started, close it down
 		if (serverStarted && server) {
 			server.close(function () {
-				process.exit(1);
+				throw new Error('Server closed due to unhandled error');
 			});
 		}
 	}
@@ -76,12 +76,11 @@ export default function main(
 		next(createError(404, `Route not found: ${req.url}`));
 	});
 	app.use(function fiveHundredHandler(
-		err: any,
+		err: Error & { status?: number; code?: string },
 		req: Request,
-		res: Response,
-		next: NextFunction
+		res: Response
 	) {
-		if (err.status >= 500) {
+		if (err.status && err.status >= 500) {
 			logger.error(err);
 		}
 		res.status(err.status || 500).json({
@@ -95,25 +94,31 @@ export default function main(
 	});
 
 	// Start server
-	const server = app.listen(options.port, options.host, function (err?: Error) {
-		if (err) {
-			return ready(err, app, server);
-		}
+	const server = app.listen(
+		options.port,
+		options.host,
+		function (_err?: Error) {
+			if (_err) {
+				return ready(_err, app, server);
+			}
 
-		// If some other error means we should close
-		if (serverClosing) {
-			return ready(new Error('Server was closed before it could start'));
-		}
+			// If some other error means we should close
+			if (serverClosing) {
+				return ready(new Error('Server was closed before it could start'));
+			}
 
-		serverStarted = true;
-		const addr = server.address() as AddressInfo | null;
-		if (addr && typeof addr === 'object') {
-			logger.info(`Started at ${options.host}:${addr.port}`);
-		} else {
-			logger.info(`Started at ${options.host || 'localhost'}:${options.port}`);
+			serverStarted = true;
+			const addr = server.address() as AddressInfo | null;
+			if (addr && typeof addr === 'object') {
+				logger.info(`Started at ${options.host}:${addr.port}`);
+			} else {
+				logger.info(
+					`Started at ${options.host || 'localhost'}:${options.port}`
+				);
+			}
+			ready(_err, app, server);
 		}
-		ready(err, app, server);
-	});
+	);
 }
 
 main({

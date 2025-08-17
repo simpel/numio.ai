@@ -162,7 +162,7 @@ export async function getTeamsForUserAction(): Promise<
 			include: {
 				team: {
 					include: {
-						 
+						// eslint-disable-next-line @typescript-eslint/naming-convention
 						_count: {
 							select: { memberships: true, members: true },
 						},
@@ -211,7 +211,7 @@ export async function getTeamsForUserByIdAction(
 			include: {
 				team: {
 					include: {
-						 
+						// eslint-disable-next-line @typescript-eslint/naming-convention
 						_count: {
 							select: { memberships: true, members: true },
 						},
@@ -274,7 +274,7 @@ export async function getTeamsWhereUserIsOwnerAction(): Promise<
 			include: {
 				team: {
 					include: {
-						 
+						// eslint-disable-next-line @typescript-eslint/naming-convention
 						_count: {
 							select: { memberships: true, members: true },
 						},
@@ -465,34 +465,17 @@ export async function getUserTeamMembershipsAction(
 	}
 }
 
+import { TeamWithRelations } from './team.types';
+
 export async function getAllTeamsAction(): Promise<
-	ActionState<
-		Prisma.TeamGetPayload<{
-			include: {
-				organisation: true;
-				 
-				_count: { select: { memberships: true; members: true } };
-				members: {
-					include: {
-						memberUserProfile: {
-							select: {
-								id: true;
-								firstName: true;
-								lastName: true;
-								image: true;
-							};
-						};
-					};
-				};
-			};
-		}>[]
-	>
+	ActionState<TeamWithRelations[]>
 > {
 	try {
 		const teams = await db.team.findMany({
 			include: {
 				organisation: true,
-				 
+
+				// eslint-disable-next-line @typescript-eslint/naming-convention
 				_count: { select: { memberships: true, members: true } },
 				members: {
 					include: {

@@ -11,14 +11,6 @@ interface OrganisationUsersPageProps {
 	params: Promise<{ id: string }>;
 }
 
-interface MemberData {
-	id: string;
-	membershipId: string;
-	name: string;
-	email: string;
-	role: string;
-}
-
 export default async function OrganisationUsersPage({
 	params,
 }: OrganisationUsersPageProps) {
@@ -40,20 +32,11 @@ export default async function OrganisationUsersPage({
 		notFound();
 	}
 
-	const membersData: MemberData[] =
-		organisation.members?.map((membership) => ({
-			id: membership.memberUserProfile?.id || '',
-			membershipId: membership.id || '',
-			name: `${membership.memberUserProfile?.firstName || ''} ${membership.memberUserProfile?.lastName || ''}`.trim(),
-			email: membership.memberUserProfile?.email || '',
-			role: membership.role,
-		})) || [];
-
 	return (
 		<div className="space-y-4">
-			{membersData.length > 0 ? (
+			{organisation.members && organisation.members.length > 0 ? (
 				<MembersTable
-					data={membersData}
+					data={organisation.members}
 					title="Organization Members"
 					description={`Members of ${organisation.name}`}
 					roleVariant="admin"

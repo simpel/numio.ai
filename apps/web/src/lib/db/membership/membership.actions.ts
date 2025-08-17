@@ -241,9 +241,27 @@ export async function getTeamMembershipsAction(
 }
 
 // Get memberships for a specific case
-export async function getCaseMembershipsAction(
-	caseId: string
-): Promise<ActionState<Prisma.MembershipGetPayload<Record<string, never>>[]>> {
+export async function getCaseMembershipsAction(caseId: string): Promise<
+	ActionState<
+		Prisma.MembershipGetPayload<{
+			include: {
+				case: {
+					select: {
+						id: true;
+						title: true;
+						team: {
+							select: {
+								id: true;
+								name: true;
+							};
+						};
+					};
+				};
+				memberUserProfile: true;
+			};
+		}>[]
+	>
+> {
 	try {
 		const memberships = await db.membership.findMany({
 			where: { caseId },
@@ -260,6 +278,7 @@ export async function getCaseMembershipsAction(
 						},
 					},
 				},
+				memberUserProfile: true,
 			},
 			orderBy: { createdAt: 'desc' },
 		});

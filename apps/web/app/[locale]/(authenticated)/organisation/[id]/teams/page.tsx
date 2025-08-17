@@ -11,29 +11,6 @@ interface OrganisationTeamsPageProps {
 	params: Promise<{ id: string }>;
 }
 
-interface TeamData {
-	id: string;
-	name: string;
-	description?: string;
-	organisation?: string;
-	organisationId?: string;
-	owner?: string;
-	usersCount?: number;
-	members?: { id: string; name: string; role: string; image?: string }[];
-	createdAt?: string;
-}
-
-// Type for team membership with user profile
-interface TeamMembership {
-	userProfile: {
-		id: string;
-		firstName?: string;
-		lastName?: string;
-		image?: string;
-	};
-	role: string;
-}
-
 export default async function OrganisationTeamsPage({
 	params,
 }: OrganisationTeamsPageProps) {
@@ -45,36 +22,11 @@ export default async function OrganisationTeamsPage({
 		notFound();
 	}
 
-	const teamsData: TeamData[] =
-		organisation.teams?.map((team) => {
-			const memberships = team.members || [];
-
-			// Map all members with their roles
-			const members = memberships.map((m: any) => ({
-				id: m.memberUserProfile?.id || '',
-				name: `${m.memberUserProfile?.firstName || ''} ${m.memberUserProfile?.lastName || ''}`.trim(),
-				role: m.role,
-				image: m.memberUserProfile?.image,
-			}));
-
-			return {
-				id: team.id,
-				name: team.name,
-				description: team.description || undefined,
-				organisation: organisation.name,
-				organisationId: organisation.id,
-				owner: undefined, // Teams don't have owners in new schema
-				usersCount: team._count?.members ?? 0,
-				members,
-				createdAt: team.createdAt?.toISOString(),
-			};
-		}) || [];
-
 	return (
 		<div className="space-y-4">
-			{organisation.teams.length > 0 ? (
+			{organisation.teams && organisation.teams.length > 0 ? (
 				<TeamsTable
-					data={teamsData}
+					data={organisation.teams}
 					title="Teams"
 					description={`Teams in ${organisation?.name}`}
 					showDescription={true}

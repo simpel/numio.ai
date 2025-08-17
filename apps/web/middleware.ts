@@ -6,12 +6,6 @@ import { NextRequest, NextResponse } from 'next/server';
 // Map of country codes to supported locales
 const countryToLocale: Record<string, 'en' | 'sv'> = {
 	SE: 'sv', // Sweden
-	FI: 'sv', // Finland (Swedish-speaking regions)
-	NO: 'sv', // Norway (Swedish-speaking regions)
-	DK: 'sv', // Denmark (Swedish-speaking regions)
-	IS: 'sv', // Iceland (Nordic region)
-	// Add more Nordic countries as needed
-	// Default to English for all other countries (UK, US, etc.)
 };
 
 // Function to determine locale based on geolocation and cookies
@@ -67,12 +61,6 @@ function getLocaleFromGeolocation(request: NextRequest): 'en' | 'sv' {
 // Create custom middleware that combines next-intl with geolocation
 export default function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
-
-	console.log('=== MIDDLEWARE EXECUTING ===');
-	console.log('Pathname:', pathname);
-	console.log('Request URL:', request.url);
-	console.log('User Agent:', request.headers.get('user-agent'));
-	console.log('==========================');
 
 	// Check if the path already has a locale prefix
 	const hasLocalePrefix = routing.locales.some(

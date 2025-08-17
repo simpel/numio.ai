@@ -1,0 +1,358 @@
+---
+alwaysApply: true
+---
+
+# Type Safety
+
+## Type Safety Standards
+
+- Use proper TypeScript types throughout the codebase
+- Avoid unnecessary type recasting and transformations
+- Leverage Prisma's generated types for database entities
+- Use union types and generics appropriately
+- Maintain type safety across component boundaries
+
+## Avoid Type Recasting
+
+### ❌ Bad: Unnecessary Type Transformations
+
+```typescript
+// Don't create intermediate types that just transform existing types
+interface InviteData {
+	id: string;
+	email: string;
+	status: string;
+	expiresAt: string;
+	createdAt: string;
+	contextName: string;
+	contextType: string;
+	role: string;
+	hasUser: boolean;
+	userProfileId?: string;
+	userName?: string;
+	organisationId?: string;
+	teamId?: string;
+}
+
+// Don't transform data just to match a component interface
+const inviteData: InviteData = {
+	id: invite.id,
+	email: invite.email,
+	status: invite.status,
+	expiresAt: new Date(invite.expiresAt).toLocaleDateString(),
+	createdAt: new Date(invite.createdAt).toLocaleDateString(),
+	contextName: invite.organisation?.name || invite.team?.name || 'Unknown',
+	contextType: invite.organisation ? 'Organisation' : 'Team',
+	role: invite.role,
+	hasUser: !!invite.userProfile,
+	userProfileId: invite.userProfile?.id,
+	userName: invite.userProfile
+		? `${invite.userProfile.firstName || ''} ${invite.userProfile.lastName || ''}`.trim()
+		: undefined,
+	organisationId: invite.organisationId || undefined,
+	teamId: invite.teamId || undefined,
+};
+```
+
+### ✅ Good: Use Existing Types Directly
+
+```typescript
+// Use Prisma's generated types with relations
+import { InviteWithRelations } from '@src/lib/db/membership/invite.types';
+
+// Pass the data directly to components
+<InvitesTable
+  data={allInvites}
+  title="Active Invites"
+  description="Pending and accepted invites"
+  state={'pending'}
+/>
+
+// Update component to accept the actual data type
+interface InvitesTableProps {
+  data: InviteWithRelations[];
+  title: string;
+  description: string;
+  state: 'pending' | 'expired';
+}
+```
+
+## Proper Type Usage
+
+### Use Prisma Generated Types
+
+```typescript
+// ✅ Good: Use Prisma's generated types
+import { Prisma } from '@numio/ai-database';
+
+export type UserWithProfile = Prisma.UserGetPayload<{
+	include: {
+		profile: true;
+	};
+}>;
+
+export type TeamWithMembers = Prisma.TeamGetPayload<{
+	include: {
+		memberships: {
+			include: {
+				user: true;
+			};
+		};
+	};
+}>;
+
+// ✅ Good: Use in actions
+export async function getUserWithProfileAction(
+	userId: string
+): Promise<ActionState<UserWithProfile>> {
+	try {
+		const user = await db.user.findUnique({
+			where: { id: userId },
+			include: { profile: true },
+		});
+
+		if (!user) {
+			return { isSuccess: false, message: 'User not found' };
+		}
+
+		return { isSuccess: true, data: user };
+	} catch (error) {
+		return { isSuccess: false, message: 'Failed to fetch user' };
+	}
+}
+```
+
+### Use Union Types for Variants
+
+```typescript
+// ✅ Good: Use union types for component variants
+interface BaseTableProps<T> {
+  data: T[];
+  variant?: 'default' | 'compact' | 'detailed';
+  loading?: boolean;
+  onRowClick?: (row: T) => void;
+}
+
+// ✅ Good: Use discriminated unions
+type EntityData =
+  | { type: 'team'; data: TeamWithMembers }
+  | { type: 'user'; data: UserWithProfile }
+  | { type: 'organisation'; data: OrganisationWithTeams };
+
+function renderEntity(entity: EntityData) {
+  switch (entity.type) {
+    case 'team':
+      return <TeamCard team={entity.data} />;
+    case 'user':
+      return <UserCard user={entity.data} />;
+    case 'organisation':
+      return <OrganisationCard organisation={entity.data} />;
+  }
+}
+```
+
+## Component Type Safety
+
+### Accept Raw Data Types
+
+```typescript
+// ✅ Good: Component accepts the actual data type
+interface InvitesTableProps {
+  data: InviteWithRelations[];
+  title: string;
+  description: string;
+  state: 'pending' | 'expired';
+}
+
+export function InvitesTable({ data, title, description, state }: InvitesTableProps) {
+  return (
+    <div>
+      <h2>{title}</h2>
+      <p>{description}</p>
+      {data.map((invite) => (
+        <InviteRow key={invite.id} invite={invite} />
+      ))}
+    </div>
+  );
+}
+
+// ✅ Good: Format data within the component
+function InviteRow({ invite }: { invite: InviteWithRelations }) {
+  const contextName = invite.organisation?.name || invite.team?.name || 'Unknown';
+  const contextType = invite.organisation ? 'Organisation' : 'Team';
+  const hasUser = !!invite.userProfile;
+  const userName = invite.userProfile
+    ? `${invite.userProfile.firstName || ''} ${invite.userProfile.lastName || ''}`.trim()
+    : undefined;
+
+  return (
+    <div>
+      <span>{invite.email}</span>
+      <span>{contextName}</span>
+      <span>{contextType}</span>
+      <span>{invite.role}</span>
+      <span>{hasUser ? 'Yes' : 'No'}</span>
+      <span>{userName}</span>
+    </div>
+  );
+}
+```
+
+## Action Type Safety
+
+### Return Proper Types
+
+```typescript
+// ✅ Good: Return the actual data type from actions
+export async function getAllInvitesAction(): Promise<ActionState<InviteWithRelations[]>> {
+  try {
+    const invites = await db.invite.findMany({
+      include: {
+        organisation: { select: { id: true; name: true } },
+        team: {
+          select: {
+            id: true;
+            name: true;
+            organisation: { select: { id: true; name: true } };
+          };
+        },
+      },
+    });
+
+    // Add user profiles
+    const invitesWithUserProfiles = await Promise.all(
+      invites.map(async (invite) => {
+        const userProfile = await db.userProfile.findUnique({
+          where: { email: invite.email },
+          select: { id: true; firstName: true; lastName: true; email: true },
+        });
+
+        return { ...invite, userProfile };
+      })
+    );
+
+    return {
+      isSuccess: true,
+      message: 'All invites retrieved',
+      data: invitesWithUserProfiles,
+    };
+  } catch (error) {
+    return { isSuccess: false, message: 'Failed to get all invites' };
+  }
+}
+```
+
+## Examples
+
+### ✅ Good Examples
+
+```typescript
+// Use existing types directly
+export default async function AdminInvitesPage() {
+  const { data: allInvites } = await getAllInvitesAction();
+  const { data: inviteMetrics } = await getInviteMetricsAction(30);
+
+  const activeInvites = allInvites?.filter(invite =>
+    invite.status === 'pending' && new Date(invite.expiresAt) > new Date()
+  ) || [];
+
+  const expiredInvites = allInvites?.filter(invite =>
+    invite.status === 'expired' || new Date(invite.expiresAt) <= new Date()
+  ) || [];
+
+  return (
+    <div className="space-y-6">
+      {inviteMetrics && inviteMetrics.length > 0 && (
+        <MetricsChart data={inviteMetrics} title="Invite Metrics" entityType="invites" />
+      )}
+
+      {activeInvites.length > 0 && (
+        <InvitesTable
+          data={activeInvites}
+          title="Active Invites"
+          description="Pending and accepted invites"
+          state={'pending'}
+        />
+      )}
+
+      {expiredInvites.length > 0 && (
+        <InvitesTable
+          data={expiredInvites}
+          title="Expired Invites"
+          description="Expired and cancelled invites"
+          state={'expired'}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+### ❌ Bad Examples
+
+```typescript
+// Don't create unnecessary intermediate types
+interface ProcessedInviteData {
+	id: string;
+	email: string;
+	status: string;
+	formattedExpiresAt: string;
+	formattedCreatedAt: string;
+	contextName: string;
+	contextType: string;
+	role: string;
+	hasUser: boolean;
+	userProfileId?: string;
+	userName?: string;
+	organisationId?: string;
+	teamId?: string;
+}
+
+// Don't transform data unnecessarily
+const processedInvites = allInvites?.map((invite) => ({
+	id: invite.id,
+	email: invite.email,
+	status: invite.status,
+	formattedExpiresAt: new Date(invite.expiresAt).toLocaleDateString(),
+	formattedCreatedAt: new Date(invite.createdAt).toLocaleDateString(),
+	contextName: invite.organisation?.name || invite.team?.name || 'Unknown',
+	contextType: invite.organisation ? 'Organisation' : 'Team',
+	role: invite.role,
+	hasUser: !!invite.userProfile,
+	userProfileId: invite.userProfile?.id,
+	userName: invite.userProfile
+		? `${invite.userProfile.firstName || ''} ${invite.userProfile.lastName || ''}`.trim()
+		: undefined,
+	organisationId: invite.organisationId || undefined,
+	teamId: invite.teamId || undefined,
+}));
+```
+
+## Key Rules
+
+1. **Use Prisma Types**: Leverage Prisma's generated types with relations
+2. **No Type Recasting**: Don't create intermediate types that just transform existing types
+3. **Component Flexibility**: Make components accept the actual data types
+4. **Format in Components**: Handle data formatting within components, not in data processing
+5. **Type Safety**: Maintain type safety across all boundaries
+6. **Union Types**: Use union types for variants and discriminated unions for complex data
+7. **Generic Components**: Use generics for reusable components that work with different data types
+
+## Benefits
+
+- **Reduced Complexity**: Fewer type transformations and intermediate types
+- **Better Performance**: No unnecessary data processing
+- **Type Safety**: Full TypeScript type checking throughout
+- **Maintainability**: Easier to maintain and refactor
+- **Consistency**: Consistent data flow across the application
+
+description: Maintain type safety and avoid unnecessary type recasting
+globs:
+
+- src/\*_/_.{ts,tsx}
+  alwaysApply: true
+  description:
+  globs:
+  alwaysApply: false
+
+---

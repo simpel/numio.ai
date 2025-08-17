@@ -4,8 +4,9 @@
 
 - Maximum 10 lines of duplicated code between files
 - Maximum 5 lines of duplicated code within same file
-- Extract common patterns into shared utilities
+- Extract common patterns into shared utility functions
 - Create reusable components for similar UI patterns
+- **NO CLASSES** - Use functions and utilities only
 
 ## Common Duplication Patterns Found
 
@@ -21,7 +22,7 @@
 - Extract common validation logic into utility functions
 - Create shared error handling patterns
 - Standardize response formatting
-- Use base classes for CRUD operations
+- Use shared CRUD utility functions
 
 ### Component Logic Duplication
 
@@ -32,7 +33,7 @@
 
 ### Metrics Calculation Duplication
 
-- Create shared metrics utilities for common calculations
+- Create shared metrics utility functions for common calculations
 - Standardize date handling and aggregation patterns
 - Use consistent interfaces for metrics configuration
 
@@ -64,50 +65,198 @@ export function EntityLayout({
 }
 ```
 
-### Extract Base Action Classes
+### Extract Shared CRUD Utility Functions
 
 ```typescript
 // Before: Duplicated CRUD patterns
 // team.actions.ts, user-profile.actions.ts, membership.actions.ts
 
-// After: Base action class
-export abstract class BaseActions<T, CreateInput, UpdateInput> {
-	protected abstract model: any; // Prisma model
+// After: Shared CRUD utility functions
+export async function createEntityAction<T, Input>(
+	model: Prisma.ModelName,
+	data: Input,
+	entityName: string
+): Promise<ActionState<T>> {
+	try {
+		const result = await model.create({ data });
+		return {
+			isSuccess: true,
+			message: `${entityName} created successfully`,
+			data: result,
+		};
+	} catch (error) {
+		console.error(`Error creating ${entityName}:`, error);
+		return {
+			isSuccess: false,
+			message: `Failed to create ${entityName}`,
+		};
+	}
+}
 
-	async create(data: CreateInput): Promise<ActionState<T>> {
-		try {
-			const result = await this.model.create({ data });
-			return { isSuccess: true, message: 'Created successfully', data: result };
-		} catch (error) {
-			return { isSuccess: false, message: 'Failed to create' };
+export async function updateEntityAction<T, Input>(
+	model: Prisma.ModelName,
+	id: string,
+	data: Input,
+	entityName: string
+): Promise<ActionState<T>> {
+	try {
+		const result = await model.update({
+			where: { id },
+			data,
+		});
+		return {
+			isSuccess: true,
+			message: `${entityName} updated successfully`,
+			data: result,
+		};
+	} catch (error) {
+		console.error(`Error updating ${entityName}:`, error);
+		return {
+			isSuccess: false,
+			message: `Failed to update ${entityName}`,
+		};
+	}
+}
+
+export async function deleteEntityAction(
+	model: Prisma.ModelName,
+	id: string,
+	entityName: string
+): Promise<ActionState<void>> {
+	try {
+		await model.delete({ where: { id } });
+		return {
+			isSuccess: true,
+			message: `${entityName} deleted successfully`,
+		};
+	} catch (error) {
+		console.error(`Error deleting ${entityName}:`, error);
+		return {
+			isSuccess: false,
+			message: `Failed to delete ${entityName}`,
+		};
+	}
+}
+
+export async function getEntityByIdAction<T>(
+	model: Prisma.ModelName,
+	id: string,
+	entityName: string
+): Promise<ActionState<T>> {
+	try {
+		const result = await model.findUnique({ where: { id } });
+		if (!result) {
+			return { isSuccess: false, message: `${entityName} not found` };
 		}
-	}
-
-	async update(id: string, data: UpdateInput): Promise<ActionState<T>> {
-		// Common update logic
-	}
-
-	async delete(id: string): Promise<ActionState<void>> {
-		// Common delete logic
+		return { isSuccess: true, data: result };
+	} catch (error) {
+		console.error(`Error fetching ${entityName}:`, error);
+		return {
+			isSuccess: false,
+			message: `Failed to fetch ${entityName}`,
+		};
 	}
 }
 ```
 
-### Extract Shared Utilities
+### Extract Shared Utility Functions
 
 ```typescript
 // Before: Duplicated metrics calculations
 // team-metrics.actions.ts, user-metrics.actions.ts, organisation-metrics.actions.ts
 
-// After: Shared metrics utilities
-export class MetricsUtils {
-	static async calculateGrowthMetrics(config: MetricsConfig, period: string) {
-		// Common growth calculation logic
-	}
+// After: Shared metrics utility functions
+export async function calculateGrowthMetrics(
+	config: MetricsConfig,
+	period: string
+): Promise<GrowthMetrics> {
+	// Common growth calculation logic
+	const startDate = getStartDate(period);
+	const endDate = getEndDate(period);
 
-	static async calculateActivityMetrics(config: MetricsConfig, period: string) {
-		// Common activity calculation logic
+	// Implementation...
+	return {
+		growthRate: 0,
+		period,
+		startDate,
+		endDate,
+	};
+}
+
+export async function calculateActivityMetrics(
+	config: MetricsConfig,
+	period: string
+): Promise<ActivityMetrics> {
+	// Common activity calculation logic
+	const startDate = getStartDate(period);
+	const endDate = getEndDate(period);
+
+	// Implementation...
+	return {
+		activeUsers: 0,
+		totalActions: 0,
+		period,
+		startDate,
+		endDate,
+	};
+}
+
+export function getStartDate(period: string): Date {
+	const now = new Date();
+	switch (period) {
+		case '7d':
+			return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+		case '30d':
+			return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+		case '90d':
+			return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+		default:
+			return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 	}
+}
+
+export function getEndDate(period: string): Date {
+	return new Date();
+}
+```
+
+### Extract Validation Utility Functions
+
+```typescript
+// Shared validation utilities
+export function validateRequiredField(
+	value: string | undefined,
+	fieldName: string
+): { isValid: boolean; error?: string } {
+	if (!value || value.trim().length === 0) {
+		return { isValid: false, error: `${fieldName} is required` };
+	}
+	return { isValid: true };
+}
+
+export function validateEmail(email: string): {
+	isValid: boolean;
+	error?: string;
+} {
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	if (!emailRegex.test(email)) {
+		return { isValid: false, error: 'Valid email is required' };
+	}
+	return { isValid: true };
+}
+
+export function validateMaxLength(
+	value: string,
+	maxLength: number,
+	fieldName: string
+): { isValid: boolean; error?: string } {
+	if (value.length > maxLength) {
+		return {
+			isValid: false,
+			error: `${fieldName} too long (max ${maxLength} characters)`,
+		};
+	}
+	return { isValid: true };
 }
 ```
 
@@ -126,15 +275,23 @@ export class MetricsUtils {
 
 ```typescript
 // Shared utility for common operations
-export function createEntityAction<T>(
+export async function createEntityAction<T>(
 	entityType: string,
 	data: T
 ): Promise<ActionState<T>> {
 	try {
 		const result = await db[entityType].create({ data });
-		return { isSuccess: true, message: `${entityType} created`, data: result };
+		return {
+			isSuccess: true,
+			message: `${entityType} created successfully`,
+			data: result,
+		};
 	} catch (error) {
-		return { isSuccess: false, message: `Failed to create ${entityType}` };
+		console.error(`Error creating ${entityType}:`, error);
+		return {
+			isSuccess: false,
+			message: `Failed to create ${entityType}`,
+		};
 	}
 }
 
@@ -150,11 +307,49 @@ export function BaseTable<T>({
 }: BaseTableProps<T>) {
 	// Common table logic
 }
+
+// Shared hook for common state management
+export function useEntityData<T>(
+	entityId: string,
+	fetchFunction: (id: string) => Promise<ActionState<T>>
+) {
+	const [data, setData] = useState<T | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		async function fetchData() {
+			setLoading(true);
+			const result = await fetchFunction(entityId);
+			if (result.isSuccess) {
+				setData(result.data);
+			} else {
+				setError(result.message);
+			}
+			setLoading(false);
+		}
+		fetchData();
+	}, [entityId, fetchFunction]);
+
+	return { data, loading, error };
+}
 ```
 
 ### ❌ Bad Examples
 
 ```typescript
+// Class-based approach - DON'T DO THIS
+export class EntityActions<T> {
+	constructor(
+		private model: any,
+		private entityName: string
+	) {}
+
+	async create(data: T) {
+		// Implementation...
+	}
+}
+
 // Duplicated code across multiple files
 // team.actions.ts
 export async function createTeamAction(input: CreateTeamInput) {
@@ -175,7 +370,68 @@ export async function createUserAction(input: CreateUserInput) {
 		return { isSuccess: false, message: 'Failed to create user' };
 	}
 }
+
+// Duplicated validation logic
+// team.actions.ts
+function validateTeamInput(input: CreateTeamInput) {
+	if (!input.name || input.name.trim().length === 0) {
+		return { isValid: false, error: 'Team name is required' };
+	}
+	if (input.name.length > 100) {
+		return { isValid: false, error: 'Team name too long' };
+	}
+	return { isValid: true };
+}
+
+// user.actions.ts - Same validation pattern
+function validateUserInput(input: CreateUserInput) {
+	if (!input.name || input.name.trim().length === 0) {
+		return { isValid: false, error: 'User name is required' };
+	}
+	if (input.name.length > 100) {
+		return { isValid: false, error: 'User name too long' };
+	}
+	return { isValid: true };
+}
 ```
+
+## File Organization
+
+### Shared Utilities Structure
+
+```
+src/
+├── lib/
+│   ├── utils/
+│   │   ├── crud-utils.ts          # Shared CRUD functions
+│   │   ├── validation-utils.ts    # Shared validation functions
+│   │   ├── metrics-utils.ts       # Shared metrics calculations
+│   │   ├── date-utils.ts          # Shared date handling
+│   │   └── error-utils.ts         # Shared error handling
+│   └── hooks/
+│       ├── use-entity-data.ts     # Shared data fetching hook
+│       ├── use-form-validation.ts # Shared form validation hook
+│       └── use-pagination.ts      # Shared pagination hook
+└── components/
+    ├── ui/
+    │   ├── base-table.tsx         # Shared table component
+    │   ├── entity-layout.tsx      # Shared layout component
+    │   └── loading-states.tsx     # Shared loading components
+    └── forms/
+        ├── base-form.tsx          # Shared form component
+        └── validation-fields.tsx  # Shared form fields
+```
+
+## Key Rules
+
+1. **NO CLASSES** - Use functions and utilities only
+2. **Extract Common Patterns** - Create shared utility functions
+3. **Reuse Components** - Build reusable UI components
+4. **Standardize Interfaces** - Use consistent prop and return types
+5. **Group Related Functions** - Keep related utilities in single files
+6. **Document Utilities** - Add JSDoc comments for shared functions
+7. **Test Utilities** - Write tests for shared functions
+8. **Monitor Duplication** - Use tools to detect code duplication
 
 ## Tools for Detection
 
@@ -184,7 +440,7 @@ export async function createUserAction(input: CreateUserInput) {
 - Static analysis tools to flag similar code
 - Monitor bundle size for duplicated dependencies
 
-description: Prevent code duplication through extraction and reuse
+description: Prevent code duplication through extraction and reuse using functional patterns only
 globs:
 
 - src/\*_/_.{ts,tsx}

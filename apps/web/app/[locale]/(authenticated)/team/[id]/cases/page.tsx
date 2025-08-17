@@ -12,32 +12,6 @@ interface TeamCasesPageProps {
 	params: Promise<{ id: string }>;
 }
 
-interface CaseData {
-	id: string;
-	title: string;
-	description?: string;
-	client?: string;
-	clientId?: string;
-	status: string;
-	state: string;
-	createdAt: string;
-	updatedAt: string;
-}
-
-// Type for case with client
-interface CaseWithClient {
-	id: string;
-	title: string;
-	description: string | null;
-	state: string;
-	createdAt: Date | string;
-	updatedAt: Date | string;
-	client?: {
-		id: string;
-		name: string;
-	};
-}
-
 export default async function TeamCasesPage({ params }: TeamCasesPageProps) {
 	const user = await getCurrentUser();
 	if (!user?.id) {
@@ -78,23 +52,11 @@ export default async function TeamCasesPage({ params }: TeamCasesPageProps) {
 		);
 	}
 
-	const casesTableData: CaseData[] = casesData.map((caseItem: any) => ({
-		id: caseItem.id,
-		title: caseItem.title,
-		description: caseItem.description,
-		client: caseItem.client?.name,
-		clientId: caseItem.client?.id,
-		status: caseItem.state || 'created',
-		state: caseItem.state || 'created',
-		createdAt: caseItem.createdAt.toISOString(),
-		updatedAt: caseItem.updatedAt.toISOString(),
-	}));
-
 	return (
 		<div className="space-y-4">
-			{casesTableData.length > 0 ? (
+			{casesData && casesData.length > 0 ? (
 				<CasesTable
-					data={casesTableData}
+					data={casesData}
 					title="Team Cases"
 					description="Cases assigned to this team"
 					showClient={true}

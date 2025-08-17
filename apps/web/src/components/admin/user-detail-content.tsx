@@ -14,7 +14,8 @@ import {
 import { Button } from '@shadcn/ui/button';
 import { Badge } from '@shadcn/ui/badge';
 import { getUserProfileByIdAction } from '@src/lib/db/user-profile/user-profile.actions';
-import ProfileUpdateDialog from '@src/components/dialogs/profile-update-dialog';
+import { UserProfileWithRelations } from '@/lib/db/user-profile/user-profile.types';
+import ProfileUpdateDialog from '../dialogs/profile-update-dialog';
 
 interface UserDetailContentProps {
 	userId: string;
@@ -23,7 +24,7 @@ interface UserDetailContentProps {
 export function UserDetailContent({ userId }: UserDetailContentProps) {
 	const t = useTranslations('pages.admin');
 	const router = useRouter();
-	const [userData, setUserData] = useState<any>(null);
+	const [userData, setUserData] = useState<UserProfileWithRelations>();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -44,7 +45,7 @@ export function UserDetailContent({ userId }: UserDetailContentProps) {
 		fetchUserData();
 	}, [userId]);
 
-	const getUserDisplayName = (user: any) => {
+	const getUserDisplayName = (user: UserProfileWithRelations) => {
 		const firstName = user.firstName || '';
 		const lastName = user.lastName || '';
 		const fullName = `${firstName} ${lastName}`.trim();
@@ -139,7 +140,7 @@ export function UserDetailContent({ userId }: UserDetailContentProps) {
 			<ProfileUpdateDialog
 				open={isEditDialogOpen}
 				onOpenChange={setIsEditDialogOpen}
-				userId={userData.id}
+				userProfileId={userData.id}
 				initialValues={{
 					firstName: userData.firstName || '',
 					lastName: userData.lastName || '',

@@ -2,7 +2,10 @@
 
 import { db, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
-import { UserProfileSearchData } from './user-profile.types';
+import {
+	UserProfileSearchData,
+	UserProfileWithRelations,
+} from './user-profile.types';
 import { auth } from '@src/lib/auth/auth';
 import { getMemberships } from '@src/lib/db/membership/membership.utils';
 
@@ -141,79 +144,9 @@ export async function getUserProfileId(): Promise<string | null> {
 	return userProfile?.id ?? null;
 }
 
-export async function getUserProfileByIdAction(userProfileId: string): Promise<
-	ActionState<
-		| (Prisma.UserProfileGetPayload<{
-				include: {
-					user: {
-						select: {
-							id: true;
-							email: true;
-							createdAt: true;
-						};
-					};
-					memberships: {
-						include: {
-							organisation: {
-								select: {
-									id: true;
-									name: true;
-								};
-							};
-							team: {
-								select: {
-									id: true;
-									name: true;
-									organisation: {
-										select: {
-											id: true;
-											name: true;
-										};
-									};
-								};
-							};
-							case: {
-								select: {
-									id: true;
-									title: true;
-									team: {
-										select: {
-											id: true;
-											name: true;
-										};
-									};
-								};
-							};
-						};
-					};
-				};
-		  }> & {
-				activeInvites: Prisma.InviteGetPayload<{
-					include: {
-						organisation: {
-							select: {
-								id: true;
-								name: true;
-							};
-						};
-						team: {
-							select: {
-								id: true;
-								name: true;
-								organisation: {
-									select: {
-										id: true;
-										name: true;
-									};
-								};
-							};
-						};
-					};
-				}>[];
-		  })
-		| null
-	>
-> {
+export async function getUserProfileByIdAction(
+	userProfileId: string
+): Promise<ActionState<UserProfileWithRelations | null>> {
 	try {
 		const profile = await db.userProfile.findUnique({
 			where: { id: userProfileId },
@@ -270,6 +203,7 @@ export async function getUserProfileByIdAction(userProfileId: string): Promise<
 		const activeInvites = await db.invite.findMany({
 			where: {
 				email: profile.email || '',
+
 				 
 				OR: [
 					{

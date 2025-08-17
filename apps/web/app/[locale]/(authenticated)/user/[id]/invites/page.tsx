@@ -7,44 +7,9 @@ import { getUserProfileByIdAction } from '@src/lib/db/user-profile/user-profile.
 import { canViewUserProfileAction } from '@src/lib/db/user-profile/user-profile.actions';
 import ErrorBoundary from '@src/components/error-boundary';
 import InvitesTable from '@src/components/tables/invites-table';
-import { Role } from '@numio/ai-database';
 
 interface UserInvitesPageProps {
 	params: Promise<{ id: string }>;
-}
-
-// Type for invite with relations
-interface InviteWithRelations {
-	id: string;
-	email: string;
-	status: string;
-	expiresAt: string;
-	createdAt: string;
-	role: Role;
-	organisationId?: string;
-	teamId?: string;
-	organisation?: {
-		name: string;
-	};
-	team?: {
-		name: string;
-	};
-}
-
-// Type for invite data for table
-interface InviteData {
-	id: string;
-	email: string;
-	status: string;
-	expiresAt: string;
-	createdAt: string;
-	contextName: string;
-	contextType: string;
-	role: Role;
-	hasUser: boolean;
-	userProfileId?: string;
-	organisationId?: string;
-	teamId?: string;
 }
 
 export default async function UserInvitesPage({
@@ -94,35 +59,20 @@ export default async function UserInvitesPage({
 		redirect(`/user/${targetUserId}`);
 	}
 
-	// Transform active invites to match InvitesTable format
-	const activeInvites: InviteData[] =
-		targetUserProfile.activeInvites?.map((invite: any) => ({
-			id: invite.id,
-			email: invite.email,
-			status: invite.status,
-			expiresAt: new Date(invite.expiresAt).toLocaleDateString(),
-			createdAt: new Date(invite.createdAt).toLocaleDateString(),
-			contextName: invite.organisation?.name || invite.team?.name || 'Unknown',
-			contextType: invite.organisation ? 'Organisation' : 'Team',
-			role: invite.role,
-			hasUser: !!targetUserProfile.user,
-			userProfileId: targetUserProfile.user?.id,
-			organisationId: invite.organisationId,
-			teamId: invite.teamId,
-		})) || [];
-
-	// Separate active and expired invites
-	const pendingInvites = activeInvites.filter(
-		(invite: InviteData) =>
-			invite.status === 'pending' && new Date(invite.expiresAt) > new Date()
-	);
-	const expiredInvites = activeInvites.filter(
-		(invite: InviteData) =>
-			invite.status === 'expired' || new Date(invite.expiresAt) <= new Date()
-	);
-
 	// Check if current user is viewing their own profile
 	const isCurrentUser = currentUserProfile.id === targetUserId;
+
+	// Separate active and expired invites
+	const pendingInvites =
+		targetUserProfile.activeInvites?.filter(
+			(invite) =>
+				invite.status === 'pending' && new Date(invite.expiresAt) > new Date()
+		) || [];
+	const expiredInvites =
+		targetUserProfile.activeInvites?.filter(
+			(invite) =>
+				invite.status === 'expired' || new Date(invite.expiresAt) <= new Date()
+		) || [];
 
 	return (
 		<div className="space-y-6">

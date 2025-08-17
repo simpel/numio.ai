@@ -136,20 +136,11 @@ export async function deleteCaseAction(id: string): Promise<ActionState<null>> {
 	}
 }
 
-export async function getCasesByTeamAction(teamId: string): Promise<
-	ActionState<
-		Prisma.CaseGetPayload<{
-			include: {
-				client: {
-					select: {
-						id: true;
-						name: true;
-					};
-				};
-			};
-		}>[]
-	>
-> {
+import { CaseWithRelations } from './case.types';
+
+export async function getCasesByTeamAction(
+	teamId: string
+): Promise<ActionState<CaseWithRelations[]>> {
 	try {
 		// First check if the team exists
 		const team = await db.team.findUnique({

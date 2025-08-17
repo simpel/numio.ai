@@ -4,6 +4,7 @@ import { db, Role, Invite } from '@numio/ai-database';
 import { ActionState } from '@/types/global';
 import { sendInviteEmail } from '@/mails/invite';
 import { v4 as uuidv4 } from 'uuid';
+import { InviteWithRelations } from './invite.types';
 
 export async function createInviteAction(input: {
 	email: string;
@@ -392,7 +393,9 @@ export async function getPendingInvitesForUserAction(
 	}
 }
 
-export async function getAllInvitesAction(): Promise<ActionState<Invite[]>> {
+export async function getAllInvitesAction(): Promise<
+	ActionState<InviteWithRelations[]>
+> {
 	try {
 		const invites = await db.invite.findMany({
 			where: {
@@ -425,25 +428,28 @@ export async function getAllInvitesAction(): Promise<ActionState<Invite[]>> {
 			},
 		});
 
-		// Find user profiles for each invite by email
-		const invitesWithUserProfiles = await Promise.all(
-			invites.map(async (invite) => {
-				const userProfile = await db.userProfile.findUnique({
-					where: { email: invite.email },
-					select: {
-						id: true,
-						firstName: true,
-						lastName: true,
-						email: true,
-					},
-				});
+		// Get all unique emails from invites
+		const emails = [...new Set(invites.map((invite) => invite.email))];
 
-				return {
-					...invite,
-					userProfile,
-				};
-			})
+		// Fetch all user profiles in a single query
+		const userProfiles = await db.userProfile.findMany({
+			where: {
+				email: {
+					in: emails,
+				},
+			},
+		});
+
+		// Create a map for quick lookup
+		const userProfileMap = new Map(
+			userProfiles.map((profile) => [profile.email, profile])
 		);
+
+		// Attach user profiles to invites
+		const invitesWithUserProfiles = invites.map((invite) => ({
+			...invite,
+			userProfile: userProfileMap.get(invite.email) || null,
+		}));
 
 		return {
 			isSuccess: true,

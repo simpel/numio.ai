@@ -9,21 +9,10 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from '@shadcn/ui/hover-card';
-
-interface OrganisationData {
-	id: string;
-	name: string;
-	organisationId?: string;
-	teamsCount?: number;
-	usersCount?: number;
-	activeCasesCount?: number;
-	description?: string;
-	ownerName?: string;
-	createdAt?: string;
-}
+import { OrganisationWithRelations } from '@src/lib/db/organisation/organisation.types';
 
 interface OrganisationsTableProps {
-	data: OrganisationData[];
+	data: OrganisationWithRelations[];
 	title: string;
 	description?: string;
 	showOwner?: boolean;
@@ -37,15 +26,13 @@ export default function OrganisationsTable({
 	showOwner = false,
 	showCreatedAt = false,
 }: OrganisationsTableProps) {
-	const columns: ColumnDef<OrganisationData>[] = [
+	const columns: ColumnDef<OrganisationWithRelations>[] = [
 		{
 			accessorKey: 'name',
 			header: 'Organization Name',
 			enableSorting: true,
-			cell: ({ row }: { row: Row<OrganisationData> }) => (
-				<ClickableCell
-					href={`/organisation/${row.original.organisationId || row.original.id}`}
-				>
+			cell: ({ row }: { row: Row<OrganisationWithRelations> }) => (
+				<ClickableCell href={`/organisation/${row.original.id}`}>
 					{row.original.name}
 				</ClickableCell>
 			),
@@ -53,9 +40,16 @@ export default function OrganisationsTable({
 		...(showOwner
 			? [
 					{
-						accessorKey: 'ownerName',
+						accessorKey: 'owner',
 						header: 'Owner',
 						enableSorting: true,
+						cell: ({ row }: { row: Row<OrganisationWithRelations> }) => {
+							const owner = row.original.owner;
+							if (!owner) return <div className="text-muted-foreground">—</div>;
+							const name =
+								`${owner.firstName || ''} ${owner.lastName || ''}`.trim();
+							return <div>{name || owner.email}</div>;
+						},
 					},
 				]
 			: []),
@@ -65,7 +59,7 @@ export default function OrganisationsTable({
 						accessorKey: 'createdAt',
 						header: 'Created',
 						enableSorting: true,
-						cell: ({ row }: { row: Row<OrganisationData> }) => {
+						cell: ({ row }: { row: Row<OrganisationWithRelations> }) => {
 							const v = row.original.createdAt;
 							if (!v) return <div className="text-muted-foreground">—</div>;
 							const d = new Date(v);
@@ -88,10 +82,10 @@ export default function OrganisationsTable({
 
 	// Custom row renderer with hover card
 	const customRowRenderer = (
-		row: Row<OrganisationData>,
+		row: Row<OrganisationWithRelations>,
 		children: React.ReactNode
 	) => {
-		const org = row.original as OrganisationData;
+		const org = row.original;
 
 		return (
 			<HoverCard key={row.id}>
@@ -103,9 +97,8 @@ export default function OrganisationsTable({
 							<p className="text-muted-foreground text-sm">{org.description}</p>
 						)}
 						<div className="text-muted-foreground space-y-1 text-xs">
-							<p>Active Cases: {org.activeCasesCount ?? 0}</p>
-							<p>Teams: {org.teamsCount ?? 0}</p>
-							<p>Users: {org.usersCount ?? 0}</p>
+							<p>Teams: {org._count.teams}</p>
+							<p>Users: {org._count.members}</p>
 						</div>
 					</div>
 				</HoverCardContent>

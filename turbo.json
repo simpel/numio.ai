@@ -25,6 +25,10 @@
         "MAIL_API_SECRET",
         "MAIL_API_URL",
         "MAIL_API_PORT",
+        "MAIL_API_HOST",
+        "RESEND_API_KEY",
+        "RESEND_FROM",
+        "DEV_EMAIL_OVERRIDE",
         "APP_URL"
       ]
     },
@@ -44,6 +48,10 @@
         "MAIL_API_SECRET",
         "MAIL_API_URL",
         "MAIL_API_PORT",
+        "MAIL_API_HOST",
+        "RESEND_API_KEY",
+        "RESEND_FROM",
+        "DEV_EMAIL_OVERRIDE",
         "APP_URL"
       ]
     },
@@ -63,6 +71,10 @@
         "MAIL_API_SECRET",
         "MAIL_API_URL",
         "MAIL_API_PORT",
+        "MAIL_API_HOST",
+        "RESEND_API_KEY",
+        "RESEND_FROM",
+        "DEV_EMAIL_OVERRIDE",
         "APP_URL"
       ]
     },
@@ -81,6 +93,10 @@
         "MAIL_API_SECRET",
         "MAIL_API_URL",
         "MAIL_API_PORT",
+        "MAIL_API_HOST",
+        "RESEND_API_KEY",
+        "RESEND_FROM",
+        "DEV_EMAIL_OVERRIDE",
         "APP_URL"
       ]
     },

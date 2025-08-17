@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Map of country codes to supported locales
 const countryToLocale: Record<string, 'en' | 'sv'> = {
-	 
 	SE: 'sv',
 };
 
@@ -62,12 +61,6 @@ function getLocaleFromGeolocation(request: NextRequest): 'en' | 'sv' {
 // Create custom middleware that combines next-intl with geolocation
 export default function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
-
-	console.log('=== MIDDLEWARE EXECUTING ===');
-	console.log('Pathname:', pathname);
-	console.log('Request URL:', request.url);
-	console.log('User Agent:', request.headers.get('user-agent'));
-	console.log('==========================');
 
 	// Handle root path redirect with geolocation
 	if (pathname === '/') {

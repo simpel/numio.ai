@@ -35,29 +35,11 @@ import {
 } from '@shadcn/ui/alert-dialog';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useTranslations } from 'next-intl';
-import { InviteStatus, Role } from '@numio/ai-database';
-
-interface InviteData {
-	id: string;
-	email: string;
-	status: string;
-	expiresAt: string;
-	createdAt: string;
-	// Context data for hover card
-	contextName?: string;
-	contextType?: string;
-	role: Role;
-	// User data for conditional button
-	hasUser: boolean;
-	userProfileId?: string;
-	userName?: string;
-	// Context IDs for re-invite
-	organisationId?: string;
-	teamId?: string;
-}
+import { InviteStatus } from '@numio/ai-database';
+import { InviteWithRelations } from '@/lib/db/membership/invite.types';
 
 interface InvitesTableProps {
-	data: InviteData[];
+	data: InviteWithRelations[];
 	title: string;
 	description?: string;
 	state: InviteStatus;
@@ -98,7 +80,7 @@ export default function InvitesTable({
 	const [bulkReInviting, setBulkReInviting] = useState(false);
 	const [bulkDeleting, setBulkDeleting] = useState(false);
 
-	const handleRenewInvite = async (invite: InviteData) => {
+	const handleRenewInvite = async (invite: InviteWithRelations) => {
 		try {
 			setRenewingId(invite.id);
 			const result = await renewInviteAction(invite.id);
@@ -122,7 +104,7 @@ export default function InvitesTable({
 		}
 	};
 
-	const handleReInvite = async (invite: InviteData) => {
+	const handleReInvite = async (invite: InviteWithRelations) => {
 		try {
 			setReInvitingId(invite.id);
 			const result = await reInviteUserAction({
@@ -151,7 +133,7 @@ export default function InvitesTable({
 		}
 	};
 
-	const handleAcceptInvite = async (invite: InviteData) => {
+	const handleAcceptInvite = async (invite: InviteWithRelations) => {
 		if (!currentUserProfileId) {
 			toast.error('User profile not found');
 			return;
@@ -177,7 +159,7 @@ export default function InvitesTable({
 		}
 	};
 
-	const handleRejectInvite = async (invite: InviteData) => {
+	const handleRejectInvite = async (invite: InviteWithRelations) => {
 		if (!currentUserProfileId) {
 			toast.error('User profile not found');
 			return;
@@ -200,7 +182,7 @@ export default function InvitesTable({
 		}
 	};
 
-	const handleDeleteInvite = async (invite: InviteData) => {
+	const handleDeleteInvite = async (invite: InviteWithRelations) => {
 		try {
 			setDeletingId(invite.id);
 			const result = await cancelInviteByIdAction(invite.id);
@@ -353,7 +335,7 @@ export default function InvitesTable({
 		return `**${invite.email}** is invited to the ${invite.contextType?.toLowerCase() || 'context'} **${invite.contextName || 'Unknown'}** as **${invite.role}**.`;
 	};
 
-	const columns: ColumnDef<InviteData>[] = [
+	const columns: ColumnDef<InviteWithRelations>[] = [
 		{
 			id: 'select',
 			header: ({ table }) => (

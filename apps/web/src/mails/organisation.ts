@@ -29,7 +29,7 @@ export async function sendOrganisationRoleEmail(
 			 
 			Authorization: `Bearer ${token}`,
 
-			 
+			// eslint-disable-next-line @typescript-eslint/naming-convention
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify({ to, subject, html }),

@@ -4,6 +4,10 @@ import { db, Prisma } from '@numio/ai-database';
 import { ActionState } from '@src/types/global';
 import { sendOrganisationRoleEmail } from '@src/mails/organisation';
 import { auth } from '@src/lib/auth/auth';
+import {
+	OrganisationWithRelations,
+	OrganisationWithDetails,
+} from './organisation.types';
 
 // Interface for organisation data that matches table expectations
 export interface OrganisationData {
@@ -102,7 +106,7 @@ export async function getOrganisationsForUserAction(): Promise<
 			include: {
 				organisation: {
 					include: {
-						 
+						// eslint-disable-next-line @typescript-eslint/naming-convention
 						_count: { select: { teams: true, members: true } },
 					},
 				},
@@ -157,44 +161,17 @@ export async function getOrganisationAction(
 	}
 }
 
-export async function getOrganisationWithDetailsAction(id: string): Promise<
-	ActionState<Prisma.OrganisationGetPayload<{
-		include: {
-			teams: {
-				include: {
-					 
-					_count: {
-						select: { memberships: true; members: true };
-					};
-					members: {
-						include: {
-							memberUserProfile: {
-								select: {
-									id: true;
-									firstName: true;
-									lastName: true;
-									image: true;
-								};
-							};
-						};
-					};
-				};
-			};
-			members: {
-				include: {
-					memberUserProfile: true;
-				};
-			};
-		};
-	}> | null>
-> {
+export async function getOrganisationWithDetailsAction(
+	id: string
+): Promise<ActionState<OrganisationWithDetails | null>> {
 	try {
 		const organisation = await db.organisation.findUnique({
 			where: { id },
 			include: {
 				teams: {
 					include: {
-						 
+						organisation: { select: { id: true, name: true } },
+						// eslint-disable-next-line @typescript-eslint/naming-convention
 						_count: {
 							select: { memberships: true, members: true },
 						},
@@ -334,23 +311,7 @@ export async function getOrgsWithAdminRightsAction(): Promise<
 }
 
 export async function getAllOrganisationsAction(): Promise<
-	ActionState<
-		(Prisma.OrganisationGetPayload<{
-			include: {
-				 
-				_count: {
-					select: { teams: true; members: true };
-				};
-			};
-		}> & {
-			owner?: {
-				id: string;
-				firstName: string | null;
-				lastName: string | null;
-				email: string | null;
-			};
-		})[]
-	>
+	ActionState<OrganisationWithRelations[]>
 > {
 	try {
 		const organisations = await db.organisation.findMany({
@@ -358,7 +319,7 @@ export async function getAllOrganisationsAction(): Promise<
 				createdAt: 'desc',
 			},
 			include: {
-				 
+				// eslint-disable-next-line @typescript-eslint/naming-convention
 				_count: {
 					select: { teams: true, members: true },
 				},

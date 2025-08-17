@@ -55,7 +55,7 @@ export const config = [
   },
   {
     selector: "variable",
-    format: ["camelCase", "UPPER_CASE"],
+    format: ["camelCase", "UPPER_CASE", "PascalCase"],
     leadingUnderscore: "allow",
   },
   {
@@ -76,12 +76,17 @@ export const config = [
   // Regular functions → camelCase
   {
     selector: "function",
-    format: ["camelCase"],
+    format: ["camelCase", "PascalCase"],
   },
   // Arrow functions that are components → allow PascalCase
   {
     selector: "variable",
     types: ["function"],
+    format: ["camelCase", "PascalCase"],
+  },
+  // Import names → allow both camelCase and PascalCase
+  {
+    selector: "import",
     format: ["camelCase", "PascalCase"],
   }
 ]

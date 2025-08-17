@@ -5,46 +5,7 @@ import { getInviteMetricsAction } from '@src/lib/db/membership/invite-metrics.ac
 import InvitesTable from '@src/components/tables/invites-table';
 import MetricsChart from '@src/components/charts/metrics-chart';
 import ErrorBoundary from '@src/components/error-boundary';
-import { Role } from '@numio/ai-database';
-
-interface InviteData {
-	id: string;
-	email: string;
-	status: string;
-	expiresAt: string;
-	createdAt: string;
-	contextName: string;
-	contextType: string;
-	role: Role;
-	hasUser: boolean;
-	userProfileId?: string;
-	userName?: string;
-	organisationId?: string;
-	teamId?: string;
-}
-
-// Type for invite with relations
-interface InviteWithRelations {
-	id: string;
-	email: string;
-	status: string;
-	expiresAt: string;
-	createdAt: string;
-	role: string;
-	organisationId?: string;
-	teamId?: string;
-	organisation?: {
-		name: string;
-	};
-	team?: {
-		name: string;
-	};
-	userProfile?: {
-		id: string;
-		firstName?: string;
-		lastName?: string;
-	};
-}
+import { InviteWithRelations } from '@src/lib/db/membership/invite.types';
 
 export default async function AdminInvitesPage() {
 	// Get all invites (no role filtering in admin)
@@ -53,43 +14,17 @@ export default async function AdminInvitesPage() {
 	// Get invite metrics for the last 30 days
 	const { data: inviteMetrics } = await getInviteMetricsAction(30);
 
-	const activeInvites: InviteData[] = [];
-	const expiredInvites: InviteData[] = [];
+	const activeInvites: InviteWithRelations[] = [];
+	const expiredInvites: InviteWithRelations[] = [];
 
-	allInvites?.forEach((invite: any) => {
+	allInvites?.forEach((invite: InviteWithRelations) => {
 		const isExpired =
 			invite.status === 'expired' || new Date(invite.expiresAt) < new Date();
-		const contextName =
-			invite.organisation?.name || invite.team?.name || 'Unknown';
-		const contextType = invite.organisation ? 'Organisation' : 'Team';
-
-		// Check if user exists for this email
-		const hasUser = !!invite.userProfile;
-		const userProfileId = invite.userProfile?.id;
-		const userName = invite.userProfile
-			? `${invite.userProfile.firstName || ''} ${invite.userProfile.lastName || ''}`.trim()
-			: undefined;
-
-		const inviteData: InviteData = {
-			id: invite.id,
-			email: invite.email,
-			status: invite.status,
-			expiresAt: new Date(invite.expiresAt).toLocaleDateString(),
-			createdAt: new Date(invite.createdAt).toLocaleDateString(),
-			contextName,
-			contextType,
-			role: invite.role,
-			hasUser,
-			userProfileId,
-			userName,
-			organisationId: invite.organisationId,
-			teamId: invite.teamId,
-		};
 
 		if (isExpired) {
-			expiredInvites.push(inviteData);
+			expiredInvites.push(invite);
 		} else {
-			activeInvites.push(inviteData);
+			activeInvites.push(invite);
 		}
 	});
 

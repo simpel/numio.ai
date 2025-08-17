@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
 import { Button } from '@shadcn/ui/button';
 import { AlertTriangle } from 'lucide-react';
+import React from 'react';
 
 interface ErrorBoundaryState {
 	hasError: boolean;

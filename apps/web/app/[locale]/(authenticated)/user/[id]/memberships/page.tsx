@@ -14,17 +14,6 @@ interface UserMembershipsPageParams {
 	params: Promise<{ id: string }>;
 }
 
-// Type for membership data for table
-interface MembershipData {
-	id: string;
-	name: string;
-	type: 'organization' | 'team' | 'case';
-	role: string;
-	organisation?: string;
-	createdAt: string;
-	href: string;
-}
-
 export default async function UserMembershipsPage({
 	params,
 }: UserMembershipsPageParams) {
@@ -59,47 +48,14 @@ export default async function UserMembershipsPage({
 		redirect('/');
 	}
 
-	// Transform memberships data for the table
-	const membershipsData: MembershipData[] =
-		targetUserProfile.memberships?.map((membership: any) => {
-			const name =
-				membership.organisation?.name ||
-				membership.team?.name ||
-				membership.case?.title ||
-				'Unknown';
-
-			const type = membership.organisation
-				? 'organization'
-				: membership.team
-					? 'team'
-					: 'case';
-
-			const href = membership.organisation
-				? `/organisation/${membership.organisation.id}`
-				: membership.team
-					? `/team/${membership.team.id}`
-					: membership.case
-						? `/case/${membership.case.id}`
-						: '#';
-
-			return {
-				id: membership.id,
-				name,
-				type,
-				role: membership.role,
-				organisation: membership.team?.organisation?.name || undefined,
-				createdAt: membership.createdAt.toISOString(),
-				href,
-			};
-		}) || [];
-
 	return (
 		<div className="space-y-6">
 			<ErrorBoundary>
 				{/* Memberships */}
-				{membershipsData.length > 0 ? (
+				{targetUserProfile.memberships &&
+				targetUserProfile.memberships.length > 0 ? (
 					<MembershipsTable
-						data={membershipsData}
+						data={targetUserProfile.memberships}
 						title="Active Memberships"
 						description="Organizations, teams, and cases this user is part of."
 					/>

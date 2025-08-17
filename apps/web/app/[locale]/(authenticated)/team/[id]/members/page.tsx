@@ -11,46 +11,6 @@ interface TeamUsersPageProps {
 	params: Promise<{ id: string }>;
 }
 
-interface MemberData {
-	id: string;
-	membershipId: string;
-	name: string;
-	email: string;
-	role: string;
-	memberSince?: string;
-}
-
-// Type for team with included relations
-interface TeamWithDetails {
-	id: string;
-	name: string;
-	description: string | null;
-	createdAt: Date;
-	organisationId: string;
-	ownerId: string;
-	organisation: {
-		id: string;
-		name: string;
-	};
-	owner: {
-		id: string;
-		firstName: string | null;
-		lastName: string | null;
-		email: string | null;
-	};
-	contextMemberships: Array<{
-		id: string;
-		role: string;
-		createdAt: Date;
-		userProfile: {
-			id: string;
-			firstName: string | null;
-			lastName: string | null;
-			email: string | null;
-		};
-	}>;
-}
-
 export default async function TeamUsersPage({ params }: TeamUsersPageProps) {
 	const user = await getCurrentUser();
 	if (!user?.id) {
@@ -70,27 +30,11 @@ export default async function TeamUsersPage({ params }: TeamUsersPageProps) {
 		notFound();
 	}
 
-	// Cast to the correct type with includes
-	const teamWithDetails = teamDetails as unknown as TeamWithDetails;
-
-	const membersData: MemberData[] =
-		teamWithDetails.contextMemberships?.map((membership) => ({
-			id: membership.userProfile.id,
-			membershipId: membership.id,
-			name: `${membership.userProfile.firstName || ''} ${membership.userProfile.lastName || ''}`.trim(),
-			email: membership.userProfile.email || '',
-			role: membership.role,
-			memberSince: membership.createdAt
-				? new Date(membership.createdAt).toISOString()
-				: undefined,
-		})) || [];
-
 	return (
 		<div className="space-y-4">
-			{teamWithDetails.contextMemberships &&
-			teamWithDetails.contextMemberships.length > 0 ? (
+			{teamDetails.members && teamDetails.members.length > 0 ? (
 				<MembersTable
-					data={membersData}
+					data={teamDetails.members}
 					title="Team Members"
 					description="Members of this team"
 					roleVariant="admin"

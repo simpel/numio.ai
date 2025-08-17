@@ -3,17 +3,10 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@shadcn/ui/badge';
 import { DataTable } from '@src/components/data-table';
 import { ClickableCell } from './clickable-cell';
-
-interface UserData {
-	id: string;
-	name: string;
-	email: string;
-	status: string;
-	lastLogin: string;
-}
+import { UserWithRelations } from '@/lib/db/user/user.types';
 
 interface UsersTableProps {
-	data: UserData[];
+	data: UserWithRelations[];
 	title: string;
 	description?: string;
 }
@@ -38,41 +31,52 @@ export default function UsersTable({
 	title,
 	description,
 }: UsersTableProps) {
-	const columns: ColumnDef<UserData>[] = [
+	const columns: ColumnDef<UserWithRelations>[] = [
 		{
 			accessorKey: 'name',
 			header: 'Name',
 			enableSorting: true,
-			cell: ({ row }: { row: { original: UserData } }) => (
-				<ClickableCell href={`/user/${row.original.id}`}>
-					{row.original.name}
-				</ClickableCell>
-			),
+			cell: ({ row }: { row: { original: UserWithRelations } }) => {
+				const user = row.original;
+				const name =
+					`${user.profile?.firstName || ''} ${user.profile?.lastName || ''}`.trim() ||
+					'Unknown';
+				const userId = user.profile?.id || user.id;
+				return <ClickableCell href={`/user/${userId}`}>{name}</ClickableCell>;
+			},
 		},
 		{
 			accessorKey: 'email',
 			header: 'Email',
 			enableSorting: true,
-			cell: ({ row }: { row: { original: UserData } }) => (
-				<ClickableCell href={`/user/${row.original.id}`}>
-					{row.original.email}
-				</ClickableCell>
-			),
+			cell: ({ row }: { row: { original: UserWithRelations } }) => {
+				const user = row.original;
+				const email = user.profile?.email || user.email || '';
+				const userId = user.profile?.id || user.id;
+				return <ClickableCell href={`/user/${userId}`}>{email}</ClickableCell>;
+			},
 		},
 		{
 			accessorKey: 'status',
 			header: 'Role',
 			enableSorting: true,
-			cell: ({ row }: { row: { original: UserData } }) => (
-				<Badge variant={getStatusVariant(row.original.status)}>
-					{row.original.status}
-				</Badge>
-			),
+			cell: ({ row }: { row: { original: UserWithRelations } }) => {
+				const user = row.original;
+				const status = user.profile?.role || 'active';
+				return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+			},
 		},
 		{
 			accessorKey: 'lastLogin',
 			header: 'Last Login',
 			enableSorting: true,
+			cell: ({ row }: { row: { original: UserWithRelations } }) => {
+				const user = row.original;
+				const lastLogin = user.profile?.updatedAt
+					? new Date(user.profile.updatedAt).toLocaleDateString()
+					: 'Never';
+				return <div>{lastLogin}</div>;
+			},
 		},
 	];
 
